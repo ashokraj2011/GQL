@@ -46,6 +46,18 @@ public class SchemaField {
     }
 
     /**
+     * Gets the clean type name without modifiers (!, [])
+     * 
+     * @return The clean type name
+     */
+    public String getCleanType() {
+        return type
+            .replace("[", "")
+            .replace("]", "")
+            .replace("!", "");
+    }
+
+    /**
      * Checks if the field is required
      * 
      * @return true if the field is required, false otherwise
@@ -83,3 +95,4 @@ public class SchemaField {
                 '}';
     }
 }
+

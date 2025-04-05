@@ -6,6 +6,7 @@ directive @deprecated(reason: String) on FIELD_DEFINITION
 directive @cached(seconds: Int) on FIELD_DEFINITION
 directive @auth(requires: String) on FIELD_DEFINITION | OBJECT
 directive @paginate(defaultLimit: Int = 10, maxLimit: Int = 100) on FIELD_DEFINITION
+directive @log on FIELD_DEFINITION
 
 # Marketing domain types
 type Marketing @params(fields: ["id"]) {
@@ -324,7 +325,7 @@ type Query {
   externalProducts: [ExternalProduct] @paginate
   
   # Search functionality
-  search(term: String!, types: [String]): [SearchResult]
+  search(term: String!, types: [String]): [SearchResult] @log
 }
 
 # Type for search results across domains
@@ -334,3 +335,4 @@ type SearchResult {
   highlights: [String]
   score: Float
 }
+

@@ -243,6 +243,9 @@ public class SchemaParser {
         // Parse @params directive
         parseParamsDirective(schemaContent);
         
+        // Parse @log directive
+        parseLogDirective(schemaContent);
+        
         // Parse relationship fields to infer namespaces
         inferNamespacesFromRelationships();
     }
@@ -347,6 +350,28 @@ public class SchemaParser {
                         System.out.println("Also set namespace " + typeName.toLowerCase() + " for related type " + otherTypeName);
                     }
                 }
+            }
+        }
+    }
+    
+    /**
+     * Parse @log directive that specifies logging
+     */
+    private void parseLogDirective(String schemaContent) {
+        // Matches: type TypeName { ... } @log
+        Pattern logPattern = Pattern.compile(
+            "type\\s+(\\w+)\\s*\\{[^}]*\\}\\s*@log",
+            Pattern.DOTALL
+        );
+
+        Matcher logMatcher = logPattern.matcher(schemaContent);
+
+        while (logMatcher.find()) {
+            String typeName = logMatcher.group(1);
+
+            if (schemaTypes.containsKey(typeName)) {
+                schemaTypes.get(typeName).setLog(true);
+                System.out.println("Set log directive for " + typeName);
             }
         }
     }

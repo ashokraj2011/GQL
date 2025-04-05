@@ -19,6 +19,16 @@ public interface AIQueryGenerator {
     JsonNode generateQuery(String description) throws AIQueryException;
     
     /**
+     * Generate a GQL query with schema context
+     * 
+     * @param description The natural language description of what data is needed
+     * @param schemaContext Schema information to help guide the generation
+     * @return A JsonNode containing the generated query
+     * @throws AIQueryException If there was an error generating the query
+     */
+    JsonNode generateQuery(String description, String schemaContext) throws AIQueryException;
+    
+    /**
      * Generate a GQL query with additional context/examples
      * 
      * @param description The natural language description of what data is needed

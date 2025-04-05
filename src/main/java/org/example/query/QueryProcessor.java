@@ -544,7 +544,13 @@ public class QueryProcessor {
      */
     private JsonNode processTypeQuery(String typeName, JsonNode typeQuery) {
         System.out.println("Processing type query for " + typeName + ": " + typeQuery);
-        
+
+        // Check if logging is enabled for this type
+        SchemaType schemaType = schema.get(typeName);
+        if (schemaType != null && schemaType.isLog()) {
+            System.out.println("Logging enabled for type: " + typeName);
+        }
+
         // Try case-insensitive match if exact match fails
         List<Map<String, Object>> data = dataLoader.getData(typeName);
         String actualTypeName = typeName;

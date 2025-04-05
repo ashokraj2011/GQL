@@ -16,7 +16,7 @@ This API enables GraphQL-like querying over various data sources without requiri
 ┌─────────────┐     ┌────────────────┐     ┌──────────┐
 │ Client App  │────▶│ GraphQL-like   │────▶│ JSON     │
 │ or Service  │◀────│ JSON API       │◀────│ Data     │
-└─────────────┘     └────────────────┘     └────��─────┘
+└─────────────┘     └────────────────┘     └──────────┘
                            │                     ▲
                            ▼                     │
                     ┌──────────────┐     ┌──────────────┐
@@ -65,6 +65,7 @@ This API enables GraphQL-like querying over various data sources without requiri
 - **🔐 Authentication & Authorization**: Field and type-level access control
 - **📊 Pagination support**: Built-in pagination for large result sets
 - **📈 Analytics domain**: Support for aggregated data and business insights
+- **⏱️ Time Travel**: Query data as it existed at any point in time
 
 ## 🚀 Setup & Installation
 
@@ -114,6 +115,7 @@ directive @deprecated(reason: String) on FIELD_DEFINITION
 directive @cached(seconds: Int) on FIELD_DEFINITION
 directive @auth(requires: String) on FIELD_DEFINITION | OBJECT
 directive @paginate(defaultLimit: Int = 10, maxLimit: Int = 100) on FIELD_DEFINITION
+directive @log on FIELD_DEFINITION
 
 # Marketing domain types
 type Marketing @params(fields: ["id"]) {
@@ -121,6 +123,8 @@ type Marketing @params(fields: ["id"]) {
   customers: [MarketingCustomer]
   orders: [MarketingOrder]
   campaigns: [MarketingCampaign]
+  leads: [MarketingLead]
+  events: [MarketingEvent]
 }
 
 type MarketingCustomer @source(file: "data/marketing.customer.json") {
@@ -128,33 +132,24 @@ type MarketingCustomer @source(file: "data/marketing.customer.json") {
   name: String
   email: String
   orders: [MarketingOrder]
+  leadSource: String
+  customerSegment: String
   campaignHistory: [MarketingCampaign]
-}
-
-type MarketingOrder @source(file: "data/marketing.order.json") {
-  id: ID!
-  total: String
-  customerId: ID
-  date: String
-  customer: MarketingCustomer
-  campaignId: ID
-  campaign: MarketingCampaign
+  totalSpend: Float @deprecated(reason: "Use analytics.customerValue instead")
+  leadId: ID
+  lead: MarketingLead
 }
 
 # Finance domain types
 type Finance @params(fields: ["id"]) {
   id: ID
   customers: [FinanceCustomer]
+  invoices: [FinanceInvoice]
+  transactions: [FinanceTransaction]
 }
 
-type FinanceCustomer @source(file: "data/finance.customer.json") {
-  id: ID!
-  name: String
-  email: String
-}
-
-# Analytics domain types
-type Analytics @params(fields: ["id"]) @auth(requires: "ROLE_ANALYST") {
+# Analytics domain for aggregated data and insights
+type Analytics @params(fields: ["id"]) {
   id: ID
   customerAnalytics: [CustomerAnalytics]
   campaignPerformance: [CampaignPerformance]
@@ -171,6 +166,7 @@ type Analytics @params(fields: ["id"]) @auth(requires: "ROLE_ANALYST") {
 - `@cached(seconds: 300)`: Cache field results
 - `@auth(requires: "ROLE_NAME")`: Restrict access to specific roles
 - `@paginate(defaultLimit: 10, maxLimit: 100)`: Enable pagination with limits
+- `@log`: Enable logging for a field or operation
 
 ## 📂 Data Sources
 
@@ -181,7 +177,11 @@ data/
 ├── marketing.customer.json
 ├── marketing.order.json
 ├── marketing.campaign.json
+├── marketing.lead.json
+├── marketing.event.json
 ├── finance.customer.json
+├── finance.invoice.json
+├── finance.transaction.json
 ├── analytics.customer.json
 ├── analytics.campaign.json
 ├── analytics.sales.json
@@ -325,11 +325,14 @@ The API accepts JSON queries with the following structure:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/query` | Process a data query |
+| POST | `/api/query/at` | Process a point-in-time query |
 | POST | `/api/nl-query` | Process a natural language query (if AI enabled) |
 | GET | `/api/schema` | Get schema information |
 | GET | `/api/data-info` | Get data statistics |
 | GET | `/api/namespaces` | Get namespace information |
 | GET | `/api/relationships` | Get relationship information |
+| GET | `/api/history/{typeName}/{id}` | Get record history |
+| GET | `/api/health` | Service health status |
 
 ### WebSocket API
 
@@ -359,6 +362,56 @@ stompClient.connect({}, frame => {
     })
   );
 });
+```
+
+## 🔄 Relationships
+
+The system automatically detects and manages relationships between entities based on the schema definition. Relationships are tracked through the `RelationshipInfo` class, which contains:
+
+- `sourceType`: The type containing the relationship field
+- `fieldName`: The field name in the source type that references the target
+- `targetType`: The type being referenced
+- `isList`: Whether the relationship is a one-to-many (true) or one-to-one (false)
+
+Relationships are automatically inferred from:
+
+1. Field types matching other entity types
+2. Foreign key fields (e.g., `customerId` would link to a `Customer` type)
+3. Field names matching entity types in lowercase
+
+You can query relationships explicitly with:
+
+```json
+{
+  "query": {
+    "metadata": {
+      "fields": ["relationships"]
+    }
+  }
+}
+```
+
+This returns all detected relationships in the system:
+
+```json
+{
+  "metadata": {
+    "relationships": [
+      {
+        "sourceType": "MarketingOrder",
+        "fieldName": "customer",
+        "targetType": "MarketingCustomer",
+        "isList": false
+      },
+      {
+        "sourceType": "MarketingCustomer",
+        "fieldName": "orders",
+        "targetType": "MarketingOrder",
+        "isList": true
+      }
+    ]
+  }
+}
 ```
 
 ## 🔐 Authentication & Authorization
@@ -532,6 +585,87 @@ Response example:
 }
 ```
 
+## ⏱️ Time Travel Queries
+
+The API provides comprehensive time travel capabilities through the `TimeTravel` service, allowing you to query data as it existed at any point in time.
+
+### Querying Historical Data
+
+To query data as it existed at a specific timestamp, use the `/api/query/at` endpoint:
+
+```bash
+curl -X POST http://localhost:8080/api/query/at?timestamp=2023-06-01T00:00:00Z \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": {
+      "marketing": {
+        "customers": {
+          "fields": ["id", "name", "email"]
+        }
+      }
+    }
+  }'
+```
+
+This returns the data as it existed on June 1, 2023.
+
+### Retrieving Record History
+
+To retrieve the complete history of a specific record:
+
+```bash
+curl -X GET http://localhost:8080/api/history/MarketingCustomer/123
+```
+
+This returns all historical versions of the customer with ID 123, with their respective validity periods.
+
+### Historical Data Format
+
+Historical data files should be stored alongside the current data with a `.history.json` suffix:
+
+```
+data/
+├── marketing.customer.json         # Current data
+├── marketing.customer.history.json # Historical versions
+```
+
+Each record in the history file should include `validFrom` and `validTo` timestamps:
+
+```json
+[
+  {
+    "id": "123",
+    "name": "Old Company Name",
+    "email": "contact@example.com",
+    "validFrom": "2022-01-01T00:00:00Z",
+    "validTo": "2023-01-01T00:00:00Z"
+  },
+  {
+    "id": "123",
+    "name": "New Company Name",
+    "email": "updated@example.com",
+    "validFrom": "2023-01-01T00:00:00Z",
+    "validTo": null
+  }
+]
+```
+
+The `validTo` field is `null` for current records.
+
+### Time Travel Implementation
+
+The time travel functionality is implemented by:
+
+1. The `TimeTravel` service acts as a coordinator for time-based queries
+2. The `DataLoader` maintains historical versions of records
+3. When a time-travel query is received, the system:
+   - Sets the point-in-time context
+   - Filters records based on their valid time ranges
+   - Returns only data that was valid at the requested timestamp
+   - Resets the context to avoid affecting subsequent queries
+
+This enables sophisticated historical analysis and auditing capabilities without modifying your query structure.
+
 ## ⚡ Performance Considerations
 
 - **Use field selection**: Request only the fields you need to reduce response size
@@ -539,6 +673,7 @@ Response example:
 - **Enable caching**: Use the `@cached` directive for frequently accessed data
 - **Consider relationship depth**: Deep relationship chains may impact performance
 - **Use pagination**: For large datasets, always use pagination to limit response size
+- **Time travel queries**: These are more resource-intensive, so use them judiciously
 
 ## 🔧 Troubleshooting
 
@@ -564,6 +699,11 @@ Response example:
    - Ensure the user has the required role for the resource
    - Check authorization header format
 
+5. **Time travel query issues**:
+   - Verify the timestamp format (ISO 8601: YYYY-MM-DDThh:mm:ssZ)
+   - Check that historical data files exist with the correct naming convention
+   - Ensure records have proper `validFrom` and `validTo` fields
+
 ## 📊 Architecture Overview
 
 The system is built with the following components:
@@ -571,7 +711,10 @@ The system is built with the following components:
 1. **Schema Parser**: Parses GraphQL schema and builds type definitions
 2. **Data Loader**: Loads data from various sources based on schema
 3. **Query Processor**: Processes JSON queries and resolves relationships
-4. **Metadata Provider**: Provides introspection capabilities
+4. **Relationship Manager**: Tracks and resolves relationships between entities
+5. **Time Travel Service**: Enables point-in-time querying
+6. **Metadata Provider**: Provides introspection capabilities
+7. **AI Query Generator**: (Optional) Translates natural language to structured queries
 
 ## 👥 Contributing
 
@@ -586,4 +729,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
