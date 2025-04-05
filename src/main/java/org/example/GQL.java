@@ -399,16 +399,6 @@ public class GQL {
             }
             
             String inferredPrefix = namespace.toLowerCase() + "." + collection.toLowerCase();
-            String marketingPrefix = "marketing." + collection.toLowerCase();
-            String financePrefix = "finance." + collection.toLowerCase();
-            
-            if (namespace.equalsIgnoreCase("Marketing") && dataStore.containsKey(marketingPrefix)) {
-                System.out.println("Found Marketing data using marketing prefix: " + marketingPrefix);
-                return dataStore.get(marketingPrefix);
-            } else if (namespace.equalsIgnoreCase("finance") && dataStore.containsKey(financePrefix)) {
-                System.out.println("Found finance data using finance prefix: " + financePrefix);
-                return dataStore.get(financePrefix);
-            }
             
             if (dataStore.containsKey(inferredPrefix)) {
                 System.out.println("Found data using inferred key: " + inferredPrefix);
