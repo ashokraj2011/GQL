@@ -33,6 +33,10 @@ POST to /api/query:
 }
 ```
 
+## WebSocket Integration
+You can query the server over WebSockets by sending your query to "/app/querySocket". 
+The server will broadcast the results on "/topic/responses".
+
 ## Metadata
 GET /api/metadata returns schema and relationship details for exploration.
 
@@ -42,3 +46,5 @@ GET /api/metadata returns schema and relationship details for exploration.
 
 ## License
 Open source under the MIT License.
+
+`

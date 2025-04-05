@@ -177,7 +177,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
                             String directiveKey = currentNamespace != null ? 
                                     currentNamespace + typeName + ".api" : typeName + ".api";
                             
-                            directiveStore.put(directKey, apiUrl);
+                            directiveStore.put(directiveKey, apiUrl);
                             entityType.setApiUrl(apiUrl);
                             
                             System.out.println("Added API directive for: " + directiveKey + " -> " + apiUrl);
