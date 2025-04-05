@@ -10,11 +10,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.example.ai.AIQueryException;
+import org.example.ai.AIQueryGenerator;
 import org.example.data.DataLoader;
 import org.example.query.QueryProcessor;
 import org.example.schema.SchemaField;
 import org.example.schema.SchemaParser;
 import org.example.schema.SchemaType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -55,304 +58,287 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
     private Map<String, Set<String>> namespaceTypesMap = new HashMap<>();
     private List<RelationshipInfo> relationships = new ArrayList<>();
 
+    @Autowired(required = false)
+    private AIQueryGenerator aiQueryGenerator;
+
     public static void main(String[] args) {
         SpringApplication.run(GQL.class, args);
     }
     
     @EventListener(ContextRefreshedEvent.class)
-    public void initialize() throws IOException {
-        // Initialize schema parser
-        System.out.println("Initializing schema from path: " + schemaPath);
-        schemaParser = new SchemaParser();
+    public void initialize() {
+        try {
+            // Initialize schema parser
+            schemaParser = new SchemaParser();
+            
+            // Load schema from file or resource
+            Map<String, SchemaType> schema = loadSchema();
+            System.out.println("Loaded schema with " + schema.size() + " types");
+            
+            // Build relationships
+            extractRelationships(schema);
+            System.out.println("Extracted " + relationships.size() + " relationships");
+            
+            // Initialize data loader
+            dataLoader = new DataLoader(dataDirectory);
+            dataLoader.loadData(schema);
+            
+            // Initialize query processor
+            queryProcessor = new QueryProcessor(schema, dataLoader, relationships);
+            
+            // Build namespace to types mapping
+            buildNamespaceTypesMap(schema);
+            
+            System.out.println("Initialization complete, GQL ready to process queries");
+        } catch (Exception e) {
+            System.err.println("Error initializing GQL: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Load the GraphQL schema from a file or resource
+     */
+    private Map<String, SchemaType> loadSchema() throws IOException {
+        Path schemaFilePath = Paths.get(schemaPath);
+        String schemaContent = null; // Initialize with null to ensure compiler knows we're handling it
         
-        // Load schema content
-        String schemaContent = loadSchemaContent(schemaPath);
-        Map<String, SchemaType> schema = schemaParser.parseSchema(schemaContent);
-        
-        // Extract relationships from schema
-        extractRelationships(schema);
-        
-        // Find and set the proper data directory path
-        String effectiveDataDirectory = findEffectiveDataDirectory(dataDirectory);
-        System.out.println("Using effective data directory: " + effectiveDataDirectory);
-        
-        // Initialize data loader
-        System.out.println("Initializing data loader with directory: " + effectiveDataDirectory);
-        dataLoader = new DataLoader(effectiveDataDirectory);
-        dataLoader.loadData(schema);
-        
-        // Initialize query processor
-        queryProcessor = new QueryProcessor(schema, dataLoader, relationships);
-        
-        // Initialize namespace map
-        for (Map.Entry<String, SchemaType> entry : schema.entrySet()) {
-            String typeName = entry.getKey();
-            String namespace = entry.getValue().getNamespace();
-            if (namespace != null && !namespace.isEmpty()) {
-                namespaceTypesMap.computeIfAbsent(namespace.toLowerCase(), k -> new HashSet<>()).add(typeName);
+        if (Files.exists(schemaFilePath)) {
+            // Load from file
+            schemaContent = Files.readString(schemaFilePath);
+            System.out.println("Loaded schema from file: " + schemaFilePath.toAbsolutePath());
+        } else {
+            // Try to load from classpath/resources
+            try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(schemaPath)) {
+                if (inputStream != null) {
+                    schemaContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    System.out.println("Loaded schema from classpath resource: " + schemaPath);
+                } else {
+                    // Try alternative locations
+                    List<String> alternativePaths = Arrays.asList(
+                        "schema.graphql",
+                        "gql/schema.graphql",
+                        "../schema.graphql"
+                    );
+                    
+                    boolean found = false;
+                    for (String altPath : alternativePaths) {
+                        Path path = Paths.get(altPath);
+                        if (Files.exists(path)) {
+                            schemaContent = Files.readString(path);
+                            System.out.println("Loaded schema from alternative path: " + path.toAbsolutePath());
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!found) {
+                        throw new IOException("Schema file not found at " + schemaPath + " or in resources");
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error loading schema: " + e.getMessage());
+                throw e;
             }
         }
         
-        // Extract namespace from type names where not explicitly set
+        // Additional safety check to satisfy compiler
+        if (schemaContent == null) {
+            throw new IOException("Failed to load schema content from any source");
+        }
+        
+        return schemaParser.parseSchema(schemaContent);
+    }
+
+    /**
+     * Extract relationships between types based on field references
+     */
+    private void extractRelationships(Map<String, SchemaType> schema) {
+        for (Map.Entry<String, SchemaType> entry : schema.entrySet()) {
+            String sourceTypeName = entry.getKey();
+            SchemaType sourceType = entry.getValue();
+            
+            for (SchemaField field : sourceType.getFields()) {
+                String fieldName = field.getName();
+                String fieldTypeName = field.getType()
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("!", "");
+                
+                // Skip scalar types
+                if (fieldTypeName.equals("ID") || fieldTypeName.equals("String") || 
+                    fieldTypeName.equals("Int") || fieldTypeName.equals("Float") || 
+                    fieldTypeName.equals("Boolean")) {
+                    continue;
+                }
+                
+                // Check if the field type exists in the schema
+                if (schema.containsKey(fieldTypeName)) {
+                    // Add relationship
+                    RelationshipInfo relationship = new RelationshipInfo(
+                        sourceTypeName,
+                        fieldName,
+                        fieldTypeName,
+                        field.isList()
+                    );
+                    relationships.add(relationship);
+                }
+            }
+        }
+    }
+
+    /**
+     * Build a map of namespaces to their types
+     */
+    private void buildNamespaceTypesMap(Map<String, SchemaType> schema) {
+        namespaceTypesMap.clear();
+        
         for (Map.Entry<String, SchemaType> entry : schema.entrySet()) {
             String typeName = entry.getKey();
             SchemaType type = entry.getValue();
+            String namespace = type.getNamespace();
             
-            // If namespace isn't set yet, try to extract it from type name
-            if (type.getNamespace() == null || type.getNamespace().isEmpty()) {
-                // Common namespace prefixes in type names 
+            if (namespace != null && !namespace.isEmpty()) {
+                namespaceTypesMap.computeIfAbsent(namespace, k -> new HashSet<>()).add(typeName);
+            } else {
+                // Try to infer namespace from type name
                 for (String prefix : Arrays.asList("Marketing", "Finance", "External")) {
                     if (typeName.startsWith(prefix)) {
-                        String extractedNamespace = prefix.toLowerCase();
-                        type.setNamespace(extractedNamespace);
-                        namespaceTypesMap.computeIfAbsent(extractedNamespace, k -> new HashSet<>()).add(typeName);
-                        System.out.println("Added extracted namespace " + extractedNamespace + " for type " + typeName);
+                        String ns = prefix.toLowerCase();
+                        namespaceTypesMap.computeIfAbsent(ns, k -> new HashSet<>()).add(typeName);
                         break;
                     }
                 }
             }
         }
-        
-        // Add explicit namespace entries for root-level namespace types
-        // This ensures queries can reference them directly
-        if (!namespaceTypesMap.containsKey("marketing")) {
-            namespaceTypesMap.put("marketing", new HashSet<>());
-        }
-        if (!namespaceTypesMap.containsKey("finance")) {
-            namespaceTypesMap.put("finance", new HashSet<>());
-        }
-        
-        // Print namespace mapping for debugging
-        for (Map.Entry<String, Set<String>> entry : namespaceTypesMap.entrySet()) {
-            System.out.println("Namespace: " + entry.getKey() + " -> Types: " + entry.getValue());
-        }
-        
-        System.out.println("GQL initialization complete. Ready to process queries.");
     }
 
     /**
-     * Load schema content from file or classpath
-     */
-    private String loadSchemaContent(String schemaPath) throws IOException {
-        // First, try to load from file system
-        Path path = Paths.get(schemaPath);
-        if (Files.exists(path)) {
-            return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-        }
-        
-        // Next, try to load from classpath
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(schemaPath)) {
-            if (is != null) {
-                return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            }
-        }
-        
-        // Finally, try with different path prefixes
-        for (String prefix : Arrays.asList("gql/", "src/main/resources/")) {
-            path = Paths.get(prefix + schemaPath);
-            if (Files.exists(path)) {
-                return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-            }
-        }
-        
-        throw new IOException("Schema file not found: " + schemaPath);
-    }
-
-    /**
-     * Extract relationships between types from the schema
-     * 
-     * @param schema The parsed schema
-     */
-    private void extractRelationships(Map<String, SchemaType> schema) {
-        for (Map.Entry<String, SchemaType> entry : schema.entrySet()) {
-            String sourceType = entry.getKey();
-            SchemaType type = entry.getValue();
-            
-            for (SchemaField field : type.getFields()) {
-                // Skip scalar fields
-                if (field.isScalar()) {
-                    continue;
-                }
-                
-                // Check if this field references another type
-                String targetType = field.getType();
-                if (schema.containsKey(targetType)) {
-                    // Add relationship
-                    RelationshipInfo relationship = new RelationshipInfo(
-                        sourceType,
-                        field.getName(),
-                        targetType,
-                        field.isList()
-                    );
-                    relationships.add(relationship);
-                    System.out.println("Found relationship: " + relationship);
-                }
-            }
-        }
-        
-        System.out.println("Extracted " + relationships.size() + " relationships");
-    }
-    
-    /**
-     * Handles GraphQL queries via REST endpoint
+     * Process a JSON query
      */
     @PostMapping("/query")
-    @PermissionCheck
-    public ResponseEntity<JsonNode> handleQuery(@RequestBody JsonNode requestBody) {
+    public ResponseEntity<JsonNode> processQuery(@RequestBody JsonNode queryNode) {
         try {
-            JsonNode result;
-            
-            // Check if the request uses the simplified format
-            if (isSimplifiedQueryFormat(requestBody)) {
-                // Convert from simplified format to standard format
-                ObjectNode standardFormat = objectMapper.createObjectNode();
-                ObjectNode queryObj = standardFormat.putObject("query");
-                
-                Iterator<Map.Entry<String, JsonNode>> fields = requestBody.fields();
-                while (fields.hasNext()) {
-                    Map.Entry<String, JsonNode> entry = fields.next();
-                    queryObj.set(entry.getKey(), entry.getValue());
-                }
-                
-                result = queryProcessor.processQuery(standardFormat);
-            } else {
-                // Process the query normally
-                result = queryProcessor.processQuery(requestBody);
-            }
-            
+            JsonNode result = queryProcessor.processQuery(queryNode);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             ObjectNode errorNode = objectMapper.createObjectNode();
-            errorNode.put("error", "Error processing query: " + e.getMessage());
+            errorNode.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(errorNode);
         }
     }
-    
+
     /**
-     * Handles GraphQL queries via WebSocket
+     * Process a natural language query using AI
      */
-    @MessageMapping("/ws-query")
-    @SendTo("/topic/results")
-    public JsonNode handleWebSocketQuery(JsonNode requestBody) throws JsonProcessingException {
+    @PostMapping("/nl-query")
+    public ResponseEntity<JsonNode> processNaturalLanguageQuery(@RequestBody Map<String, String> request) {
+        String query = request.get("query");
+        if (query == null || query.trim().isEmpty()) {
+            ObjectNode errorNode = objectMapper.createObjectNode();
+            errorNode.put("error", "Query cannot be empty");
+            return ResponseEntity.badRequest().body(errorNode);
+        }
+        
         try {
-            // Use the same processing logic as the REST endpoint
-            if (isSimplifiedQueryFormat(requestBody)) {
-                ObjectNode standardFormat = objectMapper.createObjectNode();
-                ObjectNode queryObj = standardFormat.putObject("query");
-                
-                Iterator<Map.Entry<String, JsonNode>> fields = requestBody.fields();
-                while (fields.hasNext()) {
-                    Map.Entry<String, JsonNode> entry = fields.next();
-                    queryObj.set(entry.getKey(), entry.getValue());
-                }
-                
-                return queryProcessor.processQuery(standardFormat);
-            } else {
-                return queryProcessor.processQuery(requestBody);
+            if (aiQueryGenerator == null) {
+                throw new AIQueryException("AI query generator is not configured");
             }
+            
+            // Generate JSON query from natural language using AI
+            JsonNode jsonQuery = aiQueryGenerator.generateQuery(query);
+            System.out.println("Generated query: " + jsonQuery);
+            
+            // Process the generated query
+            JsonNode result = queryProcessor.processQuery(jsonQuery);
+            
+            // Return both the generated query and the result
+            ObjectNode response = objectMapper.createObjectNode();
+            response.set("query", jsonQuery);
+            response.set("result", result);
+            return ResponseEntity.ok(response);
+        } catch (AIQueryException e) {
+            ObjectNode errorNode = objectMapper.createObjectNode();
+            errorNode.put("error", "AI query error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorNode);
         } catch (Exception e) {
             ObjectNode errorNode = objectMapper.createObjectNode();
-            errorNode.put("error", "Error processing WebSocket query: " + e.getMessage());
-            return errorNode;
+            errorNode.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorNode);
         }
     }
-    
+
     /**
-     * Provides system metadata
+     * Get schema information
      */
-    @GetMapping("/metadata")
-    public ResponseEntity<Map<String, Object>> getMetadata() {
-        Map<String, Object> metadata = new HashMap<>();
-        
-        // Add relationships
-        metadata.put("relationships", relationships);
-        
-        // Add namespaces
-        metadata.put("namespaces", namespaceTypesMap);
-        
-        // Add data loader debug info
-        metadata.put("dataLoader", dataLoader.getDebugInfo());
-        
-        return ResponseEntity.ok(metadata);
+    @GetMapping("/schema")
+    public ResponseEntity<JsonNode> getSchema() {
+        try {
+            return ResponseEntity.ok(schemaParser.getDebugInfo());
+        } catch (Exception e) {
+            ObjectNode errorNode = objectMapper.createObjectNode();
+            errorNode.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorNode);
+        }
     }
-    
+
     /**
-     * Determines if the request uses the simplified query format
-     * Simplified format: { "TypeName": [], "AnotherType": [] }
-     * 
-     * @param requestBody The incoming request
-     * @return true if it's a simplified format, false otherwise
+     * Get data info and statistics
      */
-    private boolean isSimplifiedQueryFormat(JsonNode requestBody) {
-        // If it has a "query" field with nested objects that aren't simple types, it's standard format
-        if (requestBody.has("query")) {
-            JsonNode query = requestBody.get("query");
-            Iterator<Map.Entry<String, JsonNode>> fields = query.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
-                JsonNode value = field.getValue();
-                // If we find nested objects that have their own structure, it's likely standard format
-                if (value.isObject() && !value.has("fields") && !value.has("where")) {
-                    return false;
-                }
-            }
+    @GetMapping("/data-info")
+    public ResponseEntity<JsonNode> getDataInfo() {
+        try {
+            return ResponseEntity.ok(objectMapper.valueToTree(dataLoader.getDebugInfo()));
+        } catch (Exception e) {
+            ObjectNode errorNode = objectMapper.createObjectNode();
+            errorNode.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorNode);
         }
-        
-        // If it has a "query" field with direct field->value mappings, it's standard format
-        if (requestBody.has("query") && requestBody.get("query").has("fields")) {
-            return false;
-        }
-        
-        // Check for simplified format structure
-        Iterator<String> fieldNames = requestBody.fieldNames();
-        while (fieldNames.hasNext()) {
-            String fieldName = fieldNames.next();
-            // If any field has an array value, it might be the simplified format
-            if (requestBody.get(fieldName).isArray()) {
-                return true;
-            }
-        }
-        
-        return false;
     }
-    
+
+    /**
+     * Get all namespaces and their types
+     */
+    @GetMapping("/namespaces")
+    public ResponseEntity<Map<String, Set<String>>> getNamespaces() {
+        return ResponseEntity.ok(namespaceTypesMap);
+    }
+
+    /**
+     * Get all relationships between types
+     */
+    @GetMapping("/relationships")
+    public ResponseEntity<List<RelationshipInfo>> getRelationships() {
+        return ResponseEntity.ok(relationships);
+    }
+
+    /**
+     * WebSocket configuration for real-time messaging
+     */
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");
-        config.setApplicationDestinationPrefixes("/app");
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic");
+        registry.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/gql-ws").withSockJS();
+        registry.addEndpoint("/gql-websocket").withSockJS();
     }
-    
+
     /**
-     * Determines the effective data directory by checking multiple possible paths
+     * WebSocket endpoint for queries
      */
-    private String findEffectiveDataDirectory(String configuredDirectory) {
-        List<String> candidatePaths = new ArrayList<>();
-        
-        // Try the configured directory first
-        candidatePaths.add(configuredDirectory);
-        
-        // Try some common variations
-        candidatePaths.add("data");
-        candidatePaths.add("gql/data");
-        candidatePaths.add("/Users/ashokraj/Downloads/learn/dataContext/gql/data");
-        
-        for (String path : candidatePaths) {
-            Path dirPath = Paths.get(path);
-            if (Files.exists(dirPath) && Files.isDirectory(dirPath)) {
-                System.out.println("Found data directory at: " + dirPath.toAbsolutePath());
-                return dirPath.toString();
-            }
+    @MessageMapping("/query")
+    @SendTo("/topic/results")
+    public JsonNode handleWebSocketQuery(String queryString) throws JsonProcessingException {
+        try {
+            JsonNode queryNode = objectMapper.readTree(queryString);
+            return queryProcessor.processQuery(queryNode);
+        } catch (Exception e) {
+            ObjectNode errorNode = objectMapper.createObjectNode();
+            errorNode.put("error", e.getMessage());
+            return errorNode;
         }
-        
-        // If we can't find it, return the configured directory and DataLoader
-        // will create it if needed
-        System.out.println("Could not find existing data directory, will use: " + configuredDirectory);
-        return configuredDirectory;
     }
 }
-

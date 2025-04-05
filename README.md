@@ -6,11 +6,11 @@
 
 **Author:** Ashok Raj (ashok.nair.raj@gmail.com)
 
-A lightweight, schema-driven REST API providing GraphQL-like capabilities over JSON data sources.
+A lightweight, schema-driven REST API providing GraphQL-like capabilities over JSON data sources with intelligent namespace handling and relationship resolution.
 
 ## 🌟 Overview
 
-This API enables GraphQL-like querying over various data sources without requiring a full GraphQL implementation. Built with Spring Boot, it's designed for rapid development and prototyping of data-driven applications.
+This API enables GraphQL-like querying over various data sources without requiring a full GraphQL implementation. Built with Spring Boot, it's designed for rapid development and prototyping of data-driven applications with a focus on domain-driven design.
 
 ```
 ┌─────────────┐     ┌────────────────┐     ┌──────────┐
@@ -28,45 +28,40 @@ This API enables GraphQL-like querying over various data sources without requiri
 ## 🔄 Advantages Over Pure GraphQL
 
 ### 💡 Simplified Implementation
-- **Lower Learning Curve**: No need to learn GraphQL's specialized query language
-- **JSON-Native**: Uses standard JSON for both queries and responses
-- **Familiar REST Endpoints**: Works with standard HTTP clients and tools
+- **Lower Learning Curve**: Uses standard JSON for queries with familiar syntax
+- **JSON-Native**: Both queries and responses use standard JSON
+- **Familiar REST Endpoints**: Compatible with standard HTTP clients and tools
 
 ### 🚀 Performance Benefits
 - **Optimized for JSON Sources**: Direct mapping between source files and API responses
-- **Lightweight Processing**: Minimal query parsing overhead compared to GraphQL resolvers
-- **Smarter Caching**: Domain-aware caching with fine-grained control
+- **Intelligent Caching**: Namespace-aware caching with directive-based configuration
+- **Smart Indexing**: Automatic index creation for faster lookups on common fields
 
-### 🧩 Practical Flexibility
-- **No Schema Registry Required**: Works with local file-based schemas
-- **Progressive Adoption**: Can be introduced alongside existing REST APIs
-- **Domain-Driven Design**: Native support for namespacing by business domain
-- **Pragmatic Shortcuts**: Simplified relationship handling without complex resolver chains
+### 🧩 Domain-Oriented Design
+- **Strong Namespacing**: Organize data by business domain (Marketing, Finance, etc.)
+- **Integrated Relationships**: Cross-domain relationships with automatic resolution
+- **Domain Isolation**: Clear boundaries between business concerns
 
 ### 🔧 Operational Advantages
-- **Simpler Debugging**: Clear mapping between JSON sources and API responses
-- **Lower Infrastructure Requirements**: No need for specialized GraphQL servers or clients
-- **Direct File System Access**: Edit data directly for prototyping and testing
-- **Namespace Isolation**: Stronger boundaries between domains for better separation of concerns
-
-### 🌐 Integration Benefits
-- **REST Compatible**: Works with existing API management tools
-- **Adaptable Data Sources**: Can pull from files, APIs, and databases without schema changes
-- **Lightweight Migration Path**: Ideal for transitioning from REST to more GraphQL-like capabilities
+- **File-Based Development**: Simple JSON files for rapid prototyping
+- **Self-Documenting API**: Rich metadata and schema introspection
+- **Flexible Deployment**: Run as standalone API or embed in existing applications
 
 ## ✨ Key Features
 
 - **📊 Schema-driven architecture**: Define your data model using GraphQL syntax
-- **🔌 Multiple data sources**: Connect to JSON files, APIs, and databases
 - **🔍 Rich querying capabilities**:
-  - Field selection (GraphQL-style)
-  - Advanced filtering (`$eq`, `$gt`, `$lt`, `$in`, etc.)
-  - Pagination and sorting
-  - Relationship resolution (automatic joins)
-- **🗂️ Namespacing**: Organize entities by domain
-- **⚡ Real-time updates**: WebSocket support
-- **🚀 Performance optimizations**: Caching, indexing, and selective loading
-- **📚 Self-documenting**: Rich metadata and introspection
+  - Field selection (specify exactly what you need)
+  - Filtering with powerful conditions
+  - Relationship traversal across domains
+  - Namespace-based organization
+- **🔌 Multiple data sources**: Connect to:
+  - JSON files (built-in)
+  - External APIs (via `@api` directive)
+  - Databases (future extension)
+- **🗂️ Intelligent namespacing**: Query entities across domains with consistent access
+- **⚡ WebSocket support**: Real-time query capabilities
+- **🔍 Natural language queries**: Optional AI-powered query generation
 
 ## 🚀 Setup & Installation
 
@@ -100,35 +95,57 @@ This API enables GraphQL-like querying over various data sources without requiri
 | Property | Description | Default |
 |----------|-------------|---------|
 | `server.port` | HTTP port | 8080 |
-| `source.type` | Data source type (file, db, api) | file |
 | `schema.path` | Path to schema file | schema.graphql |
 | `data.directory` | Data directory | data/ |
 
 ## 📐 Schema Definition
 
-Create a `schema.graphql` file in the project root:
+The schema uses GraphQL syntax with custom directives. Create a `schema.graphql` file like this:
 
 ```graphql
-# Define namespaces using the @params directive
+# Custom directives to specify data sources
+directive @source(file: String) on OBJECT
+directive @api(url: String) on OBJECT
+directive @params(fields: [String!]) on OBJECT
+directive @deprecated(reason: String) on FIELD_DEFINITION
+directive @cached(seconds: Int) on FIELD_DEFINITION
+
+# Marketing domain types
 type Marketing @params(fields: ["id"]) {
+  id: ID
   customers: [MarketingCustomer]
   orders: [MarketingOrder]
+  campaigns: [MarketingCampaign]
 }
 
-# Use @source directive to specify data source
 type MarketingCustomer @source(file: "data/marketing.customer.json") {
   id: ID!
   name: String
   email: String
-  orders: [MarketingOrder]  # Relationship field
+  orders: [MarketingOrder]
+  campaignHistory: [MarketingCampaign]
 }
 
 type MarketingOrder @source(file: "data/marketing.order.json") {
   id: ID!
   total: String
-  customerId: ID            # Foreign key field
+  customerId: ID
   date: String
-  customer: MarketingCustomer  # Relationship field
+  customer: MarketingCustomer
+  campaignId: ID
+  campaign: MarketingCampaign
+}
+
+# Finance domain types
+type Finance @params(fields: ["id"]) {
+  id: ID
+  customers: [FinanceCustomer]
+}
+
+type FinanceCustomer @source(file: "data/finance.customer.json") {
+  id: ID!
+  name: String
+  email: String
 }
 ```
 
@@ -164,119 +181,33 @@ Each file should contain a JSON array of objects:
 
 ## 📡 API Usage
 
-### REST Endpoint
+### Basic Query Structure
 
-**POST /api/query**
-
-#### Basic Query
+The API accepts JSON queries with the following structure:
 
 ```json
 {
   "query": {
-    "collection": "MarketingCustomer",
-    "fields": ["id", "name", "email"]
-  }
-}
-```
-
-Response:
-```json
-{
-  "data": {
-    "MarketingCustomer": [
-      { "id": "100", "name": "Alice", "email": "alice@example.com" },
-      { "id": "101", "name": "Bob", "email": "bob@example.com" }
-    ]
-  }
-}
-```
-
-#### Query with Filtering
-
-```json
-{
-  "query": {
-    "collection": "MarketingCustomer",
-    "fields": ["id", "name", "email"],
-    "where": {
-      "name": { "$contains": "Al" }
-    }
-  }
-}
-```
-
-Response:
-```json
-{
-  "data": {
-    "MarketingCustomer": [
-      { "id": "100", "name": "Alice", "email": "alice@example.com" }
-    ]
-  }
-}
-```
-
-#### Query with Relationship Resolution
-
-```json
-{
-  "query": {
-    "collection": "MarketingCustomer",
-    "fields": ["id", "name"],
-    "include": {
-      "orders": {
-        "fields": ["id", "total", "date"]
+    "namespace": {
+      "entityType": {
+        "fields": ["field1", "field2"],
+        "where": { "fieldName": "value" }
       }
     }
   }
 }
 ```
 
-Response:
-```json
-{
-  "data": {
-    "MarketingCustomer": [
-      { 
-        "id": "100", 
-        "name": "Alice",
-        "orders": [
-          { "id": "1001", "total": "125.99", "date": "2023-10-15" },
-          { "id": "1003", "total": "210.75", "date": "2023-10-18" }
-        ]
-      },
-      { 
-        "id": "101", 
-        "name": "Bob",
-        "orders": [
-          { "id": "1002", "total": "89.50", "date": "2023-10-16" },
-          { "id": "1004", "total": "45.25", "date": "2023-10-20" }
-        ]
-      }
-    ]
-  }
-}
-```
+### Example Queries
 
-#### Advanced Query
+#### Simple Collection Query
 
 ```json
 {
   "query": {
-    "collection": "MarketingOrder",
-    "fields": ["id", "total", "date"],
-    "where": {
-      "total": { "$gt": "90.00" }
-    },
-    "include": {
-      "customer": {
-        "fields": ["name", "email"]
-      }
-    },
-    "sortBy": "date",
-    "sortOrder": "desc",
-    "limit": 10,
-    "offset": 0
+    "marketingCustomers": {
+      "fields": ["id", "name", "email"]
+    }
   }
 }
 ```
@@ -286,14 +217,28 @@ Response:
 ```json
 {
   "query": {
-    "Marketing": {
-      "Customer": {
+    "marketing": {
+      "customers": {
         "fields": ["id", "name", "email"]
       },
-      "Order": {
-        "fields": ["id", "total", "date"],
+      "orders": {
+        "fields": ["id", "total", "date"]
+      }
+    }
+  }
+}
+```
+
+#### Query with Filtering
+
+```json
+{
+  "query": {
+    "marketing": {
+      "customers": {
+        "fields": ["id", "name", "email"],
         "where": {
-          "customerId": "100"
+          "name": "Alice"
         }
       }
     }
@@ -301,38 +246,21 @@ Response:
 }
 ```
 
-### WebSocket API
+#### Query with Relationships
 
-Connect to `/ws` endpoint using SockJS and STOMP:
-
-```javascript
-const socket = new SockJS('/ws');
-const stompClient = Stomp.over(socket);
-
-stompClient.connect({}, frame => {
-  console.log('Connected: ' + frame);
-  
-  stompClient.subscribe('/topic/responses', response => {
-    const data = JSON.parse(response.body);
-    console.log(data);
-  });
-  
-  stompClient.send("/app/querySocket", {}, 
-    JSON.stringify({
-      "query": {
-        "collection": "MarketingCustomer",
-        "fields": ["id", "name"]
+```json
+{
+  "query": {
+    "marketing": {
+      "customers": {
+        "fields": ["id", "name", "email", "orders"]
       }
-    })
-  );
-});
+    }
+  }
+}
 ```
 
-### Metadata & Introspection
-
-**GET /api/metadata** - Returns schema information
-
-Or query through the standard API:
+#### Metadata Query
 
 ```json
 {
@@ -344,70 +272,134 @@ Or query through the standard API:
 }
 ```
 
-## 🔍 Filter Operators
+### REST Endpoints
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `$eq` | Equals (default) | `{"id": {"$eq": "100"}}` or `{"id": "100"}` |
-| `$ne` | Not equals | `{"status": {"$ne": "deleted"}}` |
-| `$gt` | Greater than | `{"price": {"$gt": 50}}` |
-| `$gte` | Greater than or equal | `{"price": {"$gte": 50}}` |
-| `$lt` | Less than | `{"price": {"$lt": 100}}` |
-| `$lte` | Less than or equal | `{"price": {"$lte": 100}}` |
-| `$in` | In array | `{"status": {"$in": ["active", "pending"]}}` |
-| `$nin` | Not in array | `{"status": {"$nin": ["deleted", "archived"]}}` |
-| `$contains` | String contains | `{"name": {"$contains": "John"}}` |
-| `$startsWith` | String starts with | `{"name": {"$startsWith": "J"}}` |
-| `$endsWith` | String ends with | `{"email": {"$endsWith": "@example.com"}}` |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/query` | Process a data query |
+| POST | `/api/nl-query` | Process a natural language query (if AI enabled) |
+| GET | `/api/schema` | Get schema information |
+| GET | `/api/data-info` | Get data statistics |
+| GET | `/api/namespaces` | Get namespace information |
+| GET | `/api/relationships` | Get relationship information |
 
-## 🛠️ Debug Endpoints
+### WebSocket API
 
-- **GET /debug/datastore** - View loaded data sources
-- **GET /debug/schema** - View schema structure
-- **GET /debug/relationships** - View relationship mappings
+Connect to `/gql-websocket` endpoint using SockJS and STOMP:
 
-## ⚡ Performance Optimizations
+```javascript
+const socket = new SockJS('/gql-websocket');
+const stompClient = Stomp.over(socket);
 
-- **Query caching**: Common query results are cached
-- **Indexing**: Relationships are optimized with in-memory indexes
-- **Field selection**: Only requested fields are returned
-- **Pagination**: Prevents large result sets
-- **Lazy loading**: Related entities are loaded only when requested
+stompClient.connect({}, frame => {
+  console.log('Connected: ' + frame);
+  
+  stompClient.subscribe('/topic/results', response => {
+    const data = JSON.parse(response.body);
+    console.log(data);
+  });
+  
+  stompClient.send("/app/query", {}, 
+    JSON.stringify({
+      "query": {
+        "marketing": {
+          "customers": {
+            "fields": ["id", "name"]
+          }
+        }
+      }
+    })
+  );
+});
+```
 
-## 📊 Database Integration
+## 🔍 Schema Introspection
 
-To use a database instead of JSON files:
+You can query the schema structure with the metadata query:
 
-1. Configure your data source in `application.properties`:
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/yourdb
-   spring.datasource.username=postgres
-   spring.datasource.password=password
-   ```
+```json
+{
+  "query": {
+    "metadata": {
+      "fields": ["types", "namespaces", "relationships", "directives"]
+    }
+  }
+}
+```
 
-2. Set the source type:
-   ```
-   -Dsource.type=db
-   ```
+Response example:
 
-3. The API will use JPA repositories for data access
+```json
+{
+  "metadata": {
+    "types": [
+      {
+        "name": "MarketingCustomer",
+        "namespace": "marketing",
+        "fields": [
+          {"name": "id", "type": "ID!", "required": true, "isList": false, "isScalar": true},
+          {"name": "name", "type": "String", "required": false, "isList": false, "isScalar": true},
+          {"name": "email", "type": "String", "required": false, "isList": false, "isScalar": true}
+        ],
+        "source": {"type": "file", "path": "data/marketing.customer.json"}
+      }
+    ],
+    "namespaces": [
+      {
+        "name": "marketing",
+        "types": ["MarketingCustomer", "MarketingOrder", "MarketingCampaign"]
+      },
+      {
+        "name": "finance",
+        "types": ["FinanceCustomer"]
+      }
+    ],
+    "relationships": [
+      {
+        "sourceType": "MarketingOrder",
+        "fieldName": "customer",
+        "targetType": "MarketingCustomer",
+        "isList": false
+      }
+    ]
+  }
+}
+```
+
+## ⚡ Performance Considerations
+
+- **Use field selection**: Request only the fields you need to reduce response size
+- **Leverage namespaces**: Organize queries by business domain
+- **Enable caching**: Use the `@cached` directive for frequently accessed data
+- **Consider relationship depth**: Deep relationship chains may impact performance
 
 ## 🔧 Troubleshooting
 
-**API returns empty results**
-- Verify JSON files exist in the data/ directory
-- Check that file names match schema definitions
-- Validate JSON syntax in data files
+**Common Issues:**
 
-**Relationship resolution not working**
-- Ensure foreign key fields follow naming conventions (`entityId`)
-- Check that both entity types are defined in schema
-- Verify foreign key values exist in related entity
+1. **Data files not found**:
+   - Ensure JSON files exist in the data directory
+   - Verify file paths in the schema match actual locations
+   - Check file permissions
 
-**Performance issues**
-- Use field selection to request only needed fields
-- Add pagination for large collections
-- Check for circular relationship dependencies
+2. **Relationship resolution errors**:
+   - Verify that both entities in the relationship exist in the schema
+   - Ensure foreign key fields follow naming conventions (e.g., `customerId`)
+   - Check that foreign key values exist in the related entity
+
+3. **Schema parsing errors**:
+   - Validate GraphQL syntax in your schema file
+   - Check for missing closing brackets or quotes
+   - Ensure directive syntax is correct
+
+## 📊 Architecture Overview
+
+The system is built with the following components:
+
+1. **Schema Parser**: Parses GraphQL schema and builds type definitions
+2. **Data Loader**: Loads data from various sources based on schema
+3. **Query Processor**: Processes JSON queries and resolves relationships
+4. **Metadata Provider**: Provides introspection capabilities
 
 ## 👥 Contributing
 
@@ -422,4 +414,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-`

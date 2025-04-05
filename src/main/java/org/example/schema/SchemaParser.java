@@ -53,6 +53,76 @@ public class SchemaParser {
     }
     
     /**
+     * Get the current schema
+     * 
+     * @return Unmodifiable map of the parsed schema types
+     */
+    public Map<String, SchemaType> getSchema() {
+        return Collections.unmodifiableMap(schemaTypes);
+    }
+    
+    /**
+     * Get a schema representation suitable for the AI prompt
+     */
+    public String getSchemaForAIPrompt() {
+        StringBuilder builder = new StringBuilder();
+        
+        // Start with the main namespaces
+        builder.append("Top-level namespaces: Marketing, Finance, ExternalAPI\n\n");
+        
+        // Add Query type first as it's the entry point
+        if (schemaTypes.containsKey("Query")) {
+            SchemaType queryType = schemaTypes.get("Query");
+            builder.append("Query: Root query object with these entry points:\n");
+            
+            for (SchemaField field : queryType.getFields()) {
+                builder.append("  - ").append(field.getName())
+                       .append(": ").append(field.getType())
+                       .append("\n");
+            }
+            builder.append("\n");
+        }
+        
+        // Add important namespace types
+        for (String namespace : Arrays.asList("Marketing", "Finance", "ExternalAPI")) {
+            if (schemaTypes.containsKey(namespace)) {
+                SchemaType namespaceType = schemaTypes.get(namespace);
+                builder.append(namespace).append(": Container for all ").append(namespace.toLowerCase()).append(" data.\n");
+                
+                for (SchemaField field : namespaceType.getFields()) {
+                    builder.append("  - ").append(field.getName())
+                           .append(": ").append(field.getType())
+                           .append("\n");
+                }
+                builder.append("\n");
+            }
+        }
+        
+        // Add key entity types
+        for (String typeName : Arrays.asList(
+                "MarketingCustomer", "MarketingOrder", "MarketingCampaign", 
+                "FinanceCustomer", "ExternalCustomer")) {
+            if (schemaTypes.containsKey(typeName)) {
+                SchemaType type = schemaTypes.get(typeName);
+                builder.append(typeName).append(": Key entity with fields:\n");
+                
+                for (SchemaField field : type.getFields()) {
+                    if (!field.getName().endsWith("Id") || field.getName().equals("id")) {
+                        builder.append("  - ").append(field.getName());
+                        if (field.getType().contains("!")) {
+                            builder.append(" (required)");
+                        }
+                        builder.append("\n");
+                    }
+                }
+                builder.append("\n");
+            }
+        }
+        
+        return builder.toString();
+    }
+    
+    /**
      * Get debug information about the schema structure
      */
     public JsonNode getDebugInfo() {
@@ -381,3 +451,4 @@ public class SchemaParser {
         return content.replaceAll("#[^\\n]*", "");
     }
 }
+
