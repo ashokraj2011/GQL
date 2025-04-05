@@ -4,6 +4,8 @@ directive @api(url: String) on OBJECT
 directive @params(fields: [String!]) on OBJECT
 directive @deprecated(reason: String) on FIELD_DEFINITION
 directive @cached(seconds: Int) on FIELD_DEFINITION
+directive @auth(requires: String) on FIELD_DEFINITION | OBJECT
+directive @paginate(defaultLimit: Int = 10, maxLimit: Int = 100) on FIELD_DEFINITION
 
 # Marketing domain types
 type Marketing @params(fields: ["id"]) {
@@ -23,6 +25,9 @@ type MarketingCustomer @source(file: "data/marketing.customer.json") {
   leadSource: String
   customerSegment: String
   campaignHistory: [MarketingCampaign]
+  totalSpend: Float @deprecated(reason: "Use analytics.customerValue instead")
+  leadId: ID
+  lead: MarketingLead
 }
 
 type MarketingOrder @source(file: "data/marketing.order.json") {
@@ -33,6 +38,19 @@ type MarketingOrder @source(file: "data/marketing.order.json") {
   customer: MarketingCustomer
   campaignId: ID
   campaign: MarketingCampaign
+  items: [MarketingOrderItem]
+  status: String
+  paymentMethod: String
+}
+
+type MarketingOrderItem @source(file: "data/marketing.order.item.json") {
+  id: ID!
+  orderId: ID!
+  order: MarketingOrder
+  productName: String
+  quantity: Int
+  price: Float
+  discount: Float
 }
 
 type MarketingCampaign @source(file: "data/marketing.campaign.json") {
@@ -46,6 +64,8 @@ type MarketingCampaign @source(file: "data/marketing.campaign.json") {
   leads: [MarketingLead]
   events: [MarketingEvent]
   metrics: MarketingCampaignMetrics
+  targetSegments: [String]
+  owner: String
 }
 
 type MarketingLead @source(file: "data/marketing.lead.json") {
@@ -63,6 +83,8 @@ type MarketingLead @source(file: "data/marketing.lead.json") {
   convertedToCustomer: Boolean
   customerId: ID
   customer: MarketingCustomer
+  assignedTo: String
+  qualificationDate: String
 }
 
 type MarketingEvent @source(file: "data/marketing.event.json") {
@@ -75,6 +97,8 @@ type MarketingEvent @source(file: "data/marketing.event.json") {
   campaign: MarketingCampaign
   attendees: [MarketingEventAttendee]
   budget: Float
+  virtualEvent: Boolean
+  registrationUrl: String
 }
 
 type MarketingEventAttendee @source(file: "data/marketing.event.attendee.json") {
@@ -87,6 +111,8 @@ type MarketingEventAttendee @source(file: "data/marketing.event.attendee.json") 
   customer: MarketingCustomer
   status: String
   registrationDate: String
+  checkInTime: String
+  feedback: String
 }
 
 type MarketingCampaignMetrics @source(file: "data/marketing.campaign.metrics.json") {
@@ -97,29 +123,88 @@ type MarketingCampaignMetrics @source(file: "data/marketing.campaign.metrics.jso
   roi: Float
   costPerLead: Float
   conversionRate: Float
+  emailOpenRate: Float
+  emailClickRate: Float
+  socialShares: Int
+  websiteVisits: Int
 }
 
 # Finance domain types
 type Finance @params(fields: ["id"]) {
   id: ID
   customers: [FinanceCustomer]
+  invoices: [FinanceInvoice]
+  transactions: [FinanceTransaction]
 }
 
 type FinanceCustomer @source(file: "data/finance.customer.json") {
   id: ID!
   name: String
   email: String
+  billingAddress: String
+  paymentTerms: String
+  creditLimit: Float
+  accountStatus: String
+  marketingCustomerId: ID
+  marketingCustomer: MarketingCustomer
+}
+
+type FinanceInvoice @source(file: "data/finance.invoice.json") {
+  id: ID!
+  customerId: ID!
+  customer: FinanceCustomer
+  amount: Float!
+  date: String!
+  dueDate: String!
+  status: String
+  transactions: [FinanceTransaction]
+}
+
+type FinanceTransaction @source(file: "data/finance.transaction.json") {
+  id: ID!
+  invoiceId: ID
+  invoice: FinanceInvoice
+  customerId: ID
+  customer: FinanceCustomer
+  amount: Float!
+  date: String!
+  type: String!
+  status: String
+  method: String
 }
 
 # External API types
 type ExternalAPI {
-  customers: [ExternalCustomer]
+  customers: [ExternalCustomer] @paginate(defaultLimit: 20)
+  products: [ExternalProduct]
+  vendors: [ExternalVendor]
 }
 
 type ExternalCustomer @api(url: "https://example.com/api/customers") {
   id: ID!
   name: String
   email: String
+  externalId: String
+  source: String
+  marketingCustomerId: ID
+  marketingCustomer: MarketingCustomer
+}
+
+type ExternalProduct @api(url: "https://example.com/api/products") {
+  id: ID!
+  name: String!
+  price: Float
+  description: String
+  category: String
+  inStock: Boolean
+}
+
+type ExternalVendor @api(url: "https://example.com/api/vendors") {
+  id: ID!
+  name: String!
+  contactEmail: String
+  contactPhone: String
+  products: [ExternalProduct]
 }
 
 # Metadata type for system information
@@ -128,6 +213,8 @@ type Metadata {
   namespaces: [NamespaceInfo]
   relationships: [RelationshipInfo]
   directives: [DirectiveInfo]
+  version: String
+  lastUpdated: String
 }
 
 # Supporting types for metadata
@@ -136,6 +223,8 @@ type TypeInfo {
   namespace: String
   fields: [FieldInfo]
   source: SourceInfo
+  recordCount: Int
+  relationships: [RelationshipInfo]
 }
 
 type FieldInfo {
@@ -144,17 +233,21 @@ type FieldInfo {
   required: Boolean
   isList: Boolean
   isScalar: Boolean
+  directives: [String]
 }
 
 type SourceInfo {
   type: String!
   path: String
   url: String
+  lastUpdated: String
+  recordCount: Int
 }
 
 type NamespaceInfo {
   name: String!
   types: [String]
+  description: String
 }
 
 type RelationshipInfo {
@@ -162,6 +255,7 @@ type RelationshipInfo {
   fieldName: String!
   targetType: String!
   isList: Boolean
+  foreignKey: String
 }
 
 type DirectiveInfo {
@@ -170,20 +264,73 @@ type DirectiveInfo {
   value: String
 }
 
+# Analytics domain for aggregated data and insights
+type Analytics @params(fields: ["id"]) {
+  id: ID
+  customerAnalytics: [CustomerAnalytics]
+  campaignPerformance: [CampaignPerformance]
+  salesTrends: [SalesTrend]
+}
+
+type CustomerAnalytics @source(file: "data/analytics.customer.json") {
+  customerId: ID!
+  customer: MarketingCustomer
+  lifetime_value: Float
+  purchase_frequency: Float
+  last_activity_date: String
+  engagement_score: Int
+  churn_risk: Float
+  segment: String
+}
+
+type CampaignPerformance @source(file: "data/analytics.campaign.json") {
+  campaignId: ID!
+  campaign: MarketingCampaign
+  spend: Float
+  revenue: Float
+  roi: Float
+  conversions: Int
+  cost_per_acquisition: Float
+  engagement_rate: Float
+}
+
+type SalesTrend @source(file: "data/analytics.sales.json") {
+  id: ID!
+  period: String!
+  revenue: Float!
+  growth_rate: Float
+  top_products: [String]
+  top_campaigns: [ID]
+}
+
 # Root query type to define entry points
 type Query {
   marketing: Marketing
   finance: Finance
   external: ExternalAPI
   metadata: Metadata
+  analytics: Analytics @auth(requires: "ROLE_ANALYST")
   
   # Convenience direct access to collections
-  marketingCustomers: [MarketingCustomer]
-  marketingOrders: [MarketingOrder]
-  marketingCampaigns: [MarketingCampaign]
-  marketingLeads: [MarketingLead]
-  marketingEvents: [MarketingEvent]
-  financeCustomers: [FinanceCustomer]
-  externalCustomers: [ExternalCustomer]
+  marketingCustomers: [MarketingCustomer] @paginate
+  marketingOrders: [MarketingOrder] @paginate
+  marketingCampaigns: [MarketingCampaign] @paginate
+  marketingLeads: [MarketingLead] @paginate
+  marketingEvents: [MarketingEvent] @paginate
+  financeCustomers: [FinanceCustomer] @paginate
+  financeInvoices: [FinanceInvoice] @paginate
+  financeTransactions: [FinanceTransaction] @paginate
+  externalCustomers: [ExternalCustomer] @paginate
+  externalProducts: [ExternalProduct] @paginate
+  
+  # Search functionality
+  search(term: String!, types: [String]): [SearchResult]
 }
 
+# Type for search results across domains
+type SearchResult {
+  typeName: String!
+  record: String!  # JSON stringified record
+  highlights: [String]
+  score: Float
+}

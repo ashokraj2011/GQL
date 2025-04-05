@@ -1,4 +1,4 @@
-# GraphQL-like JSON API
+# GraphQL-like JSON API with WebSocket integration
 
 [![Java](https://img.shields.io/badge/Java-17%2B-blue)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen)](https://spring.io/projects/spring-boot)
@@ -16,7 +16,7 @@ This API enables GraphQL-like querying over various data sources without requiri
 ┌─────────────┐     ┌────────────────┐     ┌──────────┐
 │ Client App  │────▶│ GraphQL-like   │────▶│ JSON     │
 │ or Service  │◀────│ JSON API       │◀────│ Data     │
-└─────────────┘     └────────────────┘     └──────────┘
+└─────────────┘     └────────────────┘     └────��─────┘
                            │                     ▲
                            ▼                     │
                     ┌──────────────┐     ┌──────────────┐
@@ -62,6 +62,9 @@ This API enables GraphQL-like querying over various data sources without requiri
 - **🗂️ Intelligent namespacing**: Query entities across domains with consistent access
 - **⚡ WebSocket support**: Real-time query capabilities
 - **🔍 Natural language queries**: Optional AI-powered query generation
+- **🔐 Authentication & Authorization**: Field and type-level access control
+- **📊 Pagination support**: Built-in pagination for large result sets
+- **📈 Analytics domain**: Support for aggregated data and business insights
 
 ## 🚀 Setup & Installation
 
@@ -109,6 +112,8 @@ directive @api(url: String) on OBJECT
 directive @params(fields: [String!]) on OBJECT
 directive @deprecated(reason: String) on FIELD_DEFINITION
 directive @cached(seconds: Int) on FIELD_DEFINITION
+directive @auth(requires: String) on FIELD_DEFINITION | OBJECT
+directive @paginate(defaultLimit: Int = 10, maxLimit: Int = 100) on FIELD_DEFINITION
 
 # Marketing domain types
 type Marketing @params(fields: ["id"]) {
@@ -147,6 +152,14 @@ type FinanceCustomer @source(file: "data/finance.customer.json") {
   name: String
   email: String
 }
+
+# Analytics domain types
+type Analytics @params(fields: ["id"]) @auth(requires: "ROLE_ANALYST") {
+  id: ID
+  customerAnalytics: [CustomerAnalytics]
+  campaignPerformance: [CampaignPerformance]
+  salesTrends: [SalesTrend]
+}
 ```
 
 ### Available Directives
@@ -156,6 +169,8 @@ type FinanceCustomer @source(file: "data/finance.customer.json") {
 - `@params(fields: ["field1", "field2"])`: Define namespace parameters
 - `@deprecated(reason: "Use newField instead")`: Mark deprecated fields
 - `@cached(seconds: 300)`: Cache field results
+- `@auth(requires: "ROLE_NAME")`: Restrict access to specific roles
+- `@paginate(defaultLimit: 10, maxLimit: 100)`: Enable pagination with limits
 
 ## 📂 Data Sources
 
@@ -167,6 +182,9 @@ data/
 ├── marketing.order.json
 ├── marketing.campaign.json
 ├── finance.customer.json
+├── analytics.customer.json
+├── analytics.campaign.json
+├── analytics.sales.json
 └── ...
 ```
 
@@ -260,6 +278,36 @@ The API accepts JSON queries with the following structure:
 }
 ```
 
+#### Analytics Query (Requires Authentication)
+
+```json
+{
+  "query": {
+    "analytics": {
+      "customerAnalytics": {
+        "fields": ["customerId", "lifetime_value", "engagement_score"]
+      }
+    }
+  }
+}
+```
+
+#### Paginated Query
+
+```json
+{
+  "query": {
+    "marketingCustomers": {
+      "fields": ["id", "name", "email"],
+      "pagination": {
+        "limit": 10,
+        "offset": 0
+      }
+    }
+  }
+}
+```
+
 #### Metadata Query
 
 ```json
@@ -311,6 +359,124 @@ stompClient.connect({}, frame => {
     })
   );
 });
+```
+
+## 🔐 Authentication & Authorization
+
+The API supports role-based access control through the `@auth` directive:
+
+```graphql
+type Analytics @auth(requires: "ROLE_ANALYST") {
+  # Only accessible to users with ROLE_ANALYST
+  customerAnalytics: [CustomerAnalytics]
+}
+
+type MarketingCampaign {
+  id: ID!
+  name: String
+  budget: Float @auth(requires: "ROLE_MANAGER") # Field-level restriction
+}
+```
+
+To use authenticated endpoints, include an authorization header with your request:
+
+```bash
+curl -X POST http://localhost:8080/api/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-jwt-token" \
+  -d '{"query": {"analytics": {"customerAnalytics": {"fields": ["customerId", "lifetime_value"]}}}}'
+```
+
+## 📊 Analytics Data
+
+The API includes a dedicated Analytics domain for business intelligence data:
+
+### Customer Analytics
+
+```json
+{
+  "query": {
+    "analytics": {
+      "customerAnalytics": {
+        "fields": ["customerId", "lifetime_value", "engagement_score", "churn_risk"]
+      }
+    }
+  }
+}
+```
+
+### Campaign Performance
+
+```json
+{
+  "query": {
+    "analytics": {
+      "campaignPerformance": {
+        "fields": ["campaignId", "spend", "revenue", "roi", "conversions"]
+      }
+    }
+  }
+}
+```
+
+### Sales Trends
+
+```json
+{
+  "query": {
+    "analytics": {
+      "salesTrends": {
+        "fields": ["period", "revenue", "growth_rate", "top_products"]
+      }
+    }
+  }
+}
+```
+
+## 📄 Pagination
+
+The API supports pagination for large datasets using the `@paginate` directive:
+
+```graphql
+type Query {
+  marketingCustomers: [MarketingCustomer] @paginate(defaultLimit: 20)
+}
+```
+
+To paginate results, include pagination parameters in your query:
+
+```json
+{
+  "query": {
+    "marketingCustomers": {
+      "fields": ["id", "name", "email"],
+      "pagination": {
+        "limit": 10,  
+        "offset": 20
+      }
+    }
+  }
+}
+```
+
+The response includes pagination metadata:
+
+```json
+{
+  "marketingCustomers": {
+    "data": [
+      { "id": "121", "name": "Customer 21", "email": "c21@example.com" },
+      // ... more items
+    ],
+    "pagination": {
+      "total": 150,
+      "limit": 10,
+      "offset": 20,
+      "hasNext": true,
+      "hasPrevious": true
+    }
+  }
+}
 ```
 
 ## 🔍 Schema Introspection
@@ -372,6 +538,7 @@ Response example:
 - **Leverage namespaces**: Organize queries by business domain
 - **Enable caching**: Use the `@cached` directive for frequently accessed data
 - **Consider relationship depth**: Deep relationship chains may impact performance
+- **Use pagination**: For large datasets, always use pagination to limit response size
 
 ## 🔧 Troubleshooting
 
@@ -391,6 +558,11 @@ Response example:
    - Validate GraphQL syntax in your schema file
    - Check for missing closing brackets or quotes
    - Ensure directive syntax is correct
+
+4. **Authentication errors**:
+   - Verify your JWT token is valid and not expired
+   - Ensure the user has the required role for the resource
+   - Check authorization header format
 
 ## 📊 Architecture Overview
 
@@ -414,3 +586,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+

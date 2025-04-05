@@ -1,5 +1,8 @@
 package org.example.schema;
 
+/**
+ * Represents a field in a GraphQL schema type.
+ */
 public class SchemaField {
     private String name;
     private String type;
@@ -7,7 +10,15 @@ public class SchemaField {
     private boolean isList;
     private boolean isScalar;
 
-    // Constructor
+    /**
+     * Creates a new schema field
+     * 
+     * @param name Field name
+     * @param type Field type (may include ! for required and [] for lists)
+     * @param required Whether the field is required
+     * @param isList Whether the field is a list
+     * @param isScalar Whether the field is a scalar type
+     */
     public SchemaField(String name, String type, boolean required, boolean isList, boolean isScalar) {
         this.name = name;
         this.type = type;
@@ -16,44 +27,59 @@ public class SchemaField {
         this.isScalar = isScalar;
     }
 
-    // Getters and Setters
+    /**
+     * Gets the field name
+     * 
+     * @return Field name
+     */
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
+    /**
+     * Gets the field type
+     * 
+     * @return Field type (may include ! for required and [] for lists)
+     */
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
+    /**
+     * Checks if the field is required
+     * 
+     * @return true if the field is required, false otherwise
+     */
     public boolean isRequired() {
         return required;
     }
 
-    public void setRequired(boolean required) {
-        this.required = required;
-    }
-
+    /**
+     * Checks if the field is a list
+     * 
+     * @return true if the field is a list, false otherwise
+     */
     public boolean isList() {
         return isList;
     }
 
-    public void setList(boolean list) {
-        isList = list;
-    }
-
+    /**
+     * Checks if the field is a scalar type
+     * 
+     * @return true if the field is a scalar type, false otherwise
+     */
     public boolean isScalar() {
         return isScalar;
     }
 
-    public void setScalar(boolean scalar) {
-        isScalar = scalar;
+    @Override
+    public String toString() {
+        return "SchemaField{" +
+                "name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", required=" + required +
+                ", isList=" + isList +
+                ", isScalar=" + isScalar +
+                '}';
     }
 }
