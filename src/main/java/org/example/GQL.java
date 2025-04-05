@@ -18,6 +18,7 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.example.PermissionCheck;
 
 @SpringBootApplication
 @RestController
@@ -340,6 +341,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         }
     }
 
+    @PermissionCheck(entity = "Query")
     @PostMapping("/query")
     public Map<String, Object> handleQuery(@RequestBody Map<String, Object> body) {
         Map<String, Object> query = (Map<String, Object>) body.get("query");
@@ -1040,6 +1042,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws").setAllowedOrigins("*").withSockJS();
     }
 
+    @PermissionCheck(entity = "QuerySocket")
     @MessageMapping("/querySocket")
     @SendTo("/topic/responses")
     public Map<String, Object> handleSocketQuery(Map<String, Object> body) {
