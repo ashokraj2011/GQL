@@ -185,5 +185,15 @@ Connect to `/ws` endpoint using SockJS and STOMP:
 - Field selection minimizes data transfer
 - Pagination prevents large result sets
 
+## Database Integration
+1. Add JPA/Mongo dependencies in your pom.xml.
+2. Define environment variable: source.type=db
+3. Implement database access methods in GQL.
+
+## Custom Directives
+- @deprecated
+- @cached
+
 ## License
 Open source under the MIT License.
+`

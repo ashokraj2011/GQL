@@ -2,6 +2,8 @@
 directive @source(file: String) on OBJECT
 directive @api(url: String) on OBJECT
 directive @params(fields: [String!]) on OBJECT
+directive @deprecated(reason: String) on FIELD_DEFINITION
+directive @cached(seconds: Int) on FIELD_DEFINITION
 
 # Marketing domain types
 type Marketing @params(fields: ["id"]) {
@@ -184,3 +186,4 @@ type Query {
   financeCustomers: [FinanceCustomer]
   externalCustomers: [ExternalCustomer]
 }
+
