@@ -1,0 +1,111 @@
+# Custom directives to specify data sources
+directive @source(file: String) on OBJECT
+directive @api(url: String) on OBJECT
+directive @params(fields: [String!]) on OBJECT
+
+# Marketing domain types
+type Marketing @params(fields: ["id"]) {
+  id: ID
+  customers: [MarketingCustomer]
+  orders: [MarketingOrder]
+}
+
+type MarketingCustomer @source(file: "data/marketing.customer.json") {
+  id: ID!
+  name: String
+  email: String
+  orders: [MarketingOrder]
+}
+
+type MarketingOrder @source(file: "data/marketing.order.json") {
+  id: ID!
+  total: String
+  customerId: ID
+  date: String
+  customer: MarketingCustomer
+}
+
+# Finance domain types
+type Finance @params(fields: ["id"]) {
+  id: ID
+  customers: [FinanceCustomer]
+}
+
+type FinanceCustomer @source(file: "data/finance.customer.json") {
+  id: ID!
+  name: String
+  email: String
+}
+
+# External API types
+type ExternalAPI {
+  customers: [ExternalCustomer]
+}
+
+type ExternalCustomer @api(url: "https://example.com/api/customers") {
+  id: ID!
+  name: String
+  email: String
+}
+
+# Metadata type for system information
+type Metadata {
+  types: [TypeInfo]
+  namespaces: [NamespaceInfo]
+  relationships: [RelationshipInfo]
+  directives: [DirectiveInfo]
+}
+
+# Supporting types for metadata
+type TypeInfo {
+  name: String!
+  namespace: String
+  fields: [FieldInfo]
+  source: SourceInfo
+}
+
+type FieldInfo {
+  name: String!
+  type: String!
+  required: Boolean
+  isList: Boolean
+  isScalar: Boolean
+}
+
+type SourceInfo {
+  type: String!
+  path: String
+  url: String
+}
+
+type NamespaceInfo {
+  name: String!
+  types: [String]
+}
+
+type RelationshipInfo {
+  sourceType: String!
+  fieldName: String!
+  targetType: String!
+  isList: Boolean
+}
+
+type DirectiveInfo {
+  typeName: String!
+  directive: String!
+  value: String
+}
+
+# Root query type to define entry points
+type Query {
+  marketing: Marketing
+  finance: Finance
+  external: ExternalAPI
+  metadata: Metadata
+  
+  # Convenience direct access to collections
+  marketingCustomers: [MarketingCustomer]
+  marketingOrders: [MarketingOrder]
+  financeCustomers: [FinanceCustomer]
+  externalCustomers: [ExternalCustomer]
+}
