@@ -37,12 +37,15 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @SpringBootApplication
@@ -68,232 +71,247 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
     
     @Autowired
     private TimeTravel timeTravel;
+    
+    // Request metrics
+    private final AtomicLong totalRequests = new AtomicLong(0);
+    private final List<Long> recentRequestTimestamps = Collections.synchronizedList(new ArrayList<>());
+    private final int RECENT_WINDOW_MS = 60000; // 1 minute window for req/sec calculation
 
     public static void main(String[] args) {
         SpringApplication.run(GQL.class, args);
     }
     
     @EventListener(ContextRefreshedEvent.class)
-    public void initialize() throws IOException {
-        System.out.println("Initializing GQL service...");
+    public void init() {
+        System.out.println("Initializing GQL API");
         
-        // Initialize schema parser
-        schemaParser = new SchemaParser();
-        
-        // Load schema
-        Map<String, SchemaType> schema = loadSchema();
-        
-        // Load data
-        dataLoader.loadData(schema);
-        
-        // Build relationships
-        extractRelationships(schema);
-        
-        // Initialize query processor
-        queryProcessor = new QueryProcessor(schema, dataLoader, relationships);
-        
-        System.out.println("GQL service initialized successfully!");
-        
-        // Build namespace types map
-        buildNamespaceTypesMap(schema);
-    }
-    
-    /**
-     * Configure WebSocket message broker
-     */
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");
-        registry.setApplicationDestinationPrefixes("/app");
-    }
-    
-    /**
-     * Register STOMP endpoints
-     */
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/gql-websocket")
-               .setAllowedOrigins("*")
-               .withSockJS();
-    }
-    
-    /**
-     * Load GraphQL schema from file
-     */
-    private Map<String, SchemaType> loadSchema() throws IOException {
-        System.out.println("Loading schema from: " + schemaPath);
-        
-        Path path = Paths.get(schemaPath);
-        
-        // If path doesn't exist directly, try finding it
-        if (!Files.exists(path)) {
-            // Try multiple resolutions
-            List<Path> possiblePaths = new ArrayList<>();
-            possiblePaths.add(path);
-            possiblePaths.add(Paths.get("src/main/resources", schemaPath));
-            possiblePaths.add(Paths.get("src", schemaPath));
-            possiblePaths.add(Paths.get("gql", schemaPath));
+        try {
+            // Initialize schema parser
+            schemaParser = new SchemaParser();
             
-            for (Path candidate : possiblePaths) {
-                if (Files.exists(candidate)) {
-                    path = candidate;
-                    break;
+            // Try to load schema from file
+            Path schemaFilePath = Paths.get(schemaPath);
+            Map<String, SchemaType> schema;
+            
+            if (Files.exists(schemaFilePath)) {
+                System.out.println("Loading schema from file: " + schemaFilePath.toAbsolutePath());
+                schema = schemaParser.parseSchema(schemaFilePath);
+            } else {
+                // Try to load from resources if file doesn't exist
+                try (InputStream schemaStream = getClass().getClassLoader().getResourceAsStream(schemaPath)) {
+                    if (schemaStream != null) {
+                        System.out.println("Loading schema from resources: " + schemaPath);
+                        String schemaContent = new String(schemaStream.readAllBytes(), StandardCharsets.UTF_8);
+                        schema = schemaParser.parseSchema(schemaContent);
+                    } else {
+                        throw new IOException("Schema file not found in resources: " + schemaPath);
+                    }
                 }
+            }
+            
+            // Load data based on schema
+            dataLoader.loadData(schema);
+            
+            // Build namespace to types mapping
+            buildNamespaceTypeMap(schema);
+            
+            // Build relationship map
+            detectRelationships(schema);
+            
+            // Initialize query processor with schema, dataLoader, relationships, and timeTravel
+            queryProcessor = new QueryProcessor(schema, dataLoader, relationships, timeTravel);
+            
+            System.out.println("GQL API initialized successfully with " + 
+                               schema.size() + " types in " + 
+                               namespaceTypesMap.size() + " namespaces");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize GQL API: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Build a map of namespace to types
+     */
+    private void buildNamespaceTypeMap(Map<String, SchemaType> schema) {
+        // Initialize namespace map
+        namespaceTypesMap.clear();
+        
+        // Group types by namespace
+        for (SchemaType type : schema.values()) {
+            String namespace = type.getNamespace();
+            if (namespace != null && !namespace.isEmpty()) {
+                namespaceTypesMap
+                    .computeIfAbsent(namespace, k -> new HashSet<>())
+                    .add(type.getName());
             }
         }
         
-        // If still not found, look for it in resources
-        String schemaContent;
-        if (!Files.exists(path)) {
-            System.out.println("Schema file not found on disk, looking in classpath: " + schemaPath);
-            // Try loading from classpath
-            try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(schemaPath)) {
-                if (inputStream == null) {
-                    throw new IOException("Schema file not found: " + schemaPath);
-                }
-                schemaContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            }
-        } else {
-            System.out.println("Loading schema from file: " + path.toAbsolutePath());
-            schemaContent = Files.readString(path);
-        }
-        
-        return schemaParser.parseSchema(schemaContent);
+        System.out.println("Built namespace map with " + namespaceTypesMap.size() + " namespaces");
     }
     
     /**
-     * Extract relationships from schema
+     * Detect relationships between types
      */
-    private void extractRelationships(Map<String, SchemaType> schema) {
-        System.out.println("Extracting relationships from schema...");
+    private void detectRelationships(Map<String, SchemaType> schema) {
+        relationships.clear();
         
-        // Track relationships to avoid duplicates
-        Set<String> processedRelationships = new HashSet<>();
-        
-        for (Map.Entry<String, SchemaType> entry : schema.entrySet()) {
-            SchemaType sourceType = entry.getValue();
-            String sourceTypeName = entry.getKey();
-            
-            // Process each field for potential relationships
+        for (SchemaType sourceType : schema.values()) {
             for (SchemaField field : sourceType.getFields()) {
-                String fieldName = field.getName();
-                
                 // Skip scalar fields
                 if (field.isScalar()) {
                     continue;
                 }
                 
-                // Get clean type name (remove [] and !)
+                // Get the target type name
                 String targetTypeName = field.getType()
-                        .replace("[", "")
-                        .replace("]", "")
-                        .replace("!", "");
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("!", "");
                 
                 // Check if target type exists in schema
                 if (schema.containsKey(targetTypeName)) {
-                    String relationshipKey = sourceTypeName + ":" + fieldName + ":" + targetTypeName;
-                    if (!processedRelationships.contains(relationshipKey)) {
-                        RelationshipInfo relationship = new RelationshipInfo(
-                                sourceTypeName,
-                                fieldName,
-                                targetTypeName,
-                                field.isList()
-                        );
-                        
-                        relationships.add(relationship);
-                        processedRelationships.add(relationshipKey);
-                    }
+                    // Add relationship
+                    relationships.add(new RelationshipInfo(
+                        sourceType.getName(),
+                        field.getName(),
+                        targetTypeName,
+                        field.isList()
+                    ));
                 }
             }
         }
         
-        System.out.println("Extracted " + relationships.size() + " relationships");
+        System.out.println("Detected " + relationships.size() + " relationships between types");
     }
-    
+
     /**
-     * Build map of namespaces to types
+     * Record an API request for metrics
      */
-    private void buildNamespaceTypesMap(Map<String, SchemaType> schema) {
-        for (Map.Entry<String, SchemaType> entry : schema.entrySet()) {
-            SchemaType type = entry.getValue();
-            String namespace = type.getNamespace();
-            
-            if (namespace != null && !namespace.isEmpty()) {
-                Set<String> types = namespaceTypesMap.computeIfAbsent(namespace, k -> new HashSet<>());
-                types.add(entry.getKey());
-            }
+    private void recordRequest() {
+        totalRequests.incrementAndGet();
+        long now = System.currentTimeMillis();
+        recentRequestTimestamps.add(now);
+        
+        // Clean up old timestamps
+        synchronized(recentRequestTimestamps) {
+            recentRequestTimestamps.removeIf(timestamp -> now - timestamp > RECENT_WINDOW_MS);
         }
     }
     
     /**
-     * Process a query through REST API
+     * Calculate current requests per second
+     */
+    private double calculateRequestsPerSecond() {
+        long now = System.currentTimeMillis();
+        int recentCount;
+        
+        synchronized(recentRequestTimestamps) {
+            // Clean up old timestamps
+            recentRequestTimestamps.removeIf(timestamp -> now - timestamp > RECENT_WINDOW_MS);
+            recentCount = recentRequestTimestamps.size();
+        }
+        
+        // Calculate over the last minute
+        return (double) recentCount / (RECENT_WINDOW_MS / 1000.0);
+    }
+    
+    /**
+     * Process a JSON query
      */
     @PostMapping("/query")
-    public ResponseEntity<Object> processQuery(@RequestBody JsonNode queryNode) {
+    public ResponseEntity<JsonNode> query(@RequestBody JsonNode request) {
+        recordRequest();
+        
         try {
-            JsonNode result = queryProcessor.processQuery(queryNode);
-            return ResponseEntity.ok(result);
+            // Check if query processor is initialized
+            if (queryProcessor == null) {
+                return ResponseEntity.internalServerError()
+                    .body(createErrorResponse("Query processor not initialized"));
+            }
+            
+            // Process query
+            JsonNode resultNode = queryProcessor.processQuery(request);
+            return ResponseEntity.ok(resultNode);
         } catch (Exception e) {
-            System.err.println("Error processing query: " + e.getMessage());
-            e.printStackTrace();
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error processing query: " + e.getMessage()));
         }
     }
     
     /**
-     * Process a query for a specific point in time
+     * Process a time-travel query (point-in-time)
      */
     @PostMapping("/query/at")
-    public ResponseEntity<Object> processQueryAt(
-            @RequestBody JsonNode queryNode,
-            @RequestParam("timestamp") String timestamp) {
+    public ResponseEntity<JsonNode> queryAt(
+            @RequestParam String timestamp, 
+            @RequestBody JsonNode request) {
+        recordRequest();
+        
         try {
+            // Parse timestamp
             Instant pointInTime = Instant.parse(timestamp);
-            JsonNode result = timeTravel.processQueryAtTime(queryNode, pointInTime, queryProcessor);
-            return ResponseEntity.ok(result);
+            
+            // Set time travel context
+            timeTravel.setTimestamp(pointInTime);
+            
+            try {
+                // Process query
+                JsonNode resultNode = queryProcessor.processQuery(request);
+                return ResponseEntity.ok(resultNode);
+            } finally {
+                // Reset time travel context
+                timeTravel.resetTimestamp();
+            }
         } catch (Exception e) {
-            System.err.println("Error processing time travel query: " + e.getMessage());
-            e.printStackTrace();
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error processing time-travel query: " + e.getMessage()));
         }
     }
     
     /**
-     * Process a natural language query using AI
+     * Natural language query endpoint (AI-powered)
      */
     @PostMapping("/nl-query")
-    public ResponseEntity<Object> processNaturalLanguageQuery(@RequestBody Map<String, String> request) {
-        String nlQuery = request.get("query");
+    public ResponseEntity<JsonNode> naturalLanguageQuery(
+            @RequestBody Map<String, String> request) {
+        recordRequest();
         
+        // Extract the natural language query
+        String nlQuery = request.get("query");
+        if (nlQuery == null || nlQuery.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(createErrorResponse("Natural language query cannot be empty"));
+        }
+        
+        // Check if AI query generator is available
         if (aiQueryGenerator == null) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "AI query generator not configured");
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest()
+                .body(createErrorResponse("AI query generation is not available"));
         }
         
         try {
-            // Use schema info as additional context for the AI
-            JsonNode structuredQuery = aiQueryGenerator.generateQuery(nlQuery, schemaParser.getSchemaForAIPrompt());
+            // Get schema representation for AI
+            String schemaForAI = schemaParser.getSchemaForAIPrompt();
+            
+            // Generate structured query from natural language
+            JsonNode structuredQuery = aiQueryGenerator.generateQueryFromNL(nlQuery, schemaForAI);
+            
+            // Process the structured query
             JsonNode result = queryProcessor.processQuery(structuredQuery);
             
-            // Create a response that includes both the generated query and results
+            // Create response with both the generated query and result
             ObjectNode response = objectMapper.createObjectNode();
             response.set("generatedQuery", structuredQuery);
-            response.set("results", result);
+            response.set("result", result);
             
             return ResponseEntity.ok(response);
         } catch (AIQueryException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Failed to generate query: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest()
+                .body(createErrorResponse("AI query generation failed: " + e.getMessage()));
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Error processing query: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error processing natural language query: " + e.getMessage()));
         }
     }
     
@@ -301,13 +319,16 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
      * Get schema information
      */
     @GetMapping("/schema")
-    public ResponseEntity<Object> getSchema() {
+    public ResponseEntity<JsonNode> getSchema() {
+        recordRequest();
+        
         try {
-            return ResponseEntity.ok(schemaParser.getDebugInfo());
+            Map<String, SchemaType> schema = schemaParser.getSchema();
+            JsonNode schemaInfo = schemaParser.getDebugInfo();
+            return ResponseEntity.ok(schemaInfo);
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error getting schema: " + e.getMessage()));
         }
     }
     
@@ -315,88 +336,195 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
      * Get data information
      */
     @GetMapping("/data-info")
-    public ResponseEntity<Object> getDataInfo() {
+    public ResponseEntity<JsonNode> getDataInfo() {
+        recordRequest();
+        
         try {
-            return ResponseEntity.ok(dataLoader.getDebugInfo());
+            Map<String, Object> dataInfo = dataLoader.getDebugInfo();
+            JsonNode dataInfoNode = objectMapper.valueToTree(dataInfo);
+            return ResponseEntity.ok(dataInfoNode);
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error getting data info: " + e.getMessage()));
         }
     }
     
     /**
-     * Get namespaces information
+     * Get namespace information
      */
     @GetMapping("/namespaces")
-    public ResponseEntity<Object> getNamespaces() {
+    public ResponseEntity<JsonNode> getNamespaces() {
+        recordRequest();
+        
         try {
-            Map<String, Object> response = new HashMap<>();
-            response.put("namespaces", namespaceTypesMap);
-            return ResponseEntity.ok(response);
+            ObjectNode result = objectMapper.createObjectNode();
+            ArrayNode namespacesArray = objectMapper.createArrayNode();
+            
+            for (Map.Entry<String, Set<String>> entry : namespaceTypesMap.entrySet()) {
+                ObjectNode namespaceNode = objectMapper.createObjectNode();
+                namespaceNode.put("name", entry.getKey());
+                
+                ArrayNode typesArray = objectMapper.createArrayNode();
+                for (String typeName : entry.getValue()) {
+                    typesArray.add(typeName);
+                }
+                
+                namespaceNode.set("types", typesArray);
+                namespacesArray.add(namespaceNode);
+            }
+            
+            result.set("namespaces", namespacesArray);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error getting namespace info: " + e.getMessage()));
         }
     }
     
     /**
-     * Get relationships information
+     * Get relationship information
      */
     @GetMapping("/relationships")
-    public ResponseEntity<Object> getRelationships() {
+    public ResponseEntity<JsonNode> getRelationships() {
+        recordRequest();
+        
         try {
-            Map<String, Object> response = new HashMap<>();
-            response.put("relationships", relationships);
-            return ResponseEntity.ok(response);
+            ObjectNode result = objectMapper.createObjectNode();
+            ArrayNode relationshipsArray = objectMapper.createArrayNode();
+            
+            for (RelationshipInfo relationship : relationships) {
+                ObjectNode relationshipNode = objectMapper.createObjectNode();
+                relationshipNode.put("sourceType", relationship.getSourceType());
+                relationshipNode.put("fieldName", relationship.getFieldName());
+                relationshipNode.put("targetType", relationship.getTargetType());
+                relationshipNode.put("isList", relationship.isList());
+                relationshipsArray.add(relationshipNode);
+            }
+            
+            result.set("relationships", relationshipsArray);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error getting relationship info: " + e.getMessage()));
         }
     }
     
     /**
-     * Get record history
+     * Get history for a record
      */
     @GetMapping("/history/{typeName}/{id}")
-    public ResponseEntity<Object> getRecordHistory(@PathVariable String typeName, @PathVariable String id) {
+    public ResponseEntity<JsonNode> getHistory(
+            @PathVariable String typeName,
+            @PathVariable String id) {
+        recordRequest();
+        
         try {
-            List<Map<String, Object>> history = timeTravel.getRecordHistory(typeName, id);
-            return ResponseEntity.ok(history);
+            List<Map<String, Object>> history = dataLoader.getHistoricalVersions(typeName, id);
+            JsonNode historyNode = objectMapper.valueToTree(history);
+            return ResponseEntity.ok(historyNode);
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error getting record history: " + e.getMessage()));
         }
     }
     
     /**
-     * WebSocket endpoint for query processing
+     * Get health information
+     */
+    @GetMapping("/health")
+    public ResponseEntity<JsonNode> getHealth() {
+        recordRequest();
+        
+        try {
+            ObjectNode healthInfo = objectMapper.createObjectNode();
+            healthInfo.put("status", "UP");
+            healthInfo.put("timestamp", Instant.now().toString());
+            
+            // Add component status
+            ObjectNode components = objectMapper.createObjectNode();
+            
+            // Schema component
+            ObjectNode schemaComponent = objectMapper.createObjectNode();
+            schemaComponent.put("status", "UP");
+            schemaComponent.put("types", schemaParser.getSchema().size());
+            components.set("schema", schemaComponent);
+            
+            // Data component
+            ObjectNode dataComponent = objectMapper.createObjectNode();
+            dataComponent.put("status", "UP");
+            dataComponent.put("sources", dataLoader.getDataTypes().size());
+            components.set("data", dataComponent);
+            
+            healthInfo.set("components", components);
+            
+            // Add system information
+            ObjectNode systemInfo = objectMapper.createObjectNode();
+            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            double cpuLoad = osBean.getSystemLoadAverage();
+            if (cpuLoad < 0) cpuLoad = 0; // Fix for some systems that return negative values
+            
+            systemInfo.put("cpuLoad", cpuLoad);
+            systemInfo.put("cpuLoadPercentage", String.format("%.2f%%", cpuLoad * 100));
+            systemInfo.put("availableProcessors", osBean.getAvailableProcessors());
+            systemInfo.put("osName", osBean.getName());
+            systemInfo.put("osVersion", osBean.getVersion());
+            systemInfo.put("osArch", osBean.getArch());
+            
+            healthInfo.set("system", systemInfo);
+            
+            // Add request metrics
+            ObjectNode metrics = objectMapper.createObjectNode();
+            metrics.put("totalRequests", totalRequests.get());
+            metrics.put("requestsPerSecond", String.format("%.2f", calculateRequestsPerSecond()));
+            
+            healthInfo.set("metrics", metrics);
+            
+            return ResponseEntity.ok(healthInfo);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error getting health info: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * WebSocket configuration
+     */
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/topic");
+        config.setApplicationDestinationPrefixes("/app");
+    }
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/gql-websocket").withSockJS();
+    }
+    
+    /**
+     * WebSocket query handler
      */
     @MessageMapping("/query")
     @SendTo("/topic/results")
-    public JsonNode processWebSocketQuery(JsonNode queryNode) throws Exception {
-        return queryProcessor.processQuery(queryNode);
+    public JsonNode handleWebSocketQuery(JsonNode query) throws Exception {
+        recordRequest();
+        return queryProcessor.processQuery(query);
     }
     
     /**
-     * Get health status
+     * Create an error response
      */
-    @GetMapping("/health")
-    public ResponseEntity<Object> health() {
-        Map<String, Object> status = new HashMap<>();
-        status.put("status", "UP");
-        status.put("timestamp", Instant.now().toString());
-        
-        Map<String, Object> components = new HashMap<>();
-        components.put("schema", Map.of("status", "UP", "types", schemaParser.getSchema().size()));
-        components.put("data", Map.of("status", "UP", "sources", dataLoader.getDataTypes().size()));
-        
-        status.put("components", components);
-        
-        return ResponseEntity.ok(status);
+    private JsonNode createErrorResponse(String message) {
+        ObjectNode errorNode = objectMapper.createObjectNode();
+        errorNode.put("error", message);
+        return errorNode;
+    }
+
+    /**
+     * Bean for SchemaParser
+     */
+    @Bean
+    public SchemaParser schemaParser() {
+        return new SchemaParser();
     }
 }
 

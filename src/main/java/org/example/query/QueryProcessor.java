@@ -8,6 +8,7 @@ import org.example.data.DataLoader;
 import org.example.schema.SchemaType;
 import org.example.schema.SchemaField;
 import org.example.RelationshipInfo;
+import org.example.timetravel.TimeTravel;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,11 +24,14 @@ public class QueryProcessor {
     private final Map<String, Map<String, String>> namespaceTypeMap = new HashMap<>();
     // List of relationships
     private final List<RelationshipInfo> relationships;
+    // Time travel service
+    private final TimeTravel timeTravel;
     
-    public QueryProcessor(Map<String, SchemaType> schema, DataLoader dataLoader, List<RelationshipInfo> relationships) {
+    public QueryProcessor(Map<String, SchemaType> schema, DataLoader dataLoader, List<RelationshipInfo> relationships, TimeTravel timeTravel) {
         this.schema = schema;
         this.dataLoader = dataLoader;
         this.relationships = relationships;
+        this.timeTravel = timeTravel;
         buildNamespaceTypeMap();
     }
     

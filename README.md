@@ -332,7 +332,7 @@ The API accepts JSON queries with the following structure:
 | GET | `/api/namespaces` | Get namespace information |
 | GET | `/api/relationships` | Get relationship information |
 | GET | `/api/history/{typeName}/{id}` | Get record history |
-| GET | `/api/health` | Service health status |
+| GET | `/api/health` | Service health and system status information |
 
 ### WebSocket API
 
@@ -666,6 +666,220 @@ The time travel functionality is implemented by:
 
 This enables sophisticated historical analysis and auditing capabilities without modifying your query structure.
 
+## 🔮 AI-Assisted Query Generation
+
+The API includes an optional AI query generation feature that allows users to describe what data they need in natural language, and the system will generate a structured query automatically.
+
+### Natural Language Query Endpoint
+
+```bash
+curl -X POST http://localhost:8080/api/nl-query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Get me all marketing customers who spent more than $1000 last month"}'
+```
+
+This produces a response with both the generated query and the results:
+
+```json
+{
+  "generatedQuery": {
+    "query": {
+      "marketing": {
+        "customers": {
+          "fields": ["id", "name", "email", "totalSpend", "orders"],
+          "where": {
+            "totalSpend": 1000
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "marketing": {
+      "customers": [
+        {"id": "123", "name": "Acme Corp", "email": "contact@acme.com", "totalSpend": 1500},
+        // ... additional results
+      ]
+    }
+  }
+}
+```
+
+### AI Provider Integration
+
+To enable AI query generation, implement the `AIQueryGenerator` interface with your preferred AI provider:
+
+```java
+@Service
+public class OpenAIQueryGenerator implements AIQueryGenerator {
+    // Implementation using OpenAI's API
+}
+```
+
+## 🧠 Enhanced Schema Types
+
+The system uses a rich schema type model that extends beyond the GraphQL schema definition:
+
+### `SchemaType` Properties
+
+| Property | Description |
+|----------|-------------|
+| `name` | The type name (e.g., "MarketingCustomer") |
+| `namespace` | The business domain namespace (e.g., "marketing") |
+| `sourceFile` | Path to the JSON data source |
+| `apiUrl` | URL for API data source (alternative to sourceFile) |
+| `fields` | List of fields defined for this type |
+| `log` | Whether to enable detailed logging for this type |
+
+### SchemaField Methods
+
+The schema includes helper methods for field operations:
+
+```java
+// Check if a type has a specific field
+if (schemaType.hasField("email")) {
+    // Field exists
+}
+
+// Get a field by name
+Optional<SchemaField> field = schemaType.getFieldByName("email");
+```
+
+## 📋 Advanced Query Examples
+
+### Cross-Domain Query with Relationships
+
+This query retrieves marketing customers and their related finance data:
+
+```json
+{
+  "query": {
+    "marketing": {
+      "customers": {
+        "fields": ["id", "name", "email"],
+        "where": {"customerSegment": "Enterprise"}
+      }
+    },
+    "finance": {
+      "customers": {
+        "fields": ["id", "accountBalance", "outstandingInvoices"],
+        "where": {"accountStatus": "Active"}
+      }
+    }
+  }
+}
+```
+
+### Historical Data Analysis
+
+This query compares current data with historical state:
+
+```json
+// Current state query
+{
+  "query": {
+    "marketing": {
+      "campaigns": {
+        "fields": ["id", "name", "budget", "roi"]
+      }
+    }
+  }
+}
+
+// Historical state (6 months ago)
+// POST /api/query/at?timestamp=2023-10-01T00:00:00Z
+{
+  "query": {
+    "marketing": {
+      "campaigns": {
+        "fields": ["id", "name", "budget", "roi"]
+      }
+    }
+  }
+}
+```
+
+### Metadata and Data Inspection
+
+This comprehensive query provides both schema information and data samples:
+
+```json
+{
+  "query": {
+    "metadata": {
+      "fields": ["types", "namespaces", "relationships"]
+    },
+    "marketing": {
+      "customers": {
+        "fields": ["id", "name"],
+        "pagination": {
+          "limit": 3
+        }
+      }
+    }
+  }
+}
+```
+
+## 📋 Namespace Resolution Logic
+
+The API implements sophisticated namespace resolution to make cross-domain queries intuitive. The resolution follows these rules:
+
+1. **Explicit Namespace**: Types with a `@namespace` directive are assigned to that namespace
+2. **Name-based Resolution**: Types named like `MarketingCustomer` are mapped to the `marketing` namespace
+3. **Common Entity Resolution**: Entity names like "Customer" are mapped to domain-specific implementations
+4. **Fallback Resolution**: If a clear namespace can't be determined, the entity is available in all namespaces
+
+This allows for intuitive queries like:
+
+```json
+{
+  "query": {
+    "marketing": {
+      "customers": { /* ... */ }
+    }
+  }
+}
+```
+
+Which automatically resolves to `MarketingCustomer` without requiring the full type name.
+
+## 📊 Integration Options
+
+### Spring Boot Application Integration
+
+```java
+@Autowired
+private QueryProcessor queryProcessor;
+
+public JsonNode performQuery(String jsonQuery) {
+    JsonNode queryNode = new ObjectMapper().readTree(jsonQuery);
+    return queryProcessor.processQuery(queryNode);
+}
+```
+
+### External System Integration
+
+The API can be integrated with external systems through:
+
+1. **REST API calls** - Standard HTTP clients
+2. **WebSocket connections** - For real-time data needs
+3. **Embedded mode** - Include as a dependency in your application
+
+### Database Integration
+
+While the system primarily works with JSON files, you can extend it to work with databases:
+
+```java
+@Component
+public class DatabaseDataLoader implements DataSourceAdapter {
+    @Override
+    public List<Map<String, Object>> loadData(String typeName) {
+        // Query database and return results
+    }
+}
+```
+
 ## ⚡ Performance Considerations
 
 - **Use field selection**: Request only the fields you need to reduce response size
@@ -674,6 +888,78 @@ This enables sophisticated historical analysis and auditing capabilities without
 - **Consider relationship depth**: Deep relationship chains may impact performance
 - **Use pagination**: For large datasets, always use pagination to limit response size
 - **Time travel queries**: These are more resource-intensive, so use them judiciously
+
+## 🏥 Health Monitoring
+
+The API includes a comprehensive health monitoring endpoint that provides detailed information about the service status and system resources.
+
+### Health Endpoint
+
+```bash
+curl -X GET http://localhost:8080/api/health
+```
+
+### Health Response Structure
+
+```json
+{
+  "status": "UP",
+  "timestamp": "2023-04-01T14:30:45.123Z",
+  "components": {
+    "schema": {
+      "status": "UP",
+      "types": 24
+    },
+    "data": {
+      "status": "UP", 
+      "sources": 8
+    }
+  },
+  "system": {
+    "cpuLoad": 0.42,
+    "cpuLoadPercentage": "42.00%",
+    "availableProcessors": 8,
+    "osName": "Mac OS X",
+    "osVersion": "11.6",
+    "osArch": "x86_64"
+  },
+  "metrics": {
+    "totalRequests": 12345,
+    "requestsPerSecond": "42.50"
+  }
+}
+```
+
+### Health Data Fields
+
+| Field | Description |
+|-------|-------------|
+| `status` | Overall service status ("UP" or "DOWN") |
+| `timestamp` | Current server time (ISO-8601 format) |
+| `components.schema.types` | Number of schema types loaded |
+| `components.data.sources` | Number of data sources available |
+| `system.cpuLoad` | System CPU load (0.0-1.0 scale) |
+| `system.cpuLoadPercentage` | CPU load as percentage |
+| `system.availableProcessors` | Number of available CPU cores |
+| `system.osName` | Operating system name |
+| `system.osVersion` | Operating system version |
+| `system.osArch` | Operating system architecture |
+| `metrics.totalRequests` | Total number of API requests since startup |
+| `metrics.requestsPerSecond` | Current request rate (calculated from recent window) |
+
+### Health Monitoring Best Practices
+
+- **Regular Polling**: Set up scheduled health checks to monitor system status
+- **Alert Thresholds**: Configure alerts if CPU usage exceeds 80% for extended periods
+- **Component Status**: Track component-level issues to identify specific problems
+- **Integration**: Use with monitoring tools like Prometheus, Grafana, or New Relic
+- **Responsive Scaling**: Use health metrics to trigger auto-scaling in containerized deployments
+
+This endpoint is particularly useful for:
+- Container orchestration health checks (Kubernetes, Docker Swarm)
+- Load balancer status checks
+- Operations monitoring dashboards
+- Automated system scaling decisions
 
 ## 🔧 Troubleshooting
 
@@ -704,6 +990,12 @@ This enables sophisticated historical analysis and auditing capabilities without
    - Check that historical data files exist with the correct naming convention
    - Ensure records have proper `validFrom` and `validTo` fields
 
+6. **Health monitoring issues**:
+   - Verify the service is running and accessible
+   - Check that you have appropriate permissions to access system metrics
+   - On some systems, CPU load information might be limited or unavailable
+   - Resource metrics may be inaccurate in containerized environments
+
 ## 📊 Architecture Overview
 
 The system is built with the following components:
@@ -729,3 +1021,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+`
