@@ -1,4 +1,23 @@
 [
-  { "id": "100", "name": "Alice", "email": "alice@cas.com" },
-  { "id": "101", "name": "Bob",   "email": "bob@cas.com" }
+  {
+    "id": "100",
+    "name": "John Smith",
+    "email": "john.smith@example.com",
+    "leadSource": "Website",
+    "customerSegment": "Premium"
+  },
+  {
+    "id": "101",
+    "name": "Sarah Johnson",
+    "email": "sarah.j@example.com",
+    "leadSource": "Referral",
+    "customerSegment": "Standard"
+  },
+  {
+    "id": "102",
+    "name": "Michael Brown",
+    "email": "michael.b@example.com",
+    "leadSource": "Social Media",
+    "customerSegment": "Premium"
+  }
 ]
