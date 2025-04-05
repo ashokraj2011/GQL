@@ -4,6 +4,8 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
+**Author:** Ashok Raj (ashok.nair.raj@gmail.com)
+
 A lightweight, schema-driven REST API providing GraphQL-like capabilities over JSON data sources.
 
 ## 🌟 Overview
@@ -14,13 +16,13 @@ This API enables GraphQL-like querying over various data sources without requiri
 ┌─────────────┐     ┌────────────────┐     ┌──────────┐
 │ Client App  │────▶│ GraphQL-like   │────▶│ JSON     │
 │ or Service  │◀────│ JSON API       │◀────│ Data     │
-└─────────────┘     └─��──────────────┘     └──────────┘
+└─────────────┘     └────────────────┘     └──────────┘
                            │                     ▲
                            ▼                     │
                     ┌──────────────┐     ┌──────────────┐
                     │ External     │     │ Database     │
                     │ APIs         │     │ (Optional)   │
-                    └──────────────┘     └─────────��────┘
+                    └──────────────┘     └──────────────┘
 ```
 
 ## 🔄 Advantages Over Pure GraphQL
@@ -420,5 +422,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-
+`

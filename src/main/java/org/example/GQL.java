@@ -1,3 +1,9 @@
+/**
+ * GraphQL-like JSON API
+ * 
+ * Copyright (c) 2023-2024 Ashok Raj (ashok.nair.raj@gmail.com)
+ * Licensed under MIT License
+ */
 package org.example;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -349,3 +355,4 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         return configuredDirectory;
     }
 }
+
