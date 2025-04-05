@@ -144,7 +144,6 @@ Retrieve schema information including types, relationships, and namespaces.
   - `marketing.customer.json`: Marketing customer data
   - `marketing.order.json`: Marketing order data
   - `finance.customer.json`: Finance customer data
-  - `wi.customer.json`: Additional customer data
 
 ## Customization
 
