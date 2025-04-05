@@ -37,6 +37,9 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
     private final Map<String, RelationshipInfo> relationships = new HashMap<>();
     private final Map<String, Object> queryCache = new ConcurrentHashMap<>();
     private final Set<String> loadedRelationships = new HashSet<>();
+    
+    // Add a Set to track detected namespaces
+    private final Set<String> detectedNamespaces = new HashSet<>();
 
     public static void main(String[] args) {
         SpringApplication.run(GQL.class, args);
@@ -116,6 +119,23 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         boolean inTypeDefinition = false;
         String currentNamespace = null;
         
+        // First pass: identify types with @params directive as namespaces
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i).trim();
+            
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            
+            if (line.startsWith("type ") && line.contains("@params")) {
+                String typeDef = line.substring(5).trim();
+                String typeName = typeDef.split(" ")[0].trim();
+                detectedNamespaces.add(typeName);
+                System.out.println("Detected namespace: " + typeName);
+            }
+        }
+        
+        // Second pass: process the schema with namespace awareness
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i).trim();
             
@@ -136,7 +156,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
                     continue;
                 }
                 
-                if (typeName.equals("Marketing") || typeName.equals("Finance") || typeName.equals("ExternalAPI")) {
+                if (detectedNamespaces.contains(typeName)) {
                     currentNamespace = typeName;
                     currentType = new SchemaType(typeName);
                     schemaTypes.add(currentType);
@@ -147,7 +167,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
                     }
                     
                     inTypeDefinition = true;
-                    System.out.println("Found namespace: " + currentNamespace);
+                    System.out.println("Processing namespace: " + currentNamespace);
                 } 
                 else if (!inTypeDefinition || line.contains("{")) {
                     SchemaType entityType = new SchemaType(typeName);
@@ -221,6 +241,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         System.out.println("Schema loading complete. Directives: " + directiveStore.size());
         System.out.println("Schema types: " + schemaTypes.size());
         System.out.println("Type fields mapped: " + typeFields.size());
+        System.out.println("Detected namespaces: " + detectedNamespaces);
     }
 
     private void loadDataSource() throws Exception {
