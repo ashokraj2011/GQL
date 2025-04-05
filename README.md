@@ -196,4 +196,3 @@ Connect to `/ws` endpoint using SockJS and STOMP:
 
 ## License
 Open source under the MIT License.
-`

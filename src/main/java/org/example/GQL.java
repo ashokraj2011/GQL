@@ -248,6 +248,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         String sourceType = System.getProperty("source.type", "file");
         switch (sourceType.toLowerCase()) {
             case "db":
+                loadDatabaseData();
                 break;
             case "api":
                 break;
@@ -256,6 +257,12 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
                 break;
         }
         loadAPIData();
+    }
+
+    private void loadDatabaseData() throws Exception {
+        System.out.println("Loading data from database...");
+        // Placeholder for JPA / JDBC logic
+        // ...add your queries or repositories...
     }
 
     private void loadAPIData() throws Exception {
