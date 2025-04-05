@@ -12,11 +12,18 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonParser;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 
 @SpringBootApplication
 @RestController
 @RequestMapping("/api")
-public class GQL {
+@EnableWebSocketMessageBroker
+public class GQL implements WebSocketMessageBrokerConfigurer {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, List<Map<String, Object>>> dataStore = new HashMap<>();
@@ -170,7 +177,7 @@ public class GQL {
                             String directiveKey = currentNamespace != null ? 
                                     currentNamespace + typeName + ".api" : typeName + ".api";
                             
-                            directiveStore.put(directiveKey, apiUrl);
+                            directiveStore.put(directKey, apiUrl);
                             entityType.setApiUrl(apiUrl);
                             
                             System.out.println("Added API directive for: " + directiveKey + " -> " + apiUrl);
@@ -992,6 +999,23 @@ public class GQL {
         }
         
         return relationships;
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/topic");
+        config.setApplicationDestinationPrefixes("/app");
+    }
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws").setAllowedOrigins("*").withSockJS();
+    }
+
+    @MessageMapping("/querySocket")
+    @SendTo("/topic/responses")
+    public Map<String, Object> handleSocketQuery(Map<String, Object> body) {
+        return handleQuery(body);
     }
 
     private static class SchemaType {
