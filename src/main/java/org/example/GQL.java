@@ -9,8 +9,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import com.fasterxml.jackson.core.JsonParser;
 
 @SpringBootApplication
@@ -25,6 +25,11 @@ public class GQL {
     private final Map<String, List<String>> namespaceTypeMapping = new HashMap<>();
     private final List<SchemaType> schemaTypes = new ArrayList<>();
     private final Map<String, List<SchemaField>> typeFields = new HashMap<>();
+    
+    // New fields for optimization
+    private final Map<String, RelationshipInfo> relationships = new HashMap<>();
+    private final Map<String, Object> queryCache = new ConcurrentHashMap<>();
+    private final Set<String> loadedRelationships = new HashSet<>();
 
     public static void main(String[] args) {
         SpringApplication.run(GQL.class, args);
@@ -33,10 +38,61 @@ public class GQL {
     public GQL() throws Exception {
         objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
         loadSchemaFile();
+        buildRelationships();
         loadDataSource();
         
         System.out.println("Loaded data store keys: " + dataStore.keySet());
         System.out.println("Namespace mappings: " + namespaceTypeMapping);
+        System.out.println("Built relationships: " + relationships.size());
+    }
+    
+    // New method to build relationship information
+    private void buildRelationships() {
+        System.out.println("Building relationship mapping...");
+        
+        for (SchemaType type : schemaTypes) {
+            List<SchemaField> fields = typeFields.getOrDefault(type.getName(), type.getFields());
+            for (SchemaField field : fields) {
+                String fieldType = field.type
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("!", "");
+                
+                // Skip scalar types
+                if (fieldType.equals("ID") || fieldType.equals("String") || 
+                    fieldType.equals("Int") || fieldType.equals("Float") || 
+                    fieldType.equals("Boolean")) {
+                    continue;
+                }
+                
+                // Create relationship key
+                String relationshipKey = type.getName() + "." + field.name;
+                RelationshipInfo info = new RelationshipInfo();
+                info.sourceType = type.getName();
+                info.targetType = fieldType;
+                info.fieldName = field.name;
+                info.isList = field.type.startsWith("[");
+                
+                // Try to detect join field - either by ID naming convention or common patterns
+                if (field.name.endsWith("Id") || field.name.endsWith("ID")) {
+                    // If field name is customerId, join field is "id" in target Customer type
+                    info.sourceField = field.name; 
+                    info.targetField = "id";
+                } else if (field.name.toLowerCase().equals(fieldType.toLowerCase())) {
+                    // If field name matches type name, assume it's a reference by ID
+                    info.sourceField = field.name + "Id";
+                    info.targetField = "id";
+                } else {
+                    // Default assumption - join by ID
+                    info.sourceField = fieldType.toLowerCase() + "Id";
+                    info.targetField = "id";
+                }
+                
+                relationships.put(relationshipKey, info);
+                System.out.println("Added relationship: " + relationshipKey + " -> " + info.targetType + 
+                                   " [" + info.sourceField + " -> " + info.targetField + "]");
+            }
+        }
     }
 
     private void loadSchemaFile() throws Exception {
@@ -253,9 +309,17 @@ public class GQL {
     public Map<String, Object> handleQuery(@RequestBody Map<String, Object> body) {
         Map<String, Object> query = (Map<String, Object>) body.get("query");
         Map<String, Object> result = new HashMap<>();
-
-        System.out.println("Processing query: " + query);
         
+        // Query optimization: Check cache first (simple cache implementation)
+        String cacheKey = objectMapper.valueToTree(query).toString();
+        if (queryCache.containsKey(cacheKey)) {
+            System.out.println("Cache hit for query: " + cacheKey.substring(0, Math.min(50, cacheKey.length())));
+            return (Map<String, Object>) queryCache.get(cacheKey);
+        }
+        
+        System.out.println("Processing query: " + query);
+        long startTime = System.currentTimeMillis();
+
         if (query.containsKey("metadata")) {
             System.out.println("Processing metadata query");
             Map<String, Object> metadataQuery = (Map<String, Object>) query.get("metadata");
@@ -277,31 +341,60 @@ public class GQL {
                 result.put("metadata", metadataContent);
             }
             
-            return Map.of("data", result);
+            Map<String, Object> response = Map.of("data", result);
+            queryCache.put(cacheKey, response);
+            return response;
         }
 
         if (query.containsKey("collection")) {
             String collection = (String) query.get("collection");
             List<String> fields = (List<String>) query.get("fields");
             Map<String, Object> where = (Map<String, Object>) query.get("where");
+            Map<String, Object> include = (Map<String, Object>) query.get("include");
+            
+            // Handle pagination
+            Integer limit = (Integer) query.get("limit");
+            Integer offset = (Integer) query.get("offset");
+            
+            // Handle sorting
+            String sortBy = (String) query.get("sortBy");
+            String sortOrder = (String) query.get("sortOrder");
 
+            // Selective loading - only get required fields
             List<Map<String, Object>> data = findDataForCollection(collection, null);
+            
+            // Apply filters
+            List<Map<String, Object>> filteredData = applyFilters(data, where, fields);
+            
+            // Apply sorting if requested
+            if (sortBy != null && !sortBy.isEmpty()) {
+                applySorting(filteredData, sortBy, sortOrder);
+            }
+            
+            // Handle includes for relationships
+            if (include != null && !include.isEmpty()) {
+                filteredData = resolveRelationships(collection, filteredData, include);
+            }
+            
+            // Apply pagination if requested
+            if (limit != null || offset != null) {
+                filteredData = applyPagination(filteredData, offset, limit);
+            }
 
-            List<Map<String, Object>> filteredData = data.stream()
-                .filter(row -> where == null || where.entrySet().stream()
-                        .allMatch(e -> e.getValue().equals(row.get(e.getKey()))))
-                .map(row -> row.entrySet().stream()
-                        .filter(e -> fields == null || fields.isEmpty() || fields.contains(e.getKey()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-                .collect(Collectors.toList());
-
-            if (where != null && !filteredData.isEmpty()) {
+            if (where != null && !filteredData.isEmpty() && !where.isEmpty()) {
                 result.put(collection, filteredData.get(0));
             } else {
                 result.put(collection, filteredData);
             }
 
-            return Map.of("data", result);
+            Map<String, Object> response = Map.of("data", result);
+            queryCache.put(cacheKey, response);
+            
+            // Log query execution time for optimization insights
+            long executionTime = System.currentTimeMillis() - startTime;
+            System.out.println("Query executed in " + executionTime + "ms");
+            
+            return response;
         }
         
         for (String namespace : query.keySet()) {
@@ -322,19 +415,21 @@ public class GQL {
                     Map<String, Object> queryDetails = (Map<String, Object>) nestedCollections.get(collection);
                     List<String> fields = (List<String>) queryDetails.get("fields");
                     Map<String, Object> where = (Map<String, Object>) queryDetails.get("where");
+                    Map<String, Object> include = (Map<String, Object>) queryDetails.get("include");
                     
                     List<Map<String, Object>> data = findDataForCollection(collection, namespace);
                     System.out.println("Retrieved data for " + namespace + "." + collection + ": " + data.size() + " records");
                     
-                    List<Map<String, Object>> filteredData = data.stream()
-                        .filter(row -> where == null || where.entrySet().stream()
-                                .allMatch(e -> e.getValue().equals(row.get(e.getKey()))))
-                        .map(row -> row.entrySet().stream()
-                                .filter(e -> fields == null || fields.isEmpty() || fields.contains(e.getKey()))
-                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-                        .collect(Collectors.toList());
+                    // Apply filters and field selection
+                    List<Map<String, Object>> filteredData = applyFilters(data, where, fields);
                     
-                    if (where != null && !filteredData.isEmpty()) {
+                    // Resolve relationships if includes are specified
+                    if (include != null && !include.isEmpty()) {
+                        String fullTypeName = namespace + collection;
+                        filteredData = resolveRelationships(fullTypeName, filteredData, include);
+                    }
+                    
+                    if (where != null && !filteredData.isEmpty() && !where.isEmpty()) {
                         namespaceResult.put(collection, filteredData.get(0));
                     } else {
                         namespaceResult.put(collection, filteredData);
@@ -346,23 +441,329 @@ public class GQL {
                 Map<String, Object> queryDetails = (Map<String, Object>) query.get(namespace);
                 List<String> fields = (List<String>) queryDetails.get("fields");
                 Map<String, Object> where = (Map<String, Object>) queryDetails.get("where");
+                Map<String, Object> include = (Map<String, Object>) queryDetails.get("include");
                 
                 List<Map<String, Object>> data = findDataForCollection(namespace, null);
+                List<Map<String, Object>> filteredData = applyFilters(data, where, fields);
                 
-                Optional<Map<String, Object>> match = data.stream()
-                        .filter(row -> where == null || where.entrySet().stream()
-                                .allMatch(e -> e.getValue().equals(row.get(e.getKey()))))
-                        .findFirst();
-
-                result.put(namespace, match.map(row -> row.entrySet().stream()
-                                .filter(e -> fields.contains(e.getKey()))
-                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-                        .orElse(null));
+                if (include != null && !include.isEmpty()) {
+                    filteredData = resolveRelationships(namespace, filteredData, include);
+                }
+                
+                if (where != null && !filteredData.isEmpty() && !where.isEmpty()) {
+                    result.put(namespace, filteredData.get(0));
+                } else {
+                    result.put(namespace, filteredData);
+                }
             }
         }
 
-        System.out.println("Query result: " + result);
-        return Map.of("data", result);
+        Map<String, Object> response = Map.of("data", result);
+        
+        // Log query execution time for optimization insights
+        long executionTime = System.currentTimeMillis() - startTime;
+        System.out.println("Query executed in " + executionTime + "ms");
+        
+        // Cache the result
+        if (executionTime > 10) { // Only cache queries that take some time to process
+            queryCache.put(cacheKey, response);
+        }
+        
+        return response;
+    }
+    
+    // New method for selective filtering and field selection
+    private List<Map<String, Object>> applyFilters(List<Map<String, Object>> data, 
+                                                 Map<String, Object> where,
+                                                 List<String> fields) {
+        // Apply filters                                  
+        List<Map<String, Object>> filtered = data.stream()
+            .filter(row -> where == null || where.isEmpty() || matchesFilter(row, where))
+            .map(row -> selectFields(row, fields))
+            .collect(Collectors.toList());
+            
+        return filtered;
+    }
+    
+    // Enhanced filter matching with support for more operators
+    private boolean matchesFilter(Map<String, Object> row, Map<String, Object> filter) {
+        return filter.entrySet().stream().allMatch(entry -> {
+            String key = entry.getKey();
+            Object filterValue = entry.getValue();
+            Object rowValue = row.get(key);
+            
+            if (filterValue instanceof Map) {
+                // Handle operators like $gt, $lt, etc.
+                Map<String, Object> operators = (Map<String, Object>) filterValue;
+                return operators.entrySet().stream().allMatch(op -> {
+                    String operator = op.getKey();
+                    Object value = op.getValue();
+                    
+                    switch (operator) {
+                        case "$gt":
+                            return compareValues(rowValue, value) > 0;
+                        case "$lt":
+                            return compareValues(rowValue, value) < 0;
+                        case "$gte":
+                            return compareValues(rowValue, value) >= 0;
+                        case "$lte":
+                            return compareValues(rowValue, value) <= 0;
+                        case "$ne":
+                            return !Objects.equals(rowValue, value);
+                        case "$contains":
+                            return rowValue != null && rowValue.toString().toLowerCase().contains(value.toString().toLowerCase());
+                        case "$startsWith":
+                            return rowValue != null && rowValue.toString().toLowerCase().startsWith(value.toString().toLowerCase());
+                        case "$endsWith":
+                            return rowValue != null && rowValue.toString().toLowerCase().endsWith(value.toString().toLowerCase());
+                        case "$in":
+                            return value instanceof List && rowValue != null && ((List) value).contains(rowValue);
+                        case "$nin":
+                            return value instanceof List && (rowValue == null || !((List) value).contains(rowValue));
+                        default:
+                            return Objects.equals(rowValue, value);
+                    }
+                });
+            } else {
+                // Simple equality check
+                return Objects.equals(rowValue, filterValue);
+            }
+        });
+    }
+    
+    private int compareValues(Object val1, Object val2) {
+        if (val1 == null || val2 == null) {
+            return val1 == val2 ? 0 : (val1 == null ? -1 : 1);
+        }
+        
+        if (val1 instanceof Number && val2 instanceof Number) {
+            return Double.compare(((Number) val1).doubleValue(), ((Number) val2).doubleValue());
+        }
+        
+        return val1.toString().compareTo(val2.toString());
+    }
+    
+    // Selective field loading - only include requested fields
+    private Map<String, Object> selectFields(Map<String, Object> row, List<String> fields) {
+        if (fields == null || fields.isEmpty()) {
+            return row;
+        }
+        
+        return row.entrySet().stream()
+            .filter(e -> fields.contains(e.getKey()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+    
+    // New method to apply pagination
+    private List<Map<String, Object>> applyPagination(List<Map<String, Object>> data, 
+                                                    Integer offset, 
+                                                    Integer limit) {
+        int startIndex = offset != null ? offset : 0;
+        int endIndex = limit != null ? Math.min(startIndex + limit, data.size()) : data.size();
+        
+        if (startIndex >= data.size()) {
+            return new ArrayList<>();
+        }
+        
+        return data.subList(startIndex, endIndex);
+    }
+    
+    // New method to apply sorting
+    private void applySorting(List<Map<String, Object>> data, String sortBy, String sortOrder) {
+        boolean ascending = sortOrder == null || "asc".equalsIgnoreCase(sortOrder);
+        
+        data.sort((a, b) -> {
+            Object valA = a.get(sortBy);
+            Object valB = b.get(sortBy);
+            
+            if (valA == null && valB == null) return 0;
+            if (valA == null) return ascending ? -1 : 1;
+            if (valB == null) return ascending ? 1 : -1;
+            
+            int result;
+            if (valA instanceof Number && valB instanceof Number) {
+                result = Double.compare(((Number) valA).doubleValue(), ((Number) valB).doubleValue());
+            } else {
+                result = valA.toString().compareToIgnoreCase(valB.toString());
+            }
+            
+            return ascending ? result : -result;
+        });
+    }
+    
+    // New method to resolve relationships - full relation support
+    private List<Map<String, Object>> resolveRelationships(String sourceType, 
+                                                         List<Map<String, Object>> sourceData, 
+                                                         Map<String, Object> includes) {
+        if (sourceData.isEmpty()) return sourceData;
+        
+        // Track loaded relationships for this query to avoid circular dependencies
+        loadedRelationships.clear();
+        
+        // Make a deep copy to avoid modifying original data
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> item : sourceData) {
+            result.add(new HashMap<>(item));
+        }
+        
+        // Process each include directive
+        for (String relationField : includes.keySet()) {
+            Object includeValue = includes.get(relationField);
+            List<String> includeFields = new ArrayList<>();
+            Map<String, Object> nestedIncludes = null;
+            
+            if (includeValue instanceof List) {
+                includeFields = (List<String>) includeValue;
+            } else if (includeValue instanceof Map) {
+                Map<String, Object> includeDetails = (Map<String, Object>) includeValue;
+                if (includeDetails.containsKey("fields")) {
+                    includeFields = (List<String>) includeDetails.get("fields");
+                }
+                if (includeDetails.containsKey("include")) {
+                    nestedIncludes = (Map<String, Object>) includeDetails.get("include");
+                }
+            } else if (includeValue instanceof Boolean && (Boolean) includeValue) {
+                // Include all fields with no nested includes
+            }
+            
+            // Find the relationship info
+            String relationshipKey = sourceType + "." + relationField;
+            RelationshipInfo relInfo = relationships.get(relationshipKey);
+            
+            if (relInfo == null) {
+                // Try with just the type name (not fully qualified)
+                String simpleType = sourceType;
+                if (sourceType.contains(".")) {
+                    simpleType = sourceType.substring(sourceType.lastIndexOf(".") + 1);
+                }
+                relationshipKey = simpleType + "." + relationField;
+                relInfo = relationships.get(relationshipKey);
+            }
+            
+            if (relInfo != null) {
+                // To avoid circular dependencies
+                String loadKey = relationshipKey;
+                if (loadedRelationships.contains(loadKey)) {
+                    continue;
+                }
+                loadedRelationships.add(loadKey);
+                
+                resolveRelationship(result, relInfo, includeFields, nestedIncludes);
+            } else {
+                System.out.println("Relationship not found: " + relationshipKey);
+            }
+        }
+        
+        return result;
+    }
+    
+    // Helper method to resolve a single relationship
+    private void resolveRelationship(List<Map<String, Object>> sourceData, 
+                                   RelationshipInfo relInfo,
+                                   List<String> includeFields,
+                                   Map<String, Object> nestedIncludes) {
+        // Get the target type data
+        List<Map<String, Object>> targetData = findDataForCollection(relInfo.targetType, null);
+        
+        // Create indexes for quick lookup
+        Map<Object, Map<String, Object>> targetIndex = new HashMap<>();
+        for (Map<String, Object> target : targetData) {
+            if (target.containsKey(relInfo.targetField)) {
+                targetIndex.put(target.get(relInfo.targetField), target);
+            }
+        }
+        
+        // For each source record, find and link the related records
+        for (Map<String, Object> source : sourceData) {
+            if (!source.containsKey(relInfo.sourceField) && relInfo.sourceField.endsWith("Id")) {
+                // Try with lowercase 'id' if uppercase 'Id' not found
+                String altField = relInfo.sourceField.substring(0, relInfo.sourceField.length() - 2) + "id";
+                if (source.containsKey(altField)) {
+                    relInfo.sourceField = altField;
+                }
+            }
+            
+            if (source.containsKey(relInfo.sourceField)) {
+                Object sourceValue = source.get(relInfo.sourceField);
+                
+                if (relInfo.isList) {
+                    // Handle one-to-many relationships
+                    List<Map<String, Object>> relatedItems = new ArrayList<>();
+                    
+                    // If source field is a list of IDs
+                    if (sourceValue instanceof List) {
+                        for (Object id : (List<?>) sourceValue) {
+                            if (targetIndex.containsKey(id)) {
+                                Map<String, Object> relatedItem = new HashMap<>(targetIndex.get(id));
+                                
+                                // Apply field selection
+                                if (includeFields != null && !includeFields.isEmpty()) {
+                                    relatedItem = selectFields(relatedItem, includeFields);
+                                }
+                                
+                                // Process nested includes if any
+                                if (nestedIncludes != null && !nestedIncludes.isEmpty()) {
+                                    List<Map<String, Object>> nestedSource = new ArrayList<>();
+                                    nestedSource.add(relatedItem);
+                                    nestedSource = resolveRelationships(relInfo.targetType, nestedSource, nestedIncludes);
+                                    relatedItem = nestedSource.get(0);
+                                }
+                                
+                                relatedItems.add(relatedItem);
+                            }
+                        }
+                    } 
+                    // Otherwise, find all target items where target[foreignKey] = source[primaryKey]
+                    else {
+                        for (Map<String, Object> target : targetData) {
+                            if (target.containsKey(relInfo.targetField) && 
+                                Objects.equals(target.get(relInfo.targetField), sourceValue)) {
+                                
+                                Map<String, Object> relatedItem = new HashMap<>(target);
+                                
+                                // Apply field selection
+                                if (includeFields != null && !includeFields.isEmpty()) {
+                                    relatedItem = selectFields(relatedItem, includeFields);
+                                }
+                                
+                                // Process nested includes if any
+                                if (nestedIncludes != null && !nestedIncludes.isEmpty()) {
+                                    List<Map<String, Object>> nestedSource = new ArrayList<>();
+                                    nestedSource.add(relatedItem);
+                                    nestedSource = resolveRelationships(relInfo.targetType, nestedSource, nestedIncludes);
+                                    relatedItem = nestedSource.get(0);
+                                }
+                                
+                                relatedItems.add(relatedItem);
+                            }
+                        }
+                    }
+                    
+                    source.put(relInfo.fieldName, relatedItems);
+                } 
+                else {
+                    // Handle one-to-one relationships
+                    if (targetIndex.containsKey(sourceValue)) {
+                        Map<String, Object> relatedItem = new HashMap<>(targetIndex.get(sourceValue));
+                        
+                        // Apply field selection
+                        if (includeFields != null && !includeFields.isEmpty()) {
+                            relatedItem = selectFields(relatedItem, includeFields);
+                        }
+                        
+                        // Process nested includes if any
+                        if (nestedIncludes != null && !nestedIncludes.isEmpty()) {
+                            List<Map<String, Object>> nestedSource = new ArrayList<>();
+                            nestedSource.add(relatedItem);
+                            nestedSource = resolveRelationships(relInfo.targetType, nestedSource, nestedIncludes);
+                            relatedItem = nestedSource.get(0);
+                        }
+                        
+                        source.put(relInfo.fieldName, relatedItem);
+                    }
+                }
+            }
+        }
     }
 
     private List<Map<String, Object>> findDataForCollection(String collection, String namespace) {
@@ -478,7 +879,13 @@ public class GQL {
         }).collect(Collectors.toList()));
         debug.put("directiveStore", directiveStore);
         debug.put("namespaceTypeMapping", namespaceTypeMapping);
+        debug.put("relationships", relationships);
         return debug;
+    }
+    
+    @GetMapping("/debug/relationships")
+    public Map<String, RelationshipInfo> getRelationships() {
+        return relationships;
     }
 
     @GetMapping("/metadata")
@@ -654,4 +1061,27 @@ public class GQL {
             this.type = type;
         }
     }
+    
+    // New class to track relationship information
+    private static class RelationshipInfo {
+        private String sourceType;
+        private String targetType;
+        private String fieldName;
+        private String sourceField;
+        private String targetField;
+        private boolean isList;
+        
+        @Override
+        public String toString() {
+            return "RelationshipInfo{" +
+                    "sourceType='" + sourceType + '\'' +
+                    ", targetType='" + targetType + '\'' +
+                    ", fieldName='" + fieldName + '\'' +
+                    ", sourceField='" + sourceField + '\'' +
+                    ", targetField='" + targetField + '\'' +
+                    ", isList=" + isList +
+                    '}';
+        }
+    }
 }
+

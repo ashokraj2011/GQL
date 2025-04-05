@@ -8,6 +8,9 @@ type Marketing @params(fields: ["id"]) {
   id: ID
   customers: [MarketingCustomer]
   orders: [MarketingOrder]
+  campaigns: [MarketingCampaign]
+  leads: [MarketingLead]
+  events: [MarketingEvent]
 }
 
 type MarketingCustomer @source(file: "data/marketing.customer.json") {
@@ -15,6 +18,9 @@ type MarketingCustomer @source(file: "data/marketing.customer.json") {
   name: String
   email: String
   orders: [MarketingOrder]
+  leadSource: String
+  customerSegment: String
+  campaignHistory: [MarketingCampaign]
 }
 
 type MarketingOrder @source(file: "data/marketing.order.json") {
@@ -23,6 +29,72 @@ type MarketingOrder @source(file: "data/marketing.order.json") {
   customerId: ID
   date: String
   customer: MarketingCustomer
+  campaignId: ID
+  campaign: MarketingCampaign
+}
+
+type MarketingCampaign @source(file: "data/marketing.campaign.json") {
+  id: ID!
+  name: String!
+  description: String
+  startDate: String
+  endDate: String
+  budget: Float
+  status: String
+  leads: [MarketingLead]
+  events: [MarketingEvent]
+  metrics: MarketingCampaignMetrics
+}
+
+type MarketingLead @source(file: "data/marketing.lead.json") {
+  id: ID!
+  name: String!
+  email: String!
+  phone: String
+  status: String
+  source: String
+  score: Int
+  lastContactDate: String
+  notes: String
+  campaignId: ID
+  campaign: MarketingCampaign
+  convertedToCustomer: Boolean
+  customerId: ID
+  customer: MarketingCustomer
+}
+
+type MarketingEvent @source(file: "data/marketing.event.json") {
+  id: ID!
+  name: String!
+  description: String
+  date: String
+  location: String
+  campaignId: ID
+  campaign: MarketingCampaign
+  attendees: [MarketingEventAttendee]
+  budget: Float
+}
+
+type MarketingEventAttendee @source(file: "data/marketing.event.attendee.json") {
+  id: ID!
+  eventId: ID!
+  event: MarketingEvent
+  leadId: ID
+  lead: MarketingLead
+  customerId: ID
+  customer: MarketingCustomer
+  status: String
+  registrationDate: String
+}
+
+type MarketingCampaignMetrics @source(file: "data/marketing.campaign.metrics.json") {
+  campaignId: ID!
+  impressions: Int
+  clicks: Int
+  conversions: Int
+  roi: Float
+  costPerLead: Float
+  conversionRate: Float
 }
 
 # Finance domain types
@@ -106,6 +178,9 @@ type Query {
   # Convenience direct access to collections
   marketingCustomers: [MarketingCustomer]
   marketingOrders: [MarketingOrder]
+  marketingCampaigns: [MarketingCampaign]
+  marketingLeads: [MarketingLead]
+  marketingEvents: [MarketingEvent]
   financeCustomers: [FinanceCustomer]
   externalCustomers: [ExternalCustomer]
 }

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "camp001",
+    "name": "Summer Sale 2023",
+    "description": "Seasonal promotion targeting existing customers",
+    "startDate": "2023-06-01",
+    "endDate": "2023-08-31",
+    "budget": 5000.00,
+    "status": "completed"
+  },
+  {
+    "id": "camp002",
+    "name": "New Product Launch",
+    "description": "Campaign for the launch of our latest product line",
+    "startDate": "2023-09-15",
+    "endDate": "2023-10-15",
+    "budget": 7500.00,
+    "status": "active"
+  },
+  {
+    "id": "camp003",
+    "name": "Holiday Special",
+    "description": "End of year holiday promotion",
+    "startDate": "2023-11-20",
+    "endDate": "2023-12-31",
+    "budget": 10000.00,
+    "status": "planned"
+  }
+]

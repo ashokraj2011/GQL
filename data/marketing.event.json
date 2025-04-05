@@ -1,0 +1,29 @@
+[
+  {
+    "id": "evt001",
+    "name": "Product Launch Webinar",
+    "description": "Online presentation of our new product features",
+    "date": "2023-09-20",
+    "location": "Virtual/Zoom",
+    "campaignId": "camp002",
+    "budget": 1200.00
+  },
+  {
+    "id": "evt002",
+    "name": "Summer Sale Kickoff",
+    "description": "In-store event to mark the beginning of summer sale",
+    "date": "2023-06-01",
+    "location": "Main Street Store",
+    "campaignId": "camp001",
+    "budget": 800.00
+  },
+  {
+    "id": "evt003",
+    "name": "Holiday Shopping Preview",
+    "description": "Exclusive preview for loyal customers",
+    "date": "2023-11-15",
+    "location": "Downtown Convention Center",
+    "campaignId": "camp003",
+    "budget": 2500.00
+  }
+]

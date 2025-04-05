@@ -8,7 +8,8 @@ This project implements a lightweight GraphQL-inspired API that reads data from 
 
 - Namespace-based data organization
 - Field selection (like GraphQL)
-- Simple filtering
+- Advanced filtering with operators
+- Pagination and sorting
 - Schema-driven data retrieval
 - Metadata introspection
 
@@ -18,7 +19,9 @@ This project implements a lightweight GraphQL-inspired API that reads data from 
 - **Multiple Data Sources**: Load data from JSON files or external APIs
 - **Domain/Namespace Support**: Organize data into logical domains (Marketing, Finance, etc.)
 - **Selective Query Results**: Request only the fields you need
-- **Simple Filtering**: Filter data based on field values
+- **Advanced Filtering**: Support for comparison operators, string operations, and list operations
+- **Pagination**: Control result size with offset and limit parameters
+- **Sorting**: Order results by any field in ascending or descending order
 - **Schema Introspection**: Explore available types, fields and relationships through metadata endpoints
 
 ## Getting Started
@@ -106,6 +109,59 @@ Retrieve schema information including types, relationships, and namespaces.
 }
 ```
 
+#### Query with Pagination and Sorting
+
+```json
+{
+  "query": {
+    "collection": "MarketingOrder",
+    "fields": ["id", "total", "date", "customerId"],
+    "limit": 10,
+    "offset": 0,
+    "sortBy": "total",
+    "sortOrder": "desc"
+  }
+}
+```
+
+#### Advanced Filtering Examples
+
+```json
+{
+  "query": {
+    "collection": "MarketingCustomer",
+    "fields": ["id", "name", "email"],
+    "where": {
+      "name": { "$contains": "Alice" }
+    }
+  }
+}
+```
+
+```json
+{
+  "query": {
+    "collection": "MarketingOrder",
+    "fields": ["id", "total", "date"],
+    "where": {
+      "total": { "$gt": "100" }
+    }
+  }
+}
+```
+
+```json
+{
+  "query": {
+    "collection": "MarketingCustomer",
+    "fields": ["id", "name", "email"],
+    "where": {
+      "id": { "$in": ["100", "101"] }
+    }
+  }
+}
+```
+
 #### Namespace Query with Field Selection and Filter
 
 ```json
@@ -135,6 +191,36 @@ Retrieve schema information including types, relationships, and namespaces.
   }
 }
 ```
+
+## Filter Operators
+
+The API supports the following filter operators:
+
+- `$eq`: Equal to (default when no operator is specified)
+- `$ne`: Not equal to
+- `$gt`: Greater than
+- `$lt`: Less than
+- `$gte`: Greater than or equal to
+- `$lte`: Less than or equal to
+- `$contains`: String contains
+- `$startsWith`: String starts with
+- `$endsWith`: String ends with 
+- `$in`: Value exists in an array
+- `$nin`: Value does not exist in an array
+
+## Pagination
+
+Control the number of results with:
+
+- `limit`: Maximum number of results to return
+- `offset`: Number of results to skip before returning
+
+## Sorting
+
+Order results with:
+
+- `sortBy`: Field name to sort by
+- `sortOrder`: `asc` for ascending (default) or `desc` for descending
 
 ## Project Structure
 
@@ -168,13 +254,6 @@ Retrieve schema information including types, relationships, and namespaces.
 ## Data Relationships
 
 The system automatically detects potential relationships between types based on field names. For example, a field named `customerId` in `MarketingOrder` will be recognized as a potential foreign key to a `MarketingCustomer` entity.
-
-## Limitations
-
-- Simple filtering only (equality comparisons)
-- No authentication/authorization mechanism
-- Limited relationship handling
-- No transaction support
 
 ## License
 

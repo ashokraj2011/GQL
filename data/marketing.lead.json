@@ -1,0 +1,42 @@
+[
+  {
+    "id": "lead001",
+    "name": "John Smith",
+    "email": "john.smith@example.com",
+    "phone": "555-123-4567",
+    "status": "qualified",
+    "source": "website",
+    "score": 85,
+    "lastContactDate": "2023-09-10",
+    "notes": "Interested in premium package",
+    "campaignId": "camp002",
+    "convertedToCustomer": false
+  },
+  {
+    "id": "lead002",
+    "name": "Emily Johnson",
+    "email": "emily.johnson@example.com",
+    "phone": "555-987-6543",
+    "status": "new",
+    "source": "referral",
+    "score": 65,
+    "lastContactDate": "2023-09-15",
+    "notes": "Works at ABC Company",
+    "campaignId": "camp002",
+    "convertedToCustomer": false
+  },
+  {
+    "id": "lead003",
+    "name": "Michael Brown",
+    "email": "michael.brown@example.com",
+    "phone": "555-555-5555",
+    "status": "converted",
+    "source": "trade show",
+    "score": 95,
+    "lastContactDate": "2023-08-05",
+    "notes": "Converted to customer",
+    "campaignId": "camp001",
+    "convertedToCustomer": true,
+    "customerId": "100"
+  }
+]
