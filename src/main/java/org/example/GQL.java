@@ -119,7 +119,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
             detectRelationships(schema);
             
             // Initialize query processor with schema, dataLoader, relationships, and timeTravel
-            queryProcessor = new QueryProcessor(schema, dataLoader, relationships, timeTravel);
+            queryProcessor = new QueryProcessor(schema, dataLoader,  relationships, timeTravel);
             
             System.out.println("GQL API initialized successfully with " + 
                                schema.size() + " types in " + 

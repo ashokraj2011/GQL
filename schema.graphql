@@ -7,6 +7,7 @@ directive @cached(seconds: Int) on FIELD_DEFINITION
 directive @auth(requires: String) on FIELD_DEFINITION | OBJECT
 directive @paginate(defaultLimit: Int = 10, maxLimit: Int = 100) on FIELD_DEFINITION
 directive @log on FIELD_DEFINITION
+directive @db(entity: String) on OBJECT
 
 # Marketing domain types
 type Marketing @params(fields: ["id"]) {
@@ -304,6 +305,24 @@ type SalesTrend @source(file: "data/analytics.sales.json") {
   top_campaigns: [ID]
 }
 
+# HR domain for database-sourced employee data
+type HR @params(fields: ["id"]) {
+  id: ID
+  employees: [Employee] @paginate(defaultLimit: 20)
+}
+
+# Employee type sourced from PostgreSQL database
+type Employee @db(entity: "org.example.entity.Employee") {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  department: String
+  position: String
+  hireDate: String
+  salary: Float
+}
+
 # Root query type to define entry points
 type Query {
   marketing: Marketing
@@ -311,6 +330,7 @@ type Query {
   external: ExternalAPI
   metadata: Metadata
   analytics: Analytics @auth(requires: "ROLE_ANALYST")
+  hr: HR
   
   # Convenience direct access to collections
   marketingCustomers: [MarketingCustomer] @paginate
@@ -323,6 +343,7 @@ type Query {
   financeTransactions: [FinanceTransaction] @paginate
   externalCustomers: [ExternalCustomer] @paginate
   externalProducts: [ExternalProduct] @paginate
+  employees: [Employee] @paginate(defaultLimit: 20)
   
   # Search functionality
   search(term: String!, types: [String]): [SearchResult] @log
@@ -335,4 +356,3 @@ type SearchResult {
   highlights: [String]
   score: Float
 }
-

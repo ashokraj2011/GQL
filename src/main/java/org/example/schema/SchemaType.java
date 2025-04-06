@@ -11,6 +11,7 @@ public class SchemaType {
     private String apiUrl;
     private List<SchemaField> fields = new ArrayList<>();
     private boolean log;
+    private String dbEntity; // Added field for database entity class name
 
     public SchemaType(String name) {
         this.name = name;
@@ -58,6 +59,24 @@ public class SchemaType {
 
     public void setLog(boolean log) {
         this.log = log;
+    }
+
+    /**
+     * Gets the database entity class name for this type
+     * 
+     * @return The database entity class name, or null if not a DB type
+     */
+    public String getDbEntity() {
+        return dbEntity;
+    }
+    
+    /**
+     * Sets the database entity class name for this type
+     * 
+     * @param dbEntity The database entity class name
+     */
+    public void setDbEntity(String dbEntity) {
+        this.dbEntity = dbEntity;
     }
 
     /**

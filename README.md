@@ -15,19 +15,20 @@ This API enables GraphQL-like querying over various data sources without requiri
 ```
 ┌─────────────┐     ┌────────────────┐     ┌──────────┐
 │ Client App  │────▶│ GraphQL-like   │────▶│ JSON     │
-│ or Service  ��◀────│ JSON API       │◀────│ Data     │
+│ or Service  │◀────│ JSON API       │◀────│ Data     │
 └─────────────┘     └────────────────┘     └──────────┘
-       │                    │                     ▲
-       │                    ▼                     │
+       │                    │                    ▲
+       │                    │                    │
+       │                    ▼                    │
        │             ┌──────────────┐     ┌──────────────┐
        │             │ External     │     │ Database     │
-       │             │ APIs         │     │ (Optional)   │
-       │             └──────────────┘     └──────────────┘
-       │
+       │             │ APIs         │     │ (PostgreSQL, │
+       │             └──────────────┘     │  H2, etc.)   │
+       │                                  └──────────────┘
        │            WebSocket Connection
        └───────────────────────────────────┐
                                            ▼
-                                    ┌───────���─────────┐
+                                    ┌─────────────────┐
                                     │ Real-time       │
                                     │ Clients         │
                                     └─────────────────┘
@@ -52,6 +53,7 @@ This API enables GraphQL-like querying over various data sources without requiri
 
 ### 🔧 Operational Advantages
 - **File-Based Development**: Simple JSON files for rapid prototyping
+- **Database Integration**: Direct mapping to JPA entities for real database access
 - **Self-Documenting API**: Rich metadata and schema introspection
 - **Flexible Deployment**: Run as standalone API or embed in existing applications
 
@@ -66,7 +68,8 @@ This API enables GraphQL-like querying over various data sources without requiri
 - **🔌 Multiple data sources**: Connect to:
   - JSON files (built-in)
   - External APIs (via `@api` directive)
-  - Databases (future extension)
+  - Databases (via `@db` directive)
+  - Custom data sources (implementing `DBDataSource`)
 - **🗂️ Intelligent namespacing**: Query entities across domains with consistent access
 - **⚡ WebSocket support**: Real-time query capabilities
 - **🔍 Natural language queries**: Optional AI-powered query generation
@@ -81,6 +84,7 @@ This API enables GraphQL-like querying over various data sources without requiri
 
 - Java 17 or higher
 - Maven 3.6 or higher
+- PostgreSQL or H2 database (for database features)
 
 ### Quick Start
 
@@ -109,6 +113,9 @@ This API enables GraphQL-like querying over various data sources without requiri
 | `server.port` | HTTP port | 8080 |
 | `schema.path` | Path to schema file | schema.graphql |
 | `data.directory` | Data directory | data/ |
+| `spring.datasource.url` | Database URL | varies by profile |
+| `spring.datasource.username` | Database username | sa |
+| `spring.datasource.password` | Database password | password |
 
 ## 📐 Schema Definition
 
@@ -118,6 +125,7 @@ The schema uses GraphQL syntax with custom directives. Create a `schema.graphql`
 # Custom directives to specify data sources
 directive @source(file: String) on OBJECT
 directive @api(url: String) on OBJECT
+directive @db(entity: String) on OBJECT
 directive @params(fields: [String!]) on OBJECT
 directive @deprecated(reason: String) on FIELD_DEFINITION
 directive @cached(seconds: Int) on FIELD_DEFINITION
@@ -148,12 +156,25 @@ type MarketingCustomer @source(file: "data/marketing.customer.json") {
   lead: MarketingLead
 }
 
+# Database-backed Employee type
+type Employee @db(entity: "Employee") {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  department: String
+  position: String
+  hireDate: String
+  salary: Float
+}
+
 # Finance domain types
 type Finance @params(fields: ["id"]) {
   id: ID
   customers: [FinanceCustomer]
   invoices: [FinanceInvoice]
   transactions: [FinanceTransaction]
+  employees: [Employee]
 }
 
 # Analytics domain for aggregated data and insights
@@ -169,6 +190,7 @@ type Analytics @params(fields: ["id"]) {
 
 - `@source(file: "path/to/file.json")`: Specify JSON data source
 - `@api(url: "https://api.example.com/resource")`: Specify external API source
+- `@db(entity: "EntityName")`: Specify database entity source
 - `@params(fields: ["field1", "field2"])`: Define namespace parameters
 - `@deprecated(reason: "Use newField instead")`: Mark deprecated fields
 - `@cached(seconds: 300)`: Cache field results
@@ -177,6 +199,8 @@ type Analytics @params(fields: ["id"]) {
 - `@log`: Enable logging for a field or operation
 
 ## 📂 Data Sources
+
+### JSON Files
 
 Place your JSON data files in the `data/` directory:
 
@@ -203,6 +227,90 @@ Each file should contain a JSON array of objects:
   { "id": "100", "name": "Alice", "email": "alice@example.com" },
   { "id": "101", "name": "Bob", "email": "bob@example.com" }
 ]
+```
+
+### Database Entities
+
+To use database entities as data sources:
+
+1. Define JPA entities in your project:
+
+```java
+@Entity
+@Table(name = "employees")
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private UUID id;
+    
+    @Column(nullable = false)
+    private String firstName;
+    
+    @Column(nullable = false)
+    private String lastName;
+    
+    // Other fields...
+    
+    // Getters and setters...
+}
+```
+
+2. Create a Spring Data JPA repository:
+
+```java
+@Repository
+public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
+    List<Employee> findByDepartment(String department);
+    List<Employee> findBySalaryGreaterThan(Double salary);
+}
+```
+
+3. Implement a DBDataSource to connect your entity to the GQL API:
+
+```java
+@Component
+public class EmployeeDBDataSource implements DBDataSource {
+    @Autowired
+    private EmployeeRepository repository;
+    
+    @Override
+    public String getEntityType() {
+        return "Employee";  // Must match schema type name
+    }
+    
+    @Override
+    public List<Map<String, Object>> getAllEntities() {
+        return repository.findAll().stream()
+            .map(this::convertToMap)
+            .collect(Collectors.toList());
+    }
+    
+    // Implement other required methods...
+    
+    private Map<String, Object> convertToMap(Employee employee) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", employee.getId().toString());
+        map.put("firstName", employee.getFirstName());
+        map.put("lastName", employee.getLastName());
+        // Map other fields...
+        return map;
+    }
+}
+```
+
+4. Define your type in the schema with the `@db` directive:
+
+```graphql
+type Employee @db(entity: "Employee") {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  department: String
+  position: String
+  hireDate: String
+  salary: Float
+}
 ```
 
 ## 📡 API Usage
@@ -233,6 +341,19 @@ The API accepts JSON queries with the following structure:
   "query": {
     "marketingCustomers": {
       "fields": ["id", "name", "email"]
+    }
+  }
+}
+```
+
+#### Database Entity Query
+
+```json
+{
+  "query": {
+    "employees": {
+      "fields": ["id", "firstName", "lastName", "department", "salary"],
+      "where": { "department": "Engineering" }
     }
   }
 }
@@ -280,6 +401,24 @@ The API accepts JSON queries with the following structure:
     "marketing": {
       "customers": {
         "fields": ["id", "name", "email", "orders"]
+      }
+    }
+  }
+}
+```
+
+#### Query with Database and File-Based Sources
+
+```json
+{
+  "query": {
+    "finance": {
+      "employees": {
+        "fields": ["id", "firstName", "lastName", "salary"],
+        "where": { "salary": 100000 }
+      },
+      "customers": {
+        "fields": ["id", "name", "accountNumber"]
       }
     }
   }
@@ -421,6 +560,146 @@ This returns all detected relationships in the system:
   }
 }
 ```
+
+## 💾 Database Integration
+
+The API seamlessly integrates with relational databases through JPA, allowing you to use your existing database schema with minimal configuration.
+
+### Database Configuration
+
+Configure your database connection in `application.properties` or `application.yml`:
+
+```properties
+# PostgreSQL Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/mydatabase
+spring.datasource.username=postgres
+spring.datasource.password=password
+
+# JPA/Hibernate settings
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+```
+
+### Entity Configuration
+
+1. **Create JPA Entities**: Define your database tables as standard JPA entities
+2. **Create Repositories**: Define Spring Data JPA repositories for your entities
+3. **Implement DBDataSource**: Connect your entities to the GQL API
+4. **Define Schema Types**: Add types to your schema with the `@db` directive
+
+### Benefits of Database Integration
+
+- **Live Data**: Query real-time data from your relational database
+- **Write Support**: Coming soon - the ability to modify data through the API
+- **Mixed Source Queries**: Combine data from files, APIs, and databases in a single query
+- **Relationship Resolution**: Automatically resolves relationships between different data sources
+- **Type Safety**: Schema validation ensures queries match your database structure
+
+### Example: Employee Database Setup
+
+1. JPA Entity:
+```java
+@Entity
+@Table(name = "employees")
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private UUID id;
+    
+    @Column(nullable = false)
+    private String firstName;
+    
+    @Column(nullable = false)
+    private String lastName;
+    
+    @Column(nullable = false, unique = true)
+    private String email;
+    
+    @Column
+    private String department;
+    
+    @Column
+    private Double salary;
+    
+    // Getters and setters...
+}
+```
+
+2. Repository:
+```java
+@Repository
+public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
+    List<Employee> findByDepartment(String department);
+    List<Employee> findBySalaryGreaterThan(Double salary);
+}
+```
+
+3. DBDataSource Implementation:
+```java
+@Component
+public class EmployeeDBDataSource implements DBDataSource {
+    @Autowired
+    private EmployeeRepository employeeRepository;
+    
+    @Override
+    public String getEntityType() {
+        return "Employee";
+    }
+    
+    @Override
+    public List<Map<String, Object>> getAllEntities() {
+        return employeeRepository.findAll().stream()
+            .map(this::convertToMap)
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public Optional<Map<String, Object>> getEntityById(String id) {
+        return employeeRepository.findById(UUID.fromString(id))
+            .map(this::convertToMap);
+    }
+    
+    @Override
+    public List<Map<String, Object>> getEntitiesByField(String fieldName, Object value) {
+        // Field-specific handling logic...
+    }
+    
+    private Map<String, Object> convertToMap(Employee employee) {
+        // Convert entity to map...
+    }
+}
+```
+
+4. Schema Definition:
+```graphql
+type Employee @db(entity: "Employee") {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  department: String
+  position: String
+  salary: Float
+}
+```
+
+5. Example Query:
+```json
+{
+  "query": {
+    "employees": {
+      "fields": ["id", "firstName", "lastName", "department"],
+      "where": {
+        "department": "Engineering",
+        "salary": { "$gt": 100000 }
+      }
+    }
+  }
+}
+```
+
+This will execute a database query to find Engineering employees with salaries over $100,000.
 
 ## 🔐 Authentication & Authorization
 
@@ -569,6 +848,16 @@ Response example:
           {"name": "email", "type": "String", "required": false, "isList": false, "isScalar": true}
         ],
         "source": {"type": "file", "path": "data/marketing.customer.json"}
+      },
+      {
+        "name": "Employee",
+        "namespace": null,
+        "fields": [
+          {"name": "id", "type": "ID!", "required": true, "isList": false, "isScalar": true},
+          {"name": "firstName", "type": "String!", "required": true, "isList": false, "isScalar": true},
+          {"name": "lastName", "type": "String!", "required": true, "isList": false, "isScalar": true}
+        ],
+        "source": {"type": "db", "entity": "Employee"}
       }
     ],
     "namespaces": [
@@ -578,7 +867,7 @@ Response example:
       },
       {
         "name": "finance",
-        "types": ["FinanceCustomer"]
+        "types": ["FinanceCustomer", "Employee"]
       }
     ],
     "relationships": [
@@ -720,314 +1009,6 @@ To enable AI query generation, implement the `AIQueryGenerator` interface with y
 ```java
 @Service
 public class OpenAIQueryGenerator implements AIQueryGenerator {
-    // Implementation using OpenAI's API
+    // Implementation details...
 }
 ```
-
-## 🧠 Enhanced Schema Types
-
-The system uses a rich schema type model that extends beyond the GraphQL schema definition:
-
-### `SchemaType` Properties
-
-| Property | Description |
-|----------|-------------|
-| `name` | The type name (e.g., "MarketingCustomer") |
-| `namespace` | The business domain namespace (e.g., "marketing") |
-| `sourceFile` | Path to the JSON data source |
-| `apiUrl` | URL for API data source (alternative to sourceFile) |
-| `fields` | List of fields defined for this type |
-| `log` | Whether to enable detailed logging for this type |
-
-### SchemaField Methods
-
-The schema includes helper methods for field operations:
-
-```java
-// Check if a type has a specific field
-if (schemaType.hasField("email")) {
-    // Field exists
-}
-
-// Get a field by name
-Optional<SchemaField> field = schemaType.getFieldByName("email");
-```
-
-## 📋 Advanced Query Examples
-
-### Cross-Domain Query with Relationships
-
-This query retrieves marketing customers and their related finance data:
-
-```json
-{
-  "query": {
-    "marketing": {
-      "customers": {
-        "fields": ["id", "name", "email"],
-        "where": {"customerSegment": "Enterprise"}
-      }
-    },
-    "finance": {
-      "customers": {
-        "fields": ["id", "accountBalance", "outstandingInvoices"],
-        "where": {"accountStatus": "Active"}
-      }
-    }
-  }
-}
-```
-
-### Historical Data Analysis
-
-This query compares current data with historical state:
-
-```json
-// Current state query
-{
-  "query": {
-    "marketing": {
-      "campaigns": {
-        "fields": ["id", "name", "budget", "roi"]
-      }
-    }
-  }
-}
-
-// Historical state (6 months ago)
-// POST /api/query/at?timestamp=2023-10-01T00:00:00Z
-{
-  "query": {
-    "marketing": {
-      "campaigns": {
-        "fields": ["id", "name", "budget", "roi"]
-      }
-    }
-  }
-}
-```
-
-### Metadata and Data Inspection
-
-This comprehensive query provides both schema information and data samples:
-
-```json
-{
-  "query": {
-    "metadata": {
-      "fields": ["types", "namespaces", "relationships"]
-    },
-    "marketing": {
-      "customers": {
-        "fields": ["id", "name"],
-        "pagination": {
-          "limit": 3
-        }
-      }
-    }
-  }
-}
-```
-
-## 📋 Namespace Resolution Logic
-
-The API implements sophisticated namespace resolution to make cross-domain queries intuitive. The resolution follows these rules:
-
-1. **Explicit Namespace**: Types with a `@namespace` directive are assigned to that namespace
-2. **Name-based Resolution**: Types named like `MarketingCustomer` are mapped to the `marketing` namespace
-3. **Common Entity Resolution**: Entity names like "Customer" are mapped to domain-specific implementations
-4. **Fallback Resolution**: If a clear namespace can't be determined, the entity is available in all namespaces
-
-This allows for intuitive queries like:
-
-```json
-{
-  "query": {
-    "marketing": {
-      "customers": { /* ... */ }
-    }
-  }
-}
-```
-
-Which automatically resolves to `MarketingCustomer` without requiring the full type name.
-
-## 📊 Integration Options
-
-### Spring Boot Application Integration
-
-```java
-@Autowired
-private QueryProcessor queryProcessor;
-
-public JsonNode performQuery(String jsonQuery) {
-    JsonNode queryNode = new ObjectMapper().readTree(jsonQuery);
-    return queryProcessor.processQuery(queryNode);
-}
-```
-
-### External System Integration
-
-The API can be integrated with external systems through:
-
-1. **REST API calls** - Standard HTTP clients
-2. **WebSocket connections** - For real-time data needs
-3. **Embedded mode** - Include as a dependency in your application
-
-### Database Integration
-
-While the system primarily works with JSON files, you can extend it to work with databases:
-
-```java
-@Component
-public class DatabaseDataLoader implements DataSourceAdapter {
-    @Override
-    public List<Map<String, Object>> loadData(String typeName) {
-        // Query database and return results
-    }
-}
-```
-
-## ⚡ Performance Considerations
-
-- **Use field selection**: Request only the fields you need to reduce response size
-- **Leverage namespaces**: Organize queries by business domain
-- **Enable caching**: Use the `@cached` directive for frequently accessed data
-- **Consider relationship depth**: Deep relationship chains may impact performance
-- **Use pagination**: For large datasets, always use pagination to limit response size
-- **Time travel queries**: These are more resource-intensive, so use them judiciously
-
-## 🏥 Health Monitoring
-
-The API includes a comprehensive health monitoring endpoint that provides detailed information about the service status and system resources.
-
-### Health Endpoint
-
-```bash
-curl -X GET http://localhost:8080/api/health
-```
-
-### Health Response Structure
-
-```json
-{
-  "status": "UP",
-  "timestamp": "2023-04-01T14:30:45.123Z",
-  "components": {
-    "schema": {
-      "status": "UP",
-      "types": 24
-    },
-    "data": {
-      "status": "UP", 
-      "sources": 8
-    }
-  },
-  "system": {
-    "cpuLoad": 0.42,
-    "cpuLoadPercentage": "42.00%",
-    "availableProcessors": 8,
-    "osName": "Mac OS X",
-    "osVersion": "11.6",
-    "osArch": "x86_64"
-  },
-  "metrics": {
-    "totalRequests": 12345,
-    "requestsPerSecond": "42.50"
-  }
-}
-```
-
-### Health Data Fields
-
-| Field | Description |
-|-------|-------------|
-| `status` | Overall service status ("UP" or "DOWN") |
-| `timestamp` | Current server time (ISO-8601 format) |
-| `components.schema.types` | Number of schema types loaded |
-| `components.data.sources` | Number of data sources available |
-| `system.cpuLoad` | System CPU load (0.0-1.0 scale) |
-| `system.cpuLoadPercentage` | CPU load as percentage |
-| `system.availableProcessors` | Number of available CPU cores |
-| `system.osName` | Operating system name |
-| `system.osVersion` | Operating system version |
-| `system.osArch` | Operating system architecture |
-| `metrics.totalRequests` | Total number of API requests since startup |
-| `metrics.requestsPerSecond` | Current request rate (calculated from recent window) |
-
-### Health Monitoring Best Practices
-
-- **Regular Polling**: Set up scheduled health checks to monitor system status
-- **Alert Thresholds**: Configure alerts if CPU usage exceeds 80% for extended periods
-- **Component Status**: Track component-level issues to identify specific problems
-- **Integration**: Use with monitoring tools like Prometheus, Grafana, or New Relic
-- **Responsive Scaling**: Use health metrics to trigger auto-scaling in containerized deployments
-
-This endpoint is particularly useful for:
-- Container orchestration health checks (Kubernetes, Docker Swarm)
-- Load balancer status checks
-- Operations monitoring dashboards
-- Automated system scaling decisions
-
-## 🔧 Troubleshooting
-
-**Common Issues:**
-
-1. **Data files not found**:
-   - Ensure JSON files exist in the data directory
-   - Verify file paths in the schema match actual locations
-   - Check file permissions
-
-2. **Relationship resolution errors**:
-   - Verify that both entities in the relationship exist in the schema
-   - Ensure foreign key fields follow naming conventions (e.g., `customerId`)
-   - Check that foreign key values exist in the related entity
-
-3. **Schema parsing errors**:
-   - Validate GraphQL syntax in your schema file
-   - Check for missing closing brackets or quotes
-   - Ensure directive syntax is correct
-
-4. **Authentication errors**:
-   - Verify your JWT token is valid and not expired
-   - Ensure the user has the required role for the resource
-   - Check authorization header format
-
-5. **Time travel query issues**:
-   - Verify the timestamp format (ISO 8601: YYYY-MM-DDThh:mm:ssZ)
-   - Check that historical data files exist with the correct naming convention
-   - Ensure records have proper `validFrom` and `validTo` fields
-
-6. **Health monitoring issues**:
-   - Verify the service is running and accessible
-   - Check that you have appropriate permissions to access system metrics
-   - On some systems, CPU load information might be limited or unavailable
-   - Resource metrics may be inaccurate in containerized environments
-
-## 📊 Architecture Overview
-
-The system is built with the following components:
-
-1. **Schema Parser**: Parses GraphQL schema and builds type definitions
-2. **Data Loader**: Loads data from various sources based on schema
-3. **Query Processor**: Processes JSON queries and resolves relationships
-4. **Relationship Manager**: Tracks and resolves relationships between entities
-5. **Time Travel Service**: Enables point-in-time querying
-6. **Metadata Provider**: Provides introspection capabilities
-7. **AI Query Generator**: (Optional) Translates natural language to structured queries
-
-## 👥 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-`

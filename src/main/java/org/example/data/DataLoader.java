@@ -3,6 +3,7 @@ package org.example.data;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.schema.SchemaType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +37,10 @@ public class DataLoader {
     
     // Current timestamp for point-in-time queries (null means current data)
     private Instant currentTimestamp = null;
+    
+    // Database data sources
+    @Autowired(required = false)
+    private List<DBDataSource> dbDataSources = new ArrayList<>();
 
     /**
      * Creates a new DataLoader with the given data directory
@@ -67,9 +72,19 @@ public class DataLoader {
     public void loadData(Map<String, SchemaType> schema) throws IOException {
         System.out.println("Loading data from directory: " + Paths.get(dataDirectory).toAbsolutePath());
         
+        // First load data from database sources
+        loadDataFromDatabaseSources(schema);
+        
+        // Then load data from files
         for (SchemaType type : schema.values()) {
             String sourceFile = type.getSourceFile();
             String apiUrl = type.getApiUrl();
+            String dbEntity = type.getDbEntity();
+            
+            // Skip DB entities, they're already loaded
+            if (dbEntity != null) {
+                continue;
+            }
             
             if (sourceFile != null) {
                 // Load from JSON file
@@ -89,6 +104,39 @@ public class DataLoader {
         System.out.println("Loaded data: " + dataStore.size() + " types");
         for (Map.Entry<String, List<Map<String, Object>>> entry : dataStore.entrySet()) {
             System.out.println("  - " + entry.getKey() + ": " + entry.getValue().size() + " records");
+        }
+    }
+
+    /**
+     * Load data from database sources
+     */
+    private void loadDataFromDatabaseSources(Map<String, SchemaType> schema) {
+        if (dbDataSources == null || dbDataSources.isEmpty()) {
+            System.out.println("No database data sources available");
+            return;
+        }
+        
+        System.out.println("Loading data from database sources: " + dbDataSources.size());
+        
+        for (DBDataSource dbSource : dbDataSources) {
+            String entityType = dbSource.getEntityType();
+            System.out.println("Loading " + entityType + " from database");
+            
+            try {
+                // Load all entities from this source
+                List<Map<String, Object>> entities = dbSource.getAllEntities();
+                
+                // Store in data store
+                dataStore.put(entityType, entities);
+                
+                // Build indexes
+                buildIndexes(entityType);
+                
+                System.out.println("Loaded " + entities.size() + " " + entityType + " records from database");
+            } catch (Exception e) {
+                System.err.println("Error loading data from database for " + entityType + ": " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
