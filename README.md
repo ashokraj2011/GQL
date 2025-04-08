@@ -315,9 +315,88 @@ type Employee @db(entity: "Employee") {
 
 ## 📡 API Usage
 
-### Basic Query Structure
+### Query Format Options
 
-The API accepts JSON queries with the following structure:
+The API now supports two query formats:
+
+1. **Standard GraphQL Syntax** - Standard GraphQL query language
+2. **Internal JSON Query Format** - The original format used by the API
+
+### GraphQL Syntax Queries
+
+To send a GraphQL-style query to the API:
+
+```bash
+curl -X POST http://localhost:8080/api/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { marketing { customers { id name email } } }"
+  }'
+```
+
+#### GraphQL Query Examples
+
+**Simple Query:**
+```graphql
+query {
+  marketing {
+    customers {
+      id
+      name
+      email
+    }
+  }
+}
+```
+
+**Query with Arguments:**
+```graphql
+query {
+  marketing {
+    customers(where: { name: "Alice" }) {
+      id
+      name
+      email
+    }
+  }
+}
+```
+
+**Query with Pagination:**
+```graphql
+query {
+  marketing {
+    customers(limit: 10, offset: 20) {
+      id
+      name
+      email
+    }
+  }
+}
+```
+
+**Multiple Entity Types:**
+```graphql
+query {
+  marketing {
+    customers {
+      id
+      name
+    }
+    campaigns {
+      id
+      name
+      budget
+    }
+  }
+}
+```
+
+See `src/main/resources/examples/graphql-examples.md` for more examples of GraphQL queries.
+
+### Basic JSON Query Structure
+
+The API continues to accept JSON queries with the following structure:
 
 ```json
 {
@@ -471,7 +550,8 @@ The API accepts JSON queries with the following structure:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/query` | Process a data query |
+| POST | `/api/query` | Process a JSON format query |
+| POST | `/api/graphql` | Process a standard GraphQL syntax query |
 | POST | `/api/query/at` | Process a point-in-time query |
 | POST | `/api/nl-query` | Process a natural language query (if AI enabled) |
 | GET | `/api/schema` | Get schema information |
@@ -583,432 +663,4 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 ### Entity Configuration
 
-1. **Create JPA Entities**: Define your database tables as standard JPA entities
-2. **Create Repositories**: Define Spring Data JPA repositories for your entities
-3. **Implement DBDataSource**: Connect your entities to the GQL API
-4. **Define Schema Types**: Add types to your schema with the `@db` directive
-
-### Benefits of Database Integration
-
-- **Live Data**: Query real-time data from your relational database
-- **Write Support**: Coming soon - the ability to modify data through the API
-- **Mixed Source Queries**: Combine data from files, APIs, and databases in a single query
-- **Relationship Resolution**: Automatically resolves relationships between different data sources
-- **Type Safety**: Schema validation ensures queries match your database structure
-
-### Example: Employee Database Setup
-
-1. JPA Entity:
-```java
-@Entity
-@Table(name = "employees")
-public class Employee {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private UUID id;
-    
-    @Column(nullable = false)
-    private String firstName;
-    
-    @Column(nullable = false)
-    private String lastName;
-    
-    @Column(nullable = false, unique = true)
-    private String email;
-    
-    @Column
-    private String department;
-    
-    @Column
-    private Double salary;
-    
-    // Getters and setters...
-}
-```
-
-2. Repository:
-```java
-@Repository
-public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
-    List<Employee> findByDepartment(String department);
-    List<Employee> findBySalaryGreaterThan(Double salary);
-}
-```
-
-3. DBDataSource Implementation:
-```java
-@Component
-public class EmployeeDBDataSource implements DBDataSource {
-    @Autowired
-    private EmployeeRepository employeeRepository;
-    
-    @Override
-    public String getEntityType() {
-        return "Employee";
-    }
-    
-    @Override
-    public List<Map<String, Object>> getAllEntities() {
-        return employeeRepository.findAll().stream()
-            .map(this::convertToMap)
-            .collect(Collectors.toList());
-    }
-    
-    @Override
-    public Optional<Map<String, Object>> getEntityById(String id) {
-        return employeeRepository.findById(UUID.fromString(id))
-            .map(this::convertToMap);
-    }
-    
-    @Override
-    public List<Map<String, Object>> getEntitiesByField(String fieldName, Object value) {
-        // Field-specific handling logic...
-    }
-    
-    private Map<String, Object> convertToMap(Employee employee) {
-        // Convert entity to map...
-    }
-}
-```
-
-4. Schema Definition:
-```graphql
-type Employee @db(entity: "Employee") {
-  id: ID!
-  firstName: String!
-  lastName: String!
-  email: String!
-  department: String
-  position: String
-  salary: Float
-}
-```
-
-5. Example Query:
-```json
-{
-  "query": {
-    "employees": {
-      "fields": ["id", "firstName", "lastName", "department"],
-      "where": {
-        "department": "Engineering",
-        "salary": { "$gt": 100000 }
-      }
-    }
-  }
-}
-```
-
-This will execute a database query to find Engineering employees with salaries over $100,000.
-
-## 🔐 Authentication & Authorization
-
-The API supports role-based access control through the `@auth` directive:
-
-```graphql
-type Analytics @auth(requires: "ROLE_ANALYST") {
-  # Only accessible to users with ROLE_ANALYST
-  customerAnalytics: [CustomerAnalytics]
-}
-
-type MarketingCampaign {
-  id: ID!
-  name: String
-  budget: Float @auth(requires: "ROLE_MANAGER") # Field-level restriction
-}
-```
-
-To use authenticated endpoints, include an authorization header with your request:
-
-```bash
-curl -X POST http://localhost:8080/api/query \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-jwt-token" \
-  -d '{"query": {"analytics": {"customerAnalytics": {"fields": ["customerId", "lifetime_value"]}}}}'
-```
-
-## 📊 Analytics Data
-
-The API includes a dedicated Analytics domain for business intelligence data:
-
-### Customer Analytics
-
-```json
-{
-  "query": {
-    "analytics": {
-      "customerAnalytics": {
-        "fields": ["customerId", "lifetime_value", "engagement_score", "churn_risk"]
-      }
-    }
-  }
-}
-```
-
-### Campaign Performance
-
-```json
-{
-  "query": {
-    "analytics": {
-      "campaignPerformance": {
-        "fields": ["campaignId", "spend", "revenue", "roi", "conversions"]
-      }
-    }
-  }
-}
-```
-
-### Sales Trends
-
-```json
-{
-  "query": {
-    "analytics": {
-      "salesTrends": {
-        "fields": ["period", "revenue", "growth_rate", "top_products"]
-      }
-    }
-  }
-}
-```
-
-## 📄 Pagination
-
-The API supports pagination for large datasets using the `@paginate` directive:
-
-```graphql
-type Query {
-  marketingCustomers: [MarketingCustomer] @paginate(defaultLimit: 20)
-}
-```
-
-To paginate results, include pagination parameters in your query:
-
-```json
-{
-  "query": {
-    "marketingCustomers": {
-      "fields": ["id", "name", "email"],
-      "pagination": {
-        "limit": 10,  
-        "offset": 20
-      }
-    }
-  }
-}
-```
-
-The response includes pagination metadata:
-
-```json
-{
-  "marketingCustomers": {
-    "data": [
-      { "id": "121", "name": "Customer 21", "email": "c21@example.com" },
-      // ... more items
-    ],
-    "pagination": {
-      "total": 150,
-      "limit": 10,
-      "offset": 20,
-      "hasNext": true,
-      "hasPrevious": true
-    }
-  }
-}
-```
-
-## 🔍 Schema Introspection
-
-You can query the schema structure with the metadata query:
-
-```json
-{
-  "query": {
-    "metadata": {
-      "fields": ["types", "namespaces", "relationships", "directives"]
-    }
-  }
-}
-```
-
-Response example:
-
-```json
-{
-  "metadata": {
-    "types": [
-      {
-        "name": "MarketingCustomer",
-        "namespace": "marketing",
-        "fields": [
-          {"name": "id", "type": "ID!", "required": true, "isList": false, "isScalar": true},
-          {"name": "name", "type": "String", "required": false, "isList": false, "isScalar": true},
-          {"name": "email", "type": "String", "required": false, "isList": false, "isScalar": true}
-        ],
-        "source": {"type": "file", "path": "data/marketing.customer.json"}
-      },
-      {
-        "name": "Employee",
-        "namespace": null,
-        "fields": [
-          {"name": "id", "type": "ID!", "required": true, "isList": false, "isScalar": true},
-          {"name": "firstName", "type": "String!", "required": true, "isList": false, "isScalar": true},
-          {"name": "lastName", "type": "String!", "required": true, "isList": false, "isScalar": true}
-        ],
-        "source": {"type": "db", "entity": "Employee"}
-      }
-    ],
-    "namespaces": [
-      {
-        "name": "marketing",
-        "types": ["MarketingCustomer", "MarketingOrder", "MarketingCampaign"]
-      },
-      {
-        "name": "finance",
-        "types": ["FinanceCustomer", "Employee"]
-      }
-    ],
-    "relationships": [
-      {
-        "sourceType": "MarketingOrder",
-        "fieldName": "customer",
-        "targetType": "MarketingCustomer",
-        "isList": false
-      }
-    ]
-  }
-}
-```
-
-## ⏱️ Time Travel Queries
-
-The API provides comprehensive time travel capabilities through the `TimeTravel` service, allowing you to query data as it existed at any point in time.
-
-### Querying Historical Data
-
-To query data as it existed at a specific timestamp, use the `/api/query/at` endpoint:
-
-```bash
-curl -X POST http://localhost:8080/api/query/at?timestamp=2023-06-01T00:00:00Z \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": {
-      "marketing": {
-        "customers": {
-          "fields": ["id", "name", "email"]
-        }
-      }
-    }
-  }'
-```
-
-This returns the data as it existed on June 1, 2023.
-
-### Retrieving Record History
-
-To retrieve the complete history of a specific record:
-
-```bash
-curl -X GET http://localhost:8080/api/history/MarketingCustomer/123
-```
-
-This returns all historical versions of the customer with ID 123, with their respective validity periods.
-
-### Historical Data Format
-
-Historical data files should be stored alongside the current data with a `.history.json` suffix:
-
-```
-data/
-├── marketing.customer.json         # Current data
-├── marketing.customer.history.json # Historical versions
-```
-
-Each record in the history file should include `validFrom` and `validTo` timestamps:
-
-```json
-[
-  {
-    "id": "123",
-    "name": "Old Company Name",
-    "email": "contact@example.com",
-    "validFrom": "2022-01-01T00:00:00Z",
-    "validTo": "2023-01-01T00:00:00Z"
-  },
-  {
-    "id": "123",
-    "name": "New Company Name",
-    "email": "updated@example.com",
-    "validFrom": "2023-01-01T00:00:00Z",
-    "validTo": null
-  }
-]
-```
-
-The `validTo` field is `null` for current records.
-
-### Time Travel Implementation
-
-The time travel functionality is implemented by:
-
-1. The `TimeTravel` service acts as a coordinator for time-based queries
-2. The `DataLoader` maintains historical versions of records
-3. When a time-travel query is received, the system:
-   - Sets the point-in-time context
-   - Filters records based on their valid time ranges
-   - Returns only data that was valid at the requested timestamp
-   - Resets the context to avoid affecting subsequent queries
-
-This enables sophisticated historical analysis and auditing capabilities without modifying your query structure.
-
-## 🔮 AI-Assisted Query Generation
-
-The API includes an optional AI query generation feature that allows users to describe what data they need in natural language, and the system will generate a structured query automatically.
-
-### Natural Language Query Endpoint
-
-```bash
-curl -X POST http://localhost:8080/api/nl-query \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Get me all marketing customers who spent more than $1000 last month"}'
-```
-
-This produces a response with both the generated query and the results:
-
-```json
-{
-  "generatedQuery": {
-    "query": {
-      "marketing": {
-        "customers": {
-          "fields": ["id", "name", "email", "totalSpend", "orders"],
-          "where": {
-            "totalSpend": 1000
-          }
-        }
-      }
-    }
-  },
-  "result": {
-    "marketing": {
-      "customers": [
-        {"id": "123", "name": "Acme Corp", "email": "contact@acme.com", "totalSpend": 1500},
-        // ... additional results
-      ]
-    }
-  }
-}
-```
-
-### AI Provider Integration
-
-To enable AI query generation, implement the `AIQueryGenerator` interface with your preferred AI provider:
-
-```java
-@Service
-public class OpenAIQueryGenerator implements AIQueryGenerator {
-    // Implementation details...
-}
-```
+1. **

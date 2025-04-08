@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.example.ai.AIQueryException;
 import org.example.ai.AIQueryGenerator;
 import org.example.data.DataLoader;
+import org.example.graphql.GraphQLQueryTransformer;
 import org.example.query.QueryProcessor;
 import org.example.schema.SchemaField;
 import org.example.schema.SchemaParser;
@@ -72,6 +73,8 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
     @Autowired
     private TimeTravel timeTravel;
     
+    private GraphQLQueryTransformer graphQLQueryTransformer;
+    
     // Request metrics
     private final AtomicLong totalRequests = new AtomicLong(0);
     private final List<Long> recentRequestTimestamps = Collections.synchronizedList(new ArrayList<>());
@@ -120,6 +123,9 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
             
             // Initialize query processor with schema, dataLoader, relationships, and timeTravel
             queryProcessor = new QueryProcessor(schema, dataLoader,  relationships, timeTravel);
+            
+            // Initialize GraphQL query transformer
+            graphQLQueryTransformer = new GraphQLQueryTransformer();
             
             System.out.println("GQL API initialized successfully with " + 
                                schema.size() + " types in " + 
@@ -236,6 +242,60 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                 .body(createErrorResponse("Error processing query: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Process a GraphQL syntax query
+     */
+    @PostMapping("/graphql")
+    public ResponseEntity<JsonNode> graphqlQuery(@RequestBody Map<String, String> request) {
+        recordRequest();
+        
+        try {
+            // Check if query processor is initialized
+            if (queryProcessor == null) {
+                return ResponseEntity.internalServerError()
+                    .body(createErrorResponse("Query processor not initialized"));
+            }
+            
+            // Extract the GraphQL query
+            String graphqlQuery = request.get("query");
+            if (graphqlQuery == null || graphqlQuery.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(createErrorResponse("GraphQL query cannot be empty"));
+            }
+            
+            // Transform GraphQL query to internal format
+            JsonNode internalQuery = graphQLQueryTransformer.transformGraphQLQuery(graphqlQuery);
+            
+            // Process the transformed query
+            JsonNode resultNode = queryProcessor.processQuery(internalQuery);
+            
+            // For debugging, include the transformed query in development mode
+            if (isDevelopmentMode()) {
+                ObjectNode responseWithQuery = objectMapper.createObjectNode();
+                responseWithQuery.set("transformedQuery", internalQuery);
+                responseWithQuery.set("result", resultNode);
+                return ResponseEntity.ok(responseWithQuery);
+            }
+            
+            return ResponseEntity.ok(resultNode);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Error processing GraphQL query: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Check if running in development mode
+     */
+    private boolean isDevelopmentMode() {
+        try {
+            String activeProfile = System.getProperty("spring.profiles.active", "");
+            return activeProfile.contains("dev") || activeProfile.isEmpty();
+        } catch (Exception e) {
+            return false;
         }
     }
     
