@@ -4,14 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.example.config.DomainConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Parser for GraphQL schema files.
@@ -23,6 +24,23 @@ public class SchemaParser {
             Arrays.asList("ID", "String", "Int", "Float", "Boolean")
     );
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final DomainConfig domainConfig;
+    
+    /**
+     * Default constructor
+     */
+    public SchemaParser() {
+        this.domainConfig = new DomainConfig(); // Use default config if not provided
+    }
+    
+    /**
+     * Constructor with domain configuration
+     * 
+     * @param domainConfig Domain configuration with namespaces and entity types
+     */
+    public SchemaParser(DomainConfig domainConfig) {
+        this.domainConfig = domainConfig;
+    }
     
     /**
      * Parse GraphQL schema content into a map of schema types
@@ -68,7 +86,11 @@ public class SchemaParser {
         StringBuilder builder = new StringBuilder();
         
         // Start with the main namespaces
-        builder.append("Top-level namespaces: Marketing, Finance, ExternalAPI\n\n");
+        List<String> namespaces = domainConfig.getNamespaces().stream()
+            .map(this::capitalizeFirstLetter)
+            .collect(Collectors.toList());
+        
+        builder.append("Top-level namespaces: ").append(String.join(", ", namespaces)).append("\n\n");
         
         // Add Query type first as it's the entry point
         if (schemaTypes.containsKey("Query")) {
@@ -84,7 +106,7 @@ public class SchemaParser {
         }
         
         // Add important namespace types
-        for (String namespace : Arrays.asList("Marketing", "Finance", "ExternalAPI")) {
+        for (String namespace : namespaces) {
             if (schemaTypes.containsKey(namespace)) {
                 SchemaType namespaceType = schemaTypes.get(namespace);
                 builder.append(namespace).append(": Container for all ").append(namespace.toLowerCase()).append(" data.\n");
@@ -98,10 +120,21 @@ public class SchemaParser {
             }
         }
         
-        // Add key entity types
-        for (String typeName : Arrays.asList(
-                "MarketingCustomer", "MarketingOrder", "MarketingCampaign", 
-                "FinanceCustomer", "ExternalCustomer")) {
+        // Add key entity types - combine namespaces and entity types
+        List<String> keyEntityTypes = new ArrayList<>();
+        for (String namespace : namespaces) {
+            for (String entityType : domainConfig.getEntityTypeSuffixes()) {
+                keyEntityTypes.add(namespace + entityType);
+            }
+        }
+        
+        // Take a subset of entity types for the prompt to avoid it being too large
+        List<String> selectedTypes = keyEntityTypes.stream()
+            .filter(schemaTypes::containsKey)
+            .limit(10)
+            .collect(Collectors.toList());
+        
+        for (String typeName : selectedTypes) {
             if (schemaTypes.containsKey(typeName)) {
                 SchemaType type = schemaTypes.get(typeName);
                 builder.append(typeName).append(": Key entity with fields:\n");
@@ -380,6 +413,11 @@ public class SchemaParser {
      * Infer namespaces from relationship fields
      */
     private void inferNamespacesFromRelationships() {
+        // Get the configured namespaces in capitalized form 
+        List<String> capitalizedNamespaces = domainConfig.getNamespaces().stream()
+            .map(this::capitalizeFirstLetter)
+            .collect(Collectors.toList());
+            
         // Find field references between types to establish relationships and namespaces
         for (SchemaType type : schemaTypes.values()) {
             // Skip if namespace is already set
@@ -390,7 +428,7 @@ public class SchemaParser {
             String typeName = type.getName();
             
             // Try to infer namespace from type name
-            for (String prefix : Arrays.asList("Marketing", "Finance", "External")) {
+            for (String prefix : capitalizedNamespaces) {
                 if (typeName.startsWith(prefix)) {
                     type.setNamespace(prefix.toLowerCase());
                     System.out.println("Inferred namespace " + prefix.toLowerCase() + " for type " + typeName + " from name prefix");
@@ -404,9 +442,9 @@ public class SchemaParser {
             SchemaType type = schemaTypes.get(typeName);
             if (type.getNamespace() == null || type.getNamespace().isEmpty()) {
                 // For types like "Customer", add them to all standard namespaces
-                for (String entityType : Arrays.asList("Customer", "Order", "Campaign", "Lead", "Event")) {
+                for (String entityType : domainConfig.getEntityTypeSuffixes()) {
                     if (typeName.equals(entityType)) {
-                        for (String namespace : Arrays.asList("marketing", "finance", "external")) {
+                        for (String namespace : domainConfig.getNamespaces()) {
                             String namespacedTypeName = capitalizeFirstLetter(namespace) + entityType;
                             if (schemaTypes.containsKey(namespacedTypeName)) {
                                 type.setNamespace(namespace);
@@ -476,4 +514,3 @@ public class SchemaParser {
         return content.replaceAll("#[^\\n]*", "");
     }
 }
-

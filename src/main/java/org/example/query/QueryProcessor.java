@@ -9,6 +9,7 @@ import org.example.schema.SchemaType;
 import org.example.schema.SchemaField;
 import org.example.RelationshipInfo;
 import org.example.timetravel.TimeTravel;
+import org.example.config.DomainConfig;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,12 +27,15 @@ public class QueryProcessor {
     private final List<RelationshipInfo> relationships;
     // Time travel service
     private final TimeTravel timeTravel;
+    // Domain configuration
+    private final DomainConfig domainConfig;
     
-    public QueryProcessor(Map<String, SchemaType> schema, DataLoader dataLoader, List<RelationshipInfo> relationships, TimeTravel timeTravel) {
+    public QueryProcessor(Map<String, SchemaType> schema, DataLoader dataLoader, List<RelationshipInfo> relationships, TimeTravel timeTravel, DomainConfig domainConfig) {
         this.schema = schema;
         this.dataLoader = dataLoader;
         this.relationships = relationships;
         this.timeTravel = timeTravel;
+        this.domainConfig = domainConfig;
         buildNamespaceTypeMap();
     }
     
@@ -39,13 +43,23 @@ public class QueryProcessor {
      * Builds a map of namespace prefixes to their type names for quicker lookup
      */
     private void buildNamespaceTypeMap() {
-        // Create initial namespace maps
-        Set<String> knownNamespaces = new HashSet<>();
+        // Create initial namespace maps from configured namespaces
+        Set<String> knownNamespaces = new HashSet<>(
+            domainConfig.getNamespaces().stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet())
+        );
         
-        // Add standard namespaces we always want to support
-        knownNamespaces.add("marketing");
-        knownNamespaces.add("finance");
-        knownNamespaces.add("external");
+        // Initialize namespace type maps for all known namespaces
+        for (String namespace : knownNamespaces) {
+            namespaceTypeMap.put(namespace, new HashMap<>());
+        }
+        
+        // Get entity type suffixes from configuration
+        List<String> entitySuffixes = domainConfig.getEntityTypeSuffixes();
+        List<String> namespacePrefixes = domainConfig.getNamespaces().stream()
+            .map(ns -> ns.substring(0, 1).toUpperCase() + ns.substring(1))
+            .collect(Collectors.toList());
         
         // First pass: extract namespaces from schema types
         for (Map.Entry<String, SchemaType> entry : schema.entrySet()) {
@@ -56,20 +70,22 @@ public class QueryProcessor {
             if (namespace != null && !namespace.isEmpty()) {
                 String normalizedNamespace = namespace.toLowerCase();
                 knownNamespaces.add(normalizedNamespace);
+                if (!namespaceTypeMap.containsKey(normalizedNamespace)) {
+                    namespaceTypeMap.put(normalizedNamespace, new HashMap<>());
+                }
             } else {
                 // Try to extract namespace from type name for types without explicit namespace
-                for (String prefix : Arrays.asList("Marketing", "Finance", "External")) {
+                for (String prefix : namespacePrefixes) {
                     if (typeName.startsWith(prefix)) {
-                        knownNamespaces.add(prefix.toLowerCase());
+                        String nsLower = prefix.toLowerCase();
+                        knownNamespaces.add(nsLower);
+                        if (!namespaceTypeMap.containsKey(nsLower)) {
+                            namespaceTypeMap.put(nsLower, new HashMap<>());
+                        }
                         break;
                     }
                 }
             }
-        }
-        
-        // Initialize namespace type maps for all known namespaces
-        for (String namespace : knownNamespaces) {
-            namespaceTypeMap.put(namespace, new HashMap<>());
         }
         
         // Second pass: populate namespace type maps
@@ -85,7 +101,7 @@ public class QueryProcessor {
             } else {
                 // Try to extract namespace from type name
                 boolean namespaceFound = false;
-                for (String prefix : Arrays.asList("Marketing", "Finance", "External")) {
+                for (String prefix : namespacePrefixes) {
                     if (typeName.startsWith(prefix)) {
                         String extractedNamespace = prefix.toLowerCase();
                         addTypeToNamespace(extractedNamespace, typeName);
@@ -103,11 +119,11 @@ public class QueryProcessor {
             }
         }
         
-        // For each known entity type (Customer, Order, etc.), make sure it's mapped in each namespace
+        // For each known entity type, make sure it's mapped in each namespace
         for (String typeName : schema.keySet()) {
             // Extract the entity part without the namespace prefix
             String entityName = typeName;
-            for (String prefix : Arrays.asList("Marketing", "Finance", "External")) {
+            for (String prefix : namespacePrefixes) {
                 if (typeName.startsWith(prefix)) {
                     entityName = typeName.substring(prefix.length());
                     break;
@@ -115,15 +131,17 @@ public class QueryProcessor {
             }
             
             // For common entity types, add mappings to all namespaces
-            for (String entityType : Arrays.asList("Customer", "Order", "Campaign", "Lead", "Event")) {
+            for (String entityType : entitySuffixes) {
                 if (typeName.endsWith(entityType)) {
                     for (String namespace : knownNamespaces) {
                         Map<String, String> typeMap = namespaceTypeMap.get(namespace);
-                        // Add common variations of the entity name
-                        typeMap.putIfAbsent(entityType.toLowerCase(), typeName);
-                        // First letter lowercase
-                        String lcFirst = entityType.substring(0, 1).toLowerCase() + entityType.substring(1);
-                        typeMap.putIfAbsent(lcFirst, typeName);
+                        if (typeMap != null) {
+                            // Add common variations of the entity name
+                            typeMap.putIfAbsent(entityType.toLowerCase(), typeName);
+                            // First letter lowercase
+                            String lcFirst = entityType.substring(0, 1).toLowerCase() + entityType.substring(1);
+                            typeMap.putIfAbsent(lcFirst, typeName);
+                        }
                     }
                 }
             }
@@ -145,25 +163,28 @@ public class QueryProcessor {
      * Add special case mappings for better type resolution
      */
     private void addSpecialCaseMappings() {
-        // Add direct mappings for common entities in each namespace
-        Map<String, String> marketingMap = namespaceTypeMap.get("marketing");
-        if (marketingMap != null) {
-            // Add explicit mappings with proper capitalization
-            marketingMap.put("Customer", "MarketingCustomer");
-            marketingMap.put("Order", "MarketingOrder");
-            marketingMap.put("Campaign", "MarketingCampaign");
-            marketingMap.put("Lead", "MarketingLead");
-            marketingMap.put("Event", "MarketingEvent");
-        }
+        // Get all configured namespaces and entity types
+        List<String> namespaces = domainConfig.getNamespaces();
+        List<String> entityTypes = domainConfig.getEntityTypeSuffixes();
         
-        Map<String, String> financeMap = namespaceTypeMap.get("finance");
-        if (financeMap != null) {
-            financeMap.put("Customer", "FinanceCustomer");
-        }
-        
-        Map<String, String> externalMap = namespaceTypeMap.get("external");
-        if (externalMap != null) {
-            externalMap.put("Customer", "ExternalCustomer");
+        // For each namespace, add explicit mappings for common entity types
+        for (String namespace : namespaces) {
+            String nsLower = namespace.toLowerCase();
+            Map<String, String> namespaceMap = namespaceTypeMap.get(nsLower);
+            
+            if (namespaceMap != null) {
+                String nsPrefix = namespace.substring(0, 1).toUpperCase() + namespace.substring(1);
+                
+                for (String entityType : entityTypes) {
+                    String fullTypeName = nsPrefix + entityType;
+                    
+                    // Only add if the schema actually has this type
+                    if (schema.containsKey(fullTypeName)) {
+                        // Add explicit mappings with proper capitalization
+                        namespaceMap.put(entityType, fullTypeName);
+                    }
+                }
+            }
         }
     }
     
@@ -182,7 +203,7 @@ public class QueryProcessor {
         
         // Extract the entity part (e.g., "Customer" from "MarketingCustomer")
         String entityName = typeName;
-        for (String prefix : Arrays.asList("Marketing", "Finance", "External")) {
+        for (String prefix : domainConfig.getCapitalizedNamespacePrefixes()) {
             if (typeName.startsWith(prefix)) {
                 entityName = typeName.substring(prefix.length());
                 break;
@@ -314,7 +335,7 @@ public class QueryProcessor {
                 } else {
                     // Try to extract namespace from type name
                     String typeName = type.getName();
-                    for (String prefix : Arrays.asList("Marketing", "Finance", "External")) {
+                    for (String prefix : domainConfig.getCapitalizedNamespacePrefixes()) {
                         if (typeName.startsWith(prefix)) {
                             String ns = prefix.toLowerCase();
                             namespaceMap.computeIfAbsent(ns, k -> new HashSet<>()).add(typeName);
@@ -325,7 +346,7 @@ public class QueryProcessor {
             }
             
             // Add standard namespaces if not present
-            for (String ns : Arrays.asList("marketing", "finance", "external")) {
+            for (String ns : domainConfig.getNamespaces()) {
                 namespaceMap.computeIfAbsent(ns, k -> new HashSet<>());
             }
             

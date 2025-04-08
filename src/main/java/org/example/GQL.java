@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.example.ai.AIQueryException;
 import org.example.ai.AIQueryGenerator;
+import org.example.config.DomainConfig;
 import org.example.data.DataLoader;
 import org.example.graphql.GraphQLQueryTransformer;
 import org.example.query.QueryProcessor;
@@ -75,6 +76,9 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
     
     private GraphQLQueryTransformer graphQLQueryTransformer;
     
+    @Autowired
+    private DomainConfig domainConfig;
+    
     // Request metrics
     private final AtomicLong totalRequests = new AtomicLong(0);
     private final List<Long> recentRequestTimestamps = Collections.synchronizedList(new ArrayList<>());
@@ -89,8 +93,8 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         System.out.println("Initializing GQL API");
         
         try {
-            // Initialize schema parser
-            schemaParser = new SchemaParser();
+            // Initialize schema parser with domain config
+            schemaParser = new SchemaParser(domainConfig);
             
             // Try to load schema from file
             Path schemaFilePath = Paths.get(schemaPath);
@@ -121,8 +125,11 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
             // Build relationship map
             detectRelationships(schema);
             
+            // Infer additional namespaces from relationships
+            inferNamespacesFromRelationships(schema);
+            
             // Initialize query processor with schema, dataLoader, relationships, and timeTravel
-            queryProcessor = new QueryProcessor(schema, dataLoader,  relationships, timeTravel);
+            queryProcessor = new QueryProcessor(schema, dataLoader, relationships, timeTravel, domainConfig);
             
             // Initialize GraphQL query transformer
             graphQLQueryTransformer = new GraphQLQueryTransformer();
@@ -143,13 +150,32 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         // Initialize namespace map
         namespaceTypesMap.clear();
         
+        // Use domain config to get the configured namespaces
+        List<String> configuredNamespaces = domainConfig.getNamespaces();
+        
+        // Add all configured namespaces to ensure they always exist
+        for (String namespace : configuredNamespaces) {
+            namespaceTypesMap.computeIfAbsent(namespace.toLowerCase(), k -> new HashSet<>());
+        }
+        
         // Group types by namespace
         for (SchemaType type : schema.values()) {
             String namespace = type.getNamespace();
             if (namespace != null && !namespace.isEmpty()) {
                 namespaceTypesMap
-                    .computeIfAbsent(namespace, k -> new HashSet<>())
+                    .computeIfAbsent(namespace.toLowerCase(), k -> new HashSet<>())
                     .add(type.getName());
+            } else {
+                // Try to infer namespace from type name prefix
+                for (String ns : configuredNamespaces) {
+                    String capitalized = ns.substring(0, 1).toUpperCase() + ns.substring(1);
+                    if (type.getName().startsWith(capitalized)) {
+                        namespaceTypesMap
+                            .computeIfAbsent(ns.toLowerCase(), k -> new HashSet<>())
+                            .add(type.getName());
+                        break;
+                    }
+                }
             }
         }
         
@@ -161,6 +187,9 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
      */
     private void detectRelationships(Map<String, SchemaType> schema) {
         relationships.clear();
+        
+        // Get common entity suffixes from config
+        List<String> entitySuffixes = domainConfig.getEntityTypeSuffixes();
         
         for (SchemaType sourceType : schema.values()) {
             for (SchemaField field : sourceType.getFields()) {
@@ -184,6 +213,33 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
                         targetTypeName,
                         field.isList()
                     ));
+                } else {
+                    // Try to detect relationships based on field name patterns
+                    // e.g., "customerId" might refer to a "Customer" type
+                    String fieldName = field.getName().toLowerCase();
+                    
+                    // Check if field name ends with "id" and might reference another entity
+                    if (field.isScalar() && fieldName.endsWith("id")) {
+                        String possibleEntityName = fieldName.substring(0, fieldName.length() - 2);
+                        
+                        // Check against configured entity suffixes
+                        for (String entitySuffix : entitySuffixes) {
+                            if (possibleEntityName.equalsIgnoreCase(entitySuffix.toLowerCase())) {
+                                // Look for matching target types
+                                for (String potentialTarget : schema.keySet()) {
+                                    if (potentialTarget.endsWith(entitySuffix)) {
+                                        relationships.add(new RelationshipInfo(
+                                            sourceType.getName(),
+                                            field.getName(),
+                                            potentialTarget,
+                                            false
+                                        ));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -191,6 +247,66 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
         System.out.println("Detected " + relationships.size() + " relationships between types");
     }
 
+    /**
+     * Infer additional namespaces from relationships between entities
+     * 
+     * @param schema The schema containing type definitions
+     */
+    private void inferNamespacesFromRelationships(Map<String, SchemaType> schema) {
+        System.out.println("Inferring namespaces from relationships...");
+        
+        // Create a temporary map to collect type names by namespace prefix
+        Map<String, Set<String>> inferredNamespaces = new HashMap<>();
+        
+        // Analyze relationships to detect namespaces
+        for (RelationshipInfo relationship : relationships) {
+            String sourceType = relationship.getSourceType();
+            String targetType = relationship.getTargetType();
+            
+            // Extract potential namespace prefixes from source and target types
+            String sourceNamespace = domainConfig.extractNamespacePrefix(sourceType);
+            String targetNamespace = domainConfig.extractNamespacePrefix(targetType);
+            
+            // Add to inferred namespaces if valid
+            if (sourceNamespace != null) {
+                inferredNamespaces.computeIfAbsent(sourceNamespace, k -> new HashSet<>()).add(sourceType);
+            }
+            
+            if (targetNamespace != null) {
+                inferredNamespaces.computeIfAbsent(targetNamespace, k -> new HashSet<>()).add(targetType);
+            }
+        }
+        
+        // Check type names for conventional prefixes even if not in relationships
+        for (String typeName : schema.keySet()) {
+            String namespace = domainConfig.extractNamespacePrefix(typeName);
+            if (namespace != null) {
+                inferredNamespaces.computeIfAbsent(namespace, k -> new HashSet<>()).add(typeName);
+            }
+        }
+        
+        // Merge inferred namespaces with existing namespace map
+        for (Map.Entry<String, Set<String>> entry : inferredNamespaces.entrySet()) {
+            String namespace = entry.getKey();
+            Set<String> types = entry.getValue();
+            
+            if (namespaceTypesMap.containsKey(namespace)) {
+                // Add types to existing namespace
+                namespaceTypesMap.get(namespace).addAll(types);
+            } else {
+                // Create new namespace
+                namespaceTypesMap.put(namespace, types);
+            }
+        }
+        
+        System.out.println("Inferred additional namespaces: " + 
+                          inferredNamespaces.keySet().stream()
+                              .filter(ns -> !namespaceTypesMap.containsKey(ns))
+                              .collect(Collectors.joining(", ")));
+    }
+    
+    // Remove the extractNamespacePrefix method as it's now in DomainConfig
+    
     /**
      * Record an API request for metrics
      */
@@ -584,7 +700,7 @@ public class GQL implements WebSocketMessageBrokerConfigurer {
      */
     @Bean
     public SchemaParser schemaParser() {
-        return new SchemaParser();
+        return new SchemaParser(domainConfig);
     }
 }
 
