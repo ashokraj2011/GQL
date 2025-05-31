@@ -1,0 +1,897 @@
+package org.example.LogContext;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class AsyncLogWriter {
+    private static final Logger logger = LoggerFactory.getLogger(AsyncLogWriter.class);
+    private static final AsyncLogWriter INSTANCE = new AsyncLogWriter();
+    
+    private final BlockingQueue<LogTask> logQueue = new LinkedBlockingQueue<>();
+    private final Thread writerThread;
+    private final AtomicBoolean running = new AtomicBoolean(true);
+    
+    private AsyncLogWriter() {
+        this.writerThread = new Thread(this::processLogQueue);
+        this.writerThread.setName("async-log-writer");
+        this.writerThread.setDaemon(true);
+        this.writerThread.start();
+    }
+    
+    public static AsyncLogWriter getInstance() {
+        return INSTANCE;
+    }
+    
+    public void writeToFile(String path, List<LogEntry> entries, boolean useJsonFormat) {
+        if (!running.get()) {
+            logger.warn("AsyncLogWriter has been shutdown, can't process new logs");
+            return;
+        }
+        
+        logQueue.offer(new LogTask(path, entries, useJsonFormat));
+    }
+    
+    private void processLogQueue() {
+        while (running.get() || !logQueue.isEmpty()) {
+            try {
+                LogTask task = logQueue.poll(100, TimeUnit.MILLISECONDS);
+                if (task != null) {
+                    writeLogEntriesToFile(task);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("AsyncLogWriter thread interrupted", e);
+                break;
+            } catch (Exception e) {
+                logger.error("Error in AsyncLogWriter", e);
+            }
+        }
+    }
+    
+    private void writeLogEntriesToFile(LogTask task) {
+        // Create directory if it doesn't exist
+        File file = new File(task.path);
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+        
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(task.path, true))) {
+            if (task.useJsonFormat) {
+                // JSON array format
+                writer.write("[");
+                boolean first = true;
+                for (LogEntry entry : task.entries) {
+                    if (!first) {
+                        writer.write(",");
+                    }
+                    writer.newLine();
+                    writer.write(entry.formatJson());
+                    first = false;
+                }
+                writer.newLine();
+                writer.write("]");
+            } else {
+                // Plain text format
+                for (LogEntry entry : task.entries) {
+                    writer.write(entry.format());
+                    writer.newLine();
+                }
+            }
+            logger.debug("Successfully wrote {} log entries to {}", task.entries.size(), task.path);
+        } catch (IOException e) {
+            logger.error("Failed to write logs to file: {}", task.path, e);
+        }
+    }
+    
+    public void shutdown() {
+        running.set(false);
+        try {
+            writerThread.join(5000); // Wait up to 5 seconds for remaining logs to be written
+            logger.info("AsyncLogWriter shutdown complete");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.error("Interrupted while shutting down AsyncLogWriter", e);
+        }
+    }
+    
+    private static class LogTask {
+        final String path;
+        final List<LogEntry> entries;
+        final boolean useJsonFormat;
+        
+        LogTask(String path, List<LogEntry> entries, boolean useJsonFormat) {
+            this.path = path;
+            this.entries = List.copyOf(entries); // Create immutable copy to avoid concurrent modification
+            this.useJsonFormat = useJsonFormat;
+        }
+    }
+}
+
+
+package org.example.LogContext;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Centralized catalog of all error codes used by the application.
+ * Error codes follow the format: CATEGORY-COMPONENT-NUMBER
+ * - CATEGORY: The type of error (IO, COMPUTE, CONFIG, AUTH, etc.)
+ * - COMPONENT: The specific component or module where the error occurred
+ * - NUMBER: A unique identifier within that category and component
+ */
+public enum ErrorCode {
+    // Define severity levels for different types of errors
+    
+    // IO Related Error Codes (IO-*)
+    IO_FILE_001("IO-FILE-001", "File not found", "The specified file could not be found on the filesystem", Severity.ERROR),
+    IO_FILE_002("IO-FILE-002", "File permission denied", "The application lacks permission to read or write to the file", Severity.ERROR),
+    IO_FILE_003("IO-FILE-003", "File read error", "An error occurred while reading from the file", Severity.ERROR),
+    IO_FILE_004("IO-FILE-004", "File write error", "An error occurred while writing to the file", Severity.ERROR),
+    IO_NETWORK_001("IO-NETWORK-001", "Connection timeout", "The network connection timed out", Severity.WARN),
+    IO_NETWORK_002("IO-NETWORK-002", "Connection refused", "The remote server refused the connection", Severity.ERROR),
+    IO_THREAD_001("IO-THREAD-001", "Thread interrupted", "The thread was interrupted during I/O operation", Severity.WARN),
+    
+    // Computation Related Error Codes (COMPUTE-*)
+    COMPUTE_MATH_001("COMPUTE-MATH-001", "Division by zero", "An attempt was made to divide by zero", Severity.ERROR),
+    COMPUTE_MATH_002("COMPUTE-MATH-002", "Numeric overflow", "A numeric calculation resulted in an overflow", Severity.WARN),
+    COMPUTE_VALIDATION_001("COMPUTE-VALIDATION-001", "Input validation failed", "The provided input failed validation", Severity.WARN),
+    COMPUTE_PROCESS_001("COMPUTE-PROCESS-001", "Computation failed", "The computation process failed to complete", Severity.ERROR),
+    
+    // Configuration Related Error Codes (CONFIG-*)
+    CONFIG_PARSE_001("CONFIG-PARSE-001", "Configuration parse error", "Failed to parse the configuration file", Severity.ERROR),
+    CONFIG_MISSING_001("CONFIG-MISSING-001", "Missing configuration", "A required configuration property is missing", Severity.ERROR),
+    CONFIG_INVALID_001("CONFIG-INVALID-001", "Invalid configuration", "A configuration property has an invalid value", Severity.WARN),
+    
+    // Data Related Error Codes (DATA-*)
+    DATA_FORMAT_001("DATA-FORMAT-001", "Invalid data format", "The data is not in the expected format", Severity.WARN),
+    DATA_ACCESS_001("DATA-ACCESS-001", "Data access error", "Failed to access the required data", Severity.ERROR),
+    DATA_CORRUPT_001("DATA-CORRUPT-001", "Data corruption", "The data appears to be corrupted", Severity.CRITICAL),
+    
+    // Authentication/Authorization Related Error Codes (AUTH-*)
+    AUTH_LOGIN_001("AUTH-LOGIN-001", "Authentication failed", "Invalid username or password", Severity.WARN),
+    AUTH_ACCESS_001("AUTH-ACCESS-001", "Access denied", "The user does not have permission for this operation", Severity.ERROR),
+    AUTH_TOKEN_001("AUTH-TOKEN-001", "Invalid token", "The authentication token is invalid or expired", Severity.WARN),
+    
+    // System Related Error Codes (SYS-*)
+    SYS_RESOURCE_001("SYS-RESOURCE-001", "Resource exhausted", "A system resource has been exhausted", Severity.CRITICAL),
+    SYS_RUNTIME_001("SYS-RUNTIME-001", "Unexpected error", "An unexpected runtime error occurred", Severity.FATAL);
+    
+    /**
+     * Severity levels for error classification
+     */
+    public enum Severity {
+        INFO,       // Informational messages, lowest severity
+        WARN,       // Warning conditions
+        ERROR,      // Error conditions
+        CRITICAL,   // Critical conditions
+        FATAL       // System is unusable, highest severity
+    }
+    
+    private final String code;
+    private final String title;
+    private final String description;
+    private final Severity severity;
+    
+    // Map for fast lookups by code
+    private static final Map<String, ErrorCode> errorCodeMap;
+    
+    static {
+        Map<String, ErrorCode> map = new HashMap<>();
+        for (ErrorCode errorCode : values()) {
+            map.put(errorCode.getCode(), errorCode);
+        }
+        errorCodeMap = Collections.unmodifiableMap(map);
+    }
+    
+    ErrorCode(String code, String title, String description, Severity severity) {
+        this.code = code;
+        this.title = title;
+        this.description = description;
+        this.severity = severity;
+    }
+    
+    public String getCode() {
+        return code;
+    }
+    
+    public String getTitle() {
+        return title;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public Severity getSeverity() {
+        return severity;
+    }
+    
+    /**
+     * Find an ErrorCode by its string code
+     * @param code The error code string (e.g., "IO-FILE-001")
+     * @return The ErrorCode enum value or null if not found
+     */
+    public static ErrorCode fromString(String code) {
+        if (code == null) return null;
+        return errorCodeMap.get(code);
+    }
+    
+    /**
+     * Get all error codes with a specific severity level
+     * @param severity The severity level to filter by
+     * @return Array of error codes with the specified severity
+     */
+    public static ErrorCode[] getByLevel(Severity severity) {
+        if (severity == null) {
+            return new ErrorCode[0];
+        }
+        
+        return Arrays.stream(values())
+            .filter(error -> error.getSeverity() == severity)
+            .toArray(ErrorCode[]::new);
+    }
+    
+    /**
+     * Get all error codes grouped by category
+     * @return Map of categories to lists of error codes
+     */
+    public static Map<String, List<ErrorCode>> getByCategory() {
+        return Arrays.stream(values())
+            .collect(Collectors.groupingBy(
+                errorCode -> {
+                    String[] parts = errorCode.getCode().split("-");
+                    return parts.length > 0 ? parts[0] : "UNKNOWN";
+                }
+            ));
+    }
+    
+    /**
+     * Get the full error message including code, title, severity and description
+     * @return Formatted error message
+     */
+    public String getFullMessage() {
+        return String.format("[%s][%s] %s: %s", code, severity, title, description);
+    }
+    
+    @Override
+    public String toString() {
+        return code;
+    }
+}
+
+
+package org.example.LogContext;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+public class LogContext {
+    private static final Logger logger = LoggerFactory.getLogger(LogContext.class);
+    private static final InheritableThreadLocal<LogContext> threadLocal = new InheritableThreadLocal<LogContext>() {
+        @Override
+        protected LogContext initialValue() {
+            return new LogContext();
+        }
+    };
+    
+    // Static collection to store all logs from all contexts
+    private static final CopyOnWriteArrayList<LogEntry> allLogs = new CopyOnWriteArrayList<>();
+    
+    // Default minimum log level for filtering
+    private static LogEntry.Level minimumLogLevel = LogEntry.Level.INFO;
+
+    private final Deque<String> contextStack = new ArrayDeque<>();
+    private final CopyOnWriteArrayList<LogEntry> logs = new CopyOnWriteArrayList<>();
+    private boolean useJsonFormat = true; // Default to JSON format
+
+    public static LogContext get() {
+        return threadLocal.get();
+    }
+
+    public void info(String msg) {
+        log(LogEntry.Level.INFO, msg, null, null);
+    }
+
+    public void warn(String msg) {
+        log(LogEntry.Level.WARN, msg, null, null);
+    }
+
+    public void error(String msg, Throwable t) {
+        log(LogEntry.Level.ERROR, msg, t, null);
+    }
+    
+    public void error(String msg, Throwable t, String errorCode) {
+        log(LogEntry.Level.ERROR, msg, t, errorCode);
+    }
+    
+    /**
+     * Log an error with an ErrorCode enum value
+     * @param msg The error message
+     * @param t The throwable/exception
+     * @param errorCode The ErrorCode enum value
+     */
+    public void error(String msg, Throwable t, ErrorCode errorCode) {
+        // Choose the appropriate log level based on error severity
+        LogEntry.Level logLevel = mapSeverityToLogLevel(errorCode);
+        
+        log(logLevel, 
+            errorCode != null ? msg + " - " + errorCode.getTitle() : msg, 
+            t, 
+            errorCode != null ? errorCode.getCode() : null);
+    }
+
+    public void metric(String key, double value) {
+        String ctx = String.join(" > ", contextStack);
+        LogEntry entry = new LogEntry(Thread.currentThread().getName(), ctx, key, value);
+        logs.add(entry);
+        
+        // Also log to SLF4J
+        logger.info("METRIC: {} = {}", key, value);
+    }
+
+    private void log(LogEntry.Level level, String msg, Throwable t, String errorCode) {
+        String ctx = String.join(" > ", contextStack);
+        LogEntry entry = errorCode != null ? 
+            new LogEntry(Thread.currentThread().getName(), ctx, level, msg, t, errorCode) :
+            new LogEntry(Thread.currentThread().getName(), ctx, level, msg, t);
+        logs.add(entry);
+        allLogs.add(entry); // Add to the global collection
+        
+        // Also log to SLF4J
+        try {
+            MDC.put("context", ctx);
+            if (errorCode != null) {
+                MDC.put("errorCode", errorCode);
+                
+                // Add error code details to MDC if available
+                ErrorCode errorEnum = ErrorCode.fromString(errorCode);
+                if (errorEnum != null) {
+                    MDC.put("errorTitle", errorEnum.getTitle());
+                    MDC.put("errorSeverity", errorEnum.getSeverity().toString());
+                }
+            }
+            
+            switch (level) {
+                case INFO:
+                    logger.info(msg);
+                    break;
+                case WARN:
+                    logger.warn(msg);
+                    break;
+                case ERROR:
+                    logger.error(msg, t);
+                    break;
+                default:
+                    logger.debug(msg);
+            }
+        } finally {
+            MDC.remove("context");
+            if (errorCode != null) {
+                MDC.remove("errorCode");
+                MDC.remove("errorTitle");
+                MDC.remove("errorSeverity");
+            }
+        }
+    }
+    
+    /**
+     * Maps an ErrorCode severity to a LogEntry.Level
+     */
+    private LogEntry.Level mapSeverityToLogLevel(ErrorCode errorCode) {
+        if (errorCode == null) {
+            return LogEntry.Level.ERROR; // Default
+        }
+        
+        switch (errorCode.getSeverity()) {
+            case INFO:
+                return LogEntry.Level.INFO;
+            case WARN:
+                return LogEntry.Level.WARN;
+            case ERROR:
+            case CRITICAL:
+            case FATAL:
+                return LogEntry.Level.ERROR;
+            default:
+                return LogEntry.Level.ERROR;
+        }
+    }
+
+    public void pushContext(String label) {
+        contextStack.push(label);
+        MDC.put("context", String.join(" > ", contextStack));
+    }
+
+    public void popContext() {
+        if (!contextStack.isEmpty()) {
+            contextStack.pop();
+            MDC.put("context", String.join(" > ", contextStack));
+        }
+    }
+
+    public void runInContext(String label, Runnable task) {
+        pushContext(label);
+        try {
+            task.run();
+        } finally {
+            popContext();
+        }
+    }
+
+    public void flushToConsole() {
+        for (LogEntry entry : logs) {
+            // Instead of System.out, we'll use SLF4J
+            switch (entry.getLevel()) {
+                case INFO:
+                    logger.info(entry.getMessage());
+                    break;
+                case WARN:
+                    logger.warn(entry.getMessage());
+                    break;
+                case ERROR:
+                    if (entry.getErrorCode() != null) {
+                        logger.error("[{}] {}", entry.getErrorCode(), entry.getMessage(), entry.getException());
+                    } else {
+                        logger.error(entry.getMessage(), entry.getException());
+                    }
+                    break;
+                case METRIC:
+                    logger.info("METRIC: {}", entry.format());
+                    break;
+            }
+        }
+    }
+
+    public void flushToFile(String path) {
+        // Use the AsyncLogWriter with JSON format option
+        AsyncLogWriter.getInstance().writeToFile(path, logs, useJsonFormat);
+    }
+
+    public void setUseJsonFormat(boolean useJsonFormat) {
+        this.useJsonFormat = useJsonFormat;
+    }
+
+    public boolean isUseJsonFormat() {
+        return useJsonFormat;
+    }
+
+    public static void remove() {
+        threadLocal.remove();
+        MDC.clear();
+    }
+
+    /**
+     * Set the minimum log level for SLF4J/Logback
+     * @param level The minimum level to log (e.g., "INFO", "WARN", "ERROR")
+     */
+    public static void setSlf4jLogLevel(String level) {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        
+        Level logbackLevel;
+        switch (level.toUpperCase()) {
+            case "DEBUG": logbackLevel = Level.DEBUG; break;
+            case "INFO": logbackLevel = Level.INFO; break;
+            case "WARN": logbackLevel = Level.WARN; break;
+            case "ERROR": logbackLevel = Level.ERROR; break;
+            default: logbackLevel = Level.INFO;
+        }
+        
+        // Set level for the org.example package
+        ch.qos.logback.classic.Logger packageLogger = loggerContext.getLogger("org.example");
+        packageLogger.setLevel(logbackLevel);
+        
+        // Optionally set root logger level too
+        ch.qos.logback.classic.Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+        rootLogger.setLevel(logbackLevel);
+        
+        logger.info("Set SLF4J log level to: {}", level);
+    }
+    
+    /**
+     * Set the minimum log level for the custom JSON output
+     * @param level The minimum level to include in JSON output
+     */
+    public static void setMinimumLogLevel(LogEntry.Level level) {
+        minimumLogLevel = level;
+        logger.info("Set minimum log level for JSON output to: {}", level);
+    }
+    
+    /**
+     * Get the current minimum log level for JSON output
+     * @return The current minimum log level
+     */
+    public static LogEntry.Level getMinimumLogLevel() {
+        return minimumLogLevel;
+    }
+
+    /**
+     * Print all logs from all contexts to the console in JSON format,
+     * filtered by the minimum log level
+     */
+    public static void printAllLogsAsJson() {
+        // Use the new method with all log types enabled
+        printFilteredLogsAsJson(true, true, true, true);
+    }
+    
+    /**
+     * Print only error logs and metrics to the console in JSON format
+     */
+    public static void printErrorsAndMetricsAsJson() {
+        // Enable only ERROR logs and METRIC logs
+        printFilteredLogsAsJson(false, false, true, true);
+    }
+    
+    /**
+     * Print logs from all contexts to the console in JSON format with custom filtering
+     * @param includeInfo Whether to include INFO logs
+     * @param includeWarn Whether to include WARN logs
+     * @param includeError Whether to include ERROR logs
+     * @param includeMetrics Whether to include METRIC logs
+     */
+    public static void printFilteredLogsAsJson(boolean includeInfo, boolean includeWarn, 
+                                               boolean includeError, boolean includeMetrics) {
+        // Filter logs by requested types and minimum level
+        CopyOnWriteArrayList<LogEntry> filteredLogs = new CopyOnWriteArrayList<>();
+        
+        for (LogEntry entry : allLogs) {
+            boolean include = false;
+            
+            switch (entry.getLevel()) {
+                case INFO:
+                    include = includeInfo && isLevelEqualOrHigher(LogEntry.Level.INFO, minimumLogLevel);
+                    break;
+                case WARN:
+                    include = includeWarn && isLevelEqualOrHigher(LogEntry.Level.WARN, minimumLogLevel);
+                    break;
+                case ERROR:
+                    include = includeError && isLevelEqualOrHigher(LogEntry.Level.ERROR, minimumLogLevel);
+                    break;
+                case METRIC:
+                    include = includeMetrics;
+                    break;
+            }
+            
+            if (include) {
+                filteredLogs.add(entry);
+            }
+        }
+        
+        // Print the filtered logs in JSON format
+        if (filteredLogs.isEmpty()) {
+            System.out.println("[]"); // Empty JSON array
+            return;
+        }
+        
+        System.out.println("[");
+        boolean first = true;
+        for (LogEntry entry : filteredLogs) {
+            if (!first) {
+                System.out.println(",");
+            }
+            System.out.print(entry.formatJson());
+            first = false;
+        }
+        System.out.println("\n]");
+    }
+    
+    private static boolean isLevelEqualOrHigher(LogEntry.Level level, LogEntry.Level minimumLevel) {
+        // Define level order: INFO (lowest) < WARN < ERROR (highest)
+        if (level == minimumLevel) return true;
+        
+        if (minimumLevel == LogEntry.Level.ERROR) {
+            return level == LogEntry.Level.ERROR;
+        } else if (minimumLevel == LogEntry.Level.WARN) {
+            return level == LogEntry.Level.WARN || level == LogEntry.Level.ERROR;
+        } else {
+            return true; // If minimum is INFO, all levels pass
+        }
+    }
+
+    public static void shutdown() {
+        AsyncLogWriter.getInstance().shutdown();
+    }
+}
+
+
+package org.example.LogContext;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+public class LogEntry {
+    public enum Level { INFO, WARN, ERROR, METRIC }
+    
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = 
+            DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+
+    private final String threadName;
+    private final String contextPath;
+    private final Level level;
+    private final String message;
+    private final Throwable exception;
+    private final String metricKey;
+    private final Double metricValue;
+    private final Instant timestamp;
+    private final String errorCode; // New field for error codes
+
+    // Standard log without error code
+    public LogEntry(String threadName, String contextPath, Level level, String message, Throwable exception) {
+        this(threadName, contextPath, level, message, exception, null, null, null);
+    }
+
+    // Standard log with error code
+    public LogEntry(String threadName, String contextPath, Level level, String message, Throwable exception, String errorCode) {
+        this(threadName, contextPath, level, message, exception, null, null, errorCode);
+    }
+
+    // Metric log
+    public LogEntry(String threadName, String contextPath, String metricKey, double metricValue) {
+        this(threadName, contextPath, Level.METRIC, null, null, metricKey, metricValue, null);
+    }
+
+    private LogEntry(String threadName, String contextPath, Level level, String message, Throwable exception,
+                     String metricKey, Double metricValue, String errorCode) {
+        this.threadName = threadName;
+        this.contextPath = contextPath;
+        this.level = level;
+        this.message = message;
+        this.exception = exception;
+        this.metricKey = metricKey;
+        this.metricValue = metricValue;
+        this.timestamp = Instant.now();
+        this.errorCode = errorCode;
+    }
+
+    public String format() {
+        if (level == Level.METRIC) {
+            return String.format("[%s] %s [%s]: %s = %.2f", level, threadName, contextPath, metricKey, metricValue);
+        } else {
+            String errorCodeStr = errorCode != null ? "[" + errorCode + "] " : "";
+            return String.format("[%s] %s [%s]: %s%s%s",
+                    level, threadName, contextPath, errorCodeStr, message,
+                    exception != null ? " | Ex: " + exception + "\n" + getFullStackTrace(exception) : "");
+        }
+    }
+    
+    public String formatJson() {
+        StringBuilder json = new StringBuilder();
+        json.append("{\n");
+        json.append("  \"timestamp\": \"").append(TIMESTAMP_FORMATTER.format(timestamp)).append("\",\n");
+        json.append("  \"thread\": \"").append(escapeJson(threadName)).append("\",\n");
+        json.append("  \"level\": \"").append(level).append("\",\n");
+        
+        // Format context as nested object with path and hierarchy
+        json.append("  \"context\": {\n");
+        json.append("    \"path\": \"").append(escapeJson(contextPath)).append("\",\n");
+        json.append("    \"hierarchy\": [");
+        if (contextPath != null && !contextPath.isEmpty()) {
+            String[] parts = contextPath.split(" > ");
+            json.append(Arrays.stream(parts)
+                    .map(part -> "\"" + escapeJson(part) + "\"")
+                    .collect(Collectors.joining(", ")));
+        }
+        json.append("]\n");
+        json.append("  }");
+        
+        // Add error code and severity if present
+        if (errorCode != null) {
+            ErrorCode code = ErrorCode.fromString(errorCode);
+            json.append(",\n  \"error\": {\n");
+            json.append("    \"code\": \"").append(escapeJson(errorCode)).append("\"");
+            
+            if (code != null) {
+                json.append(",\n    \"title\": \"").append(escapeJson(code.getTitle())).append("\",\n");
+                json.append("    \"severity\": \"").append(code.getSeverity()).append("\",\n");
+                json.append("    \"description\": \"").append(escapeJson(code.getDescription())).append("\"");
+            }
+            
+            json.append("\n  }");
+        }
+        
+        // Add message if present
+        if (message != null) {
+            json.append(",\n  \"message\": \"").append(escapeJson(message)).append("\"");
+        }
+        
+        // Add exception details if present
+        if (exception != null) {
+            json.append(",\n  \"exception\": {\n");
+            json.append("    \"type\": \"").append(escapeJson(exception.getClass().getName())).append("\",\n");
+            json.append("    \"message\": \"").append(escapeJson(exception.getMessage())).append("\",\n");
+            json.append("    \"stacktrace\": \"").append(escapeJson(getFullStackTrace(exception))).append("\"\n");
+            json.append("  }");
+        }
+        
+        // Add metrics if present
+        if (level == Level.METRIC && metricKey != null) {
+            json.append(",\n  \"metric\": {\n");
+            json.append("    \"key\": \"").append(escapeJson(metricKey)).append("\",\n");
+            json.append("    \"value\": ").append(metricValue).append("\n");
+            json.append("  }");
+        }
+        
+        json.append("\n}");
+        return json.toString();
+    }
+    
+    public String getFullStackTrace(Throwable t) {
+        if (t == null) return "";
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        return sw.toString();
+    }
+    
+    private String escapeJson(String text) {
+        if (text == null) return "";
+        return text.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t");
+    }
+    
+    // Getters for the fields
+    public Level getLevel() {
+        return level;
+    }
+    
+    public String getMessage() {
+        return message;
+    }
+    
+    public Throwable getException() {
+        return exception;
+    }
+    
+    public String getErrorCode() {
+        return errorCode;
+    }
+    
+    public String getContextPath() {
+        return contextPath;
+    }
+}
+
+
+
+package org.example;
+
+import org.example.LogContext.ErrorCode;
+import org.example.LogContext.LogContext;
+import org.example.LogContext.LogEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
+// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+public class Main {
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    
+    public static void main(String[] args) throws InterruptedException {
+        // Set log levels - can be controlled by command line args, properties, etc.
+        // Uncomment these lines to switch off INFO logs
+        // LogContext.setSlf4jLogLevel("WARN");                   // For SLF4J logging
+        // LogContext.setMinimumLogLevel(LogEntry.Level.WARN);    // For our JSON output
+        
+        logger.info("Application starting");
+        
+        // Print all available error codes for reference, grouped by severity
+     /*      System.out.println("\n=== AVAILABLE ERROR CODES BY SEVERITY ===");
+        for (ErrorCode.Severity severity : ErrorCode.Severity.values()) {
+            System.out.println("\n" + severity + " LEVEL ERRORS:");
+            for (ErrorCode errorCode : ErrorCode.getByLevel(severity)) {
+                System.out.println("  " + errorCode.getFullMessage());
+            }
+        }
+        */
+        
+        ExecutorService pool = Executors.newFixedThreadPool(3);
+
+        for (int i = 1; i <= 3; i++) {
+            final int taskId = i;
+            pool.submit(() -> {
+                LogContext ctx = LogContext.get();
+                // Enable JSON format
+                ctx.setUseJsonFormat(true);
+
+                ctx.runInContext("task-" + taskId, () -> {
+                    ctx.info("Task started");
+
+                    ctx.runInContext("compute", () -> {
+                        int result = taskId * 10;
+                        ctx.metric("result.value", result);
+                        ctx.info("Computed result: " + result);
+                        
+                        // Test different error severities
+                        try {
+                            if (taskId == 1) {
+                                // Demonstrate WARN severity
+                                throw new RuntimeException("Input validation issue");
+                            } else if (taskId == 2) {
+                                // Demonstrate ERROR severity
+                                throw new RuntimeException("Computation failure");
+                            } else if (taskId == 3) {
+                                // Demonstrate CRITICAL severity
+                                throw new RuntimeException("Data corruption detected");
+                            }
+                        } catch (Exception ex) {
+                            if (taskId == 1) {
+                                ctx.error("Validation failed", ex, ErrorCode.COMPUTE_VALIDATION_001); // WARN severity
+                            } else if (taskId == 2) {
+                                ctx.error("Computation failed", ex, ErrorCode.COMPUTE_PROCESS_001); // ERROR severity
+                            } else {
+                                ctx.error("Data corruption detected", ex, ErrorCode.DATA_CORRUPT_001); // CRITICAL severity
+                            }
+                        }
+                    });
+
+                    ctx.runInContext("simulate-io", () -> {
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(100 + taskId * 50);
+                        } catch (InterruptedException e) {
+                            ctx.error("Sleep interrupted", e, ErrorCode.IO_THREAD_001);
+                        }
+                        ctx.metric("io.duration.ms", 100 + taskId * 50);
+                        ctx.info("Simulated I/O complete");
+                    });
+                });
+                
+                // Still flush to file for each task
+                ctx.flushToFile("logs/json/threaded-task-" + taskId + ".json");
+                LogContext.remove();
+            });
+        }
+
+        pool.shutdown();
+        pool.awaitTermination(10, TimeUnit.SECONDS);
+        
+        // Print all logs in JSON format at the end
+       //  System.out.println("\n=== ALL LOGS IN JSON FORMAT ===");
+        //System.out.println("(Current minimum log level: " + LogContext.getMinimumLogLevel() + ")");
+        //LogContext.printAllLogsAsJson();
+        
+        // Print only errors and metrics
+      //  System.out.println("\n=== ERRORS AND METRICS ONLY ===");
+        // LogContext.printErrorsAndMetricsAsJson();
+        
+        // Print custom filtered logs (only WARN and ERROR)
+        System.out.println("\n=== WARNINGS AND ERRORS ONLY ===");
+        LogContext.printFilteredLogsAsJson(false, true, false, false);
+        
+        // Shutdown the async log writer to ensure all logs are written
+        LogContext.shutdown();
+        logger.info("Application terminated");
+    }
+}
