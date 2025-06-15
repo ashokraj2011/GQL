@@ -1,0 +1,113 @@
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
+
+public class JsonLogCollector {
+    private static final ThreadLocal<JsonLogCollector> context = ThreadLocal.withInitial(JsonLogCollector::new);
+
+    private final Queue<LogEntry> entries = new ConcurrentLinkedQueue<>();
+
+    public static JsonLogCollector get() {
+        return context.get();
+    }
+
+    public static void clear() {
+        context.remove();
+    }
+
+    public void log(String level, String message, Throwable throwable) {
+        entries.add(new LogEntry(level, message, throwable != null ? throwable.toString() : null));
+    }
+
+    public void log(String level, String message) {
+        log(level, message, null);
+    }
+
+    public String toJson() {
+        return entries.stream()
+            .map(entry -> String.format("""
+                {
+                  "level": "%s",
+                  "message": "%s",
+                  "exception": %s
+                }
+                """, entry.level, entry.message, entry.exception == null ? null : "\"" + entry.exception + "\""))
+            .collect(Collectors.joining(",\n", "[\n", "\n]"));
+    }
+
+    private static class LogEntry {
+        final String level;
+        final String message;
+        final String exception;
+
+        LogEntry(String level, String message, String exception) {
+            this.level = level;
+            this.message = message;
+            this.exception = exception;
+        }
+    }
+}
+
+
+
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
+
+public class JsonLogCollector {
+    private static final ThreadLocal<JsonLogCollector> context = ThreadLocal.withInitial(JsonLogCollector::new);
+
+    private final Queue<LogEntry> entries = new ConcurrentLinkedQueue<>();
+
+    public static JsonLogCollector get() {
+        return context.get();
+    }
+
+    public static void clear() {
+        context.remove();
+    }
+
+    public void log(String level, String message, Throwable throwable) {
+        entries.add(new LogEntry(level, message, throwable != null ? throwable.toString() : null));
+    }
+
+    public void log(String level, String message) {
+        log(level, message, null);
+    }
+
+    public String toJson() {
+        return entries.stream()
+            .map(entry -> String.format("""
+                {
+                  "level": "%s",
+                  "message": "%s",
+                  "exception": %s
+                }
+                """, entry.level, entry.message, entry.exception == null ? null : "\"" + entry.exception + "\""))
+            .collect(Collectors.joining(",\n", "[\n", "\n]"));
+    }
+
+    private static class LogEntry {
+        final String level;
+        final String message;
+        final String exception;
+
+        LogEntry(String level, String message, String exception) {
+            this.level = level;
+            this.message = message;
+            this.exception = exception;
+        }
+    }
+}
+
+
+
+public class DemoRunner {
+    public static void main(String[] args) throws InterruptedException {
+        MyApi api = new MyApi();
+        String jsonLog = api.handleRequest();
+
+        System.out.println("==== Final JSON Log ====");
+        System.out.println(jsonLog);
+    }
+}
