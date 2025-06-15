@@ -111,3 +111,39 @@ public class DemoRunner {
         System.out.println(jsonLog);
     }
 }
+
+import java.util.concurrent.*;
+
+public class MyApi {
+    public String handleRequest() throws InterruptedException {
+        // Start new thread context
+        JsonLogCollector log = JsonLogCollector.get();
+        log.log("INFO", "Request started");
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        // Submit multiple async tasks
+        executor.submit(() -> {
+            JsonLogCollector.get().log("INFO", "Running Task 1");
+        });
+
+        executor.submit(() -> {
+            try {
+                throw new RuntimeException("Something failed in Task 2");
+            } catch (Exception e) {
+                JsonLogCollector.get().log("ERROR", "Exception in Task 2", e);
+            }
+        });
+
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.SECONDS);
+
+        log.log("INFO", "Request completed");
+
+        // Get full JSON log
+        String result = JsonLogCollector.get().toJson();
+        JsonLogCollector.clear(); // clear context to avoid memory leaks
+        return result;
+    }
+}
+
