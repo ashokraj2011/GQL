@@ -1,8 +1,11 @@
+package org.example;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.ReadContext;
 
 import java.io.File;
@@ -11,10 +14,12 @@ import java.util.List;
 public class JsonTransformer {
     public static void main(String[] args) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
+// /Users/ashokraj/Downloads/5.1/RD/src/main/java/org/example/schema.json
+        String fpath ="/Users/ashokraj/Downloads/5.1/RD/src/main/java/org/example/";
 
         // 1) Load schema and data
-        JsonNode schema = mapper.readTree(new File("schema.json"));
-        JsonNode data   = mapper.readTree(new File("data.json"));
+        JsonNode schema = mapper.readTree(new File(fpath + "schema.json"));
+        JsonNode data   = mapper.readTree(new File(fpath + "data.json"));
 
         // 2) Prepare a JsonPath context on the raw data
         String dataStr = mapper.writeValueAsString(data);
@@ -27,7 +32,7 @@ public class JsonTransformer {
         for (JsonNode regAttr : schema.get("registeredAttributes")) {
             String namespace     = regAttr.get("namespace").asText();
             JsonNode propGroups  = regAttr.get("propertygroups");
-            JsonNode attrs       = regAttr.get("attributeList");
+            JsonNode attrs       = regAttr.get("attrixbuteList");
 
             // Create one object per namespace
             ObjectNode nsNode = mapper.createObjectNode();
@@ -42,26 +47,34 @@ public class JsonTransformer {
                 ArrayNode arr = mapper.createArrayNode();
 
                 for (Object item : items) {
-                    // For each element, we need a new JsonPath context
-                    String itemJson = mapper.writeValueAsString(item);
-                    ReadContext itemCtx = JsonPath.parse(itemJson);
-
-                    // Build one object per element of this group
+                    DocumentContext itemCtx = JsonPath.parse(item);
                     ObjectNode itemObj = mapper.createObjectNode();
+
                     for (JsonNode attr : attrs) {
-                        // Only those attributes that belong to this group
                         if (attr.has("propertygroup") &&
-                            groupName.equals(attr.get("propertygroup").asText()))
+                                groupName.equals(attr.get("propertygroup").asText()))
                         {
                             String name = attr.get("attributeName").asText();
+                            if (itemObj.has(name)) {
+                                System.err.println("Warning: Duplicate attribute '" + name + "' found in property group '" + groupName + "'. Skipping subsequent value.");
+                                continue;
+                            }
                             String path = attr.get("jsonPath").asText();  // relative to the item
-                            Object val  = itemCtx.read(path);
-                            itemObj.set(name, mapper.valueToTree(val));
+                            try {
+                                Object val = itemCtx.read(path);
+                                itemObj.set(name, mapper.valueToTree(val));
+                            } catch (PathNotFoundException e) {
+                                // If path not found, do not add the attribute to the object
+                                System.err.println("Warning: Path not found for attribute '" + name + "' with path '" + path + "' in an item of property group '" + groupName + "'. Skipping.");
+                            }
                         }
                     }
                     arr.add(itemObj);
                 }
 
+                if (nsNode.has(groupName)) {
+                    System.err.println("Warning: Duplicate key '" + groupName + "' found in namespace. Overwriting previous value.");
+                }
                 nsNode.set(groupName, arr);
             }
 
@@ -69,20 +82,32 @@ public class JsonTransformer {
             for (JsonNode attr : attrs) {
                 if (!attr.has("propertygroup")) {
                     String name = attr.get("attributeName").asText();
+                    if (nsNode.has(name)) {
+                        System.err.println("Warning: Duplicate attribute '" + name + "' found in namespace '" + namespace + "'. Skipping subsequent value.");
+                        continue;
+                    }
                     String path = attr.get("jsonPath").asText();     // absolute in the root data
-                    Object val  = ctx.read(path);
-                    nsNode.set(name, mapper.valueToTree(val));
+                    try {
+                        Object val = ctx.read(path);
+                        nsNode.set(name, mapper.valueToTree(val));
+                    } catch (PathNotFoundException e) {
+                        nsNode.set(name, mapper.createObjectNode());
+                        System.err.println("Warning: Path not found for attribute '" + name + "' with path '" + path + "'. Adding an empty object as value.");
+                    }
                 }
             }
 
             // 4c) Attach this namespace object to the root
+            if (output.has(namespace)) {
+                System.err.println("Warning: Duplicate namespace '" + namespace + "' found. Overwriting previous one.");
+            }
             output.set(namespace, nsNode);
         }
 
         // 5) Print the transformed JSON
         System.out.println(
-            mapper.writerWithDefaultPrettyPrinter()
-                  .writeValueAsString(output)
+                mapper.writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(output)
         );
     }
 }
