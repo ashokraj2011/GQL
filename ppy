@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+import asyncio
+import aiohttp
+import argparse
+import json
+import random
+import csv
+import time
+from pathlib import Path
+
+async def call_endpoint(session, endpoint, mid, rules, call_id):
+    body = {
+        "personald": mid,
+        "personaldType": "MID",
+        "rules": rules,
+        "requestContext": {"session": {}}
+    }
+    start = time.monotonic()
+    async with session.post(endpoint["url"], headers=endpoint["headers"], json=body) as resp:
+        text = await resp.text()
+        elapsed = time.monotonic() - start
+        try:
+            data = await resp.json()
+        except:
+            data = text
+        return {
+            "call_id": call_id,
+            "endpoint": endpoint["name"],
+            "mid": mid,
+            "rules": rules,
+            "status": resp.status,
+            "response": data,
+            "time_s": round(elapsed, 4)
+        }
+
+async def worker(semaphore, session, endpoints, combos, call_id, results):
+    async with semaphore:
+        mid, rules = combos[call_id - 1]
+        tasks = [
+            call_endpoint(session, ep, mid, rules, call_id)
+            for ep in endpoints
+        ]
+        for coro in asyncio.as_completed(tasks):
+            res = await coro
+            results.append(res)
+
+async def main(args):
+    # load endpoints
+    endpoints = json.loads(Path(args.endpoints).read_text())
+    mids = [l.strip() for l in Path(args.mids).read_text().splitlines() if l.strip()]
+    rules_list = [l.strip() for l in Path(args.rules).read_text().splitlines() if l.strip()]
+
+    # optional reproducible seed
+    if args.seed is not None:
+        random.seed(args.seed)
+
+    # pre-generate all (mid, rules) combos exactly once
+    combos = []
+    for _ in range(args.num_calls):
+        mid = random.choice(mids)
+        rules = random.sample(rules_list, k=args.rules_per_call)
+        combos.append((mid, rules))
+
+    semaphore = asyncio.Semaphore(args.concurrency)
+    results = []
+
+    conn = aiohttp.TCPConnector(ssl=False)
+    async with aiohttp.ClientSession(connector=conn) as session:
+        tasks = [
+            worker(semaphore, session, endpoints, combos, call_id, results)
+            for call_id in range(1, args.num_calls + 1)
+        ]
+        await asyncio.gather(*tasks)
+
+    # write out CSV
+    with open(args.output, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["call_id","endpoint","mid","rules","status","response","time_s"])
+        writer.writeheader()
+        for row in results:
+            row["rules"] = json.dumps(row["rules"])
+            row["response"] = json.dumps(row["response"])
+            writer.writerow(row)
+
+    print(f"Done: wrote {len(results)} entries to {args.output}")
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser(
+        description="Async performance + accuracy test against multiple rule engines"
+    )
+    p.add_argument("--endpoints", required=True,
+                   help="JSON file listing endpoints and headers")
+    p.add_argument("--mids", required=True, help="Text file: one MID per line")
+    p.add_argument("--rules", required=True, help="Text file: one rule-ID per line")
+    p.add_argument("--num-calls", type=int, default=10,
+                   help="How many total calls to make (each call hits all endpoints)")
+    p.add_argument("--rules-per-call", type=int, default=1,
+                   help="How many random rules to include in each request")
+    p.add_argument("--concurrency", type=int, default=5,
+                   help="Maximum in-flight calls at once")
+    p.add_argument("--seed", type=int, default=None,
+                   help="Optional random seed for reproducibility")
+    p.add_argument("--output", default="results.csv",
+                   help="CSV file to write results into")
+    args = p.parse_args()
+    asyncio.run(main(args))
+
+
+import pandas as pd
+import json
+
+def load_comparison(path):
+    df = pd.read_csv(path)
+    # Parse JSON-like columns
+    df['rules'] = df['rules'].apply(json.loads)
+    df['response'] = df['response'].apply(json.loads)
+    return df
+
+def pivot_results(df):
+    # Pivot so each call_id(mid+rules) has columns per endpoint
+    pivot = df.pivot_table(
+        index=['call_id', 'mid', df['rules'].apply(lambda x: tuple(x))],
+        columns='endpoint',
+        values=['response', 'time_s', 'status'],
+        aggfunc='first'
+    )
+    # Flatten MultiIndex columns
+    pivot.columns = ['_'.join(col).strip() for col in pivot.columns.values]
+    pivot = pivot.reset_index().rename(columns={'rules_<lambda>': 'rules'})
+    pivot['match'] = pivot['response_EngineA'] == pivot['response_EngineB']
+    return pivot
+
+def summarize_accuracy(pivot):
+    total = len(pivot)
+    matches = pivot['match'].sum()
+    mismatches = total - matches
+    summary = f"""## Accuracy Summary
+
+- Total calls: {total}
+- Matches: {matches}
+- Mismatches: {mismatches}
+
+### Mismatches Detail
+| Call ID | MID | Rules | EngineA Response | EngineB Response |
+|---------|-----|-------|------------------|------------------|
+"""
+    for _, row in pivot[~pivot['match']].iterrows():
+        summary += f"| {row.call_id} | {row.mid} | {row.rules} | `{row.response_EngineA}` | `{row.response_EngineB}` |\n"
+    return summary
+
+def summarize_performance(df):
+    perf = df.groupby('endpoint')['time_s'].agg(['count', 'mean', 'median', 'min', 'max']).round(4)
+    perf_report = "## Performance Summary (seconds)\n\n"
+    perf_report += perf.to_markdown()
+    return perf_report
+
+def generate_report(input_csv, output_md):
+    df = load_comparison(input_csv)
+    pivot = pivot_results(df)
+    report = "# Rule Engine Test Report\n\n"
+    report += summarize_accuracy(pivot) + "\n"
+    report += summarize_performance(df) + "\n"
+    with open(output_md, 'w') as f:
+        f.write(report)
+    print(f"Report generated: {output_md}")
+
+if __name__ == "__main__":
+    import argparse
+    p = argparse.ArgumentParser(description="Generate summary report for rule engine tests")
+    p.add_argument("--input", default="comparison.csv", help="Path to comparison CSV")
+    p.add_argument("--output", default="report.md", help="Output Markdown report")
+    args = p.parse_args()
+    generate_report(args.input, args.output)
+
+python3 report_summary.py --input comparison.csv --output report.md
+
+python3 perf_test.py \
+  --endpoints endpoints.json \
+  --mids mids.txt \
+  --rules rules.txt \
+  --num-calls 100 \
+  --rules-per-call 5 \
+  --concurrency 20 \
+  --output comparison.csv
+
