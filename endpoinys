@@ -1,0 +1,40 @@
+[
+  {
+    "name": "EngineA",
+    "url": "xxx",
+    "headers": {
+      "appid": "xxx",
+      "appname": "bbb",
+      "authorization": "Bearer xxxxx",
+      "charset": "UTF-8",
+      "content-type": "application/json",
+      "c": "test"
+    }
+  },
+  {
+    "name": "EngineB",
+    "url": "https://otherhost:8445/ftgw/…",
+    "headers": {
+      "appid": "cccc",
+      "appname": "Other Rule Engine",
+      "authorization": "Bearer yyyyy",
+      "charset": "UTF-8",
+      "content-type": "application/json",
+      "c": "test2"
+    }
+  }
+]
+
+
+python3 perf_test.py \
+  --endpoints endpoints.json \
+  --mids mids.txt \
+  --rules rules.txt \
+  --num-calls 100 \
+  --rules-per-call 5 \
+  --concurrency 20 \
+  --output comparison.csv
+
+
+  python3 report_summary.py --input comparison.csv --output report.md
+
