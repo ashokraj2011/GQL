@@ -1,0 +1,85 @@
+dynamodb:
+  tableNames:
+    customer: "Customer_dev"  # Change to "Customer_prod" in prod env
+And your Configuration class:
+
+java
+Copy
+Edit
+public class MyAppConfig extends Configuration {
+    @JsonProperty("dynamodb")
+    private DynamoDbConfig dynamoDbConfig;
+
+    // Getters and setters
+}
+
+public class DynamoDbConfig {
+    @JsonProperty("tableNames")
+    private Map<String, String> tableNames;
+
+    public String getCustomerTableName() {
+        return tableNames.get("customer");
+    }
+
+    // Optional: getter for tableNames map
+}
+3. Create a factory to build your table
+java
+Copy
+Edit
+public class DynamoDbTableFactory {
+
+    private final DynamoDbAsyncClient client;
+
+    public DynamoDbTableFactory(DynamoDbAsyncClient client) {
+        this.client = client;
+    }
+
+    public <T> DynamoDbAsyncTable<T> createTable(Class<T> clazz, String tableName, TableSchema<T> schema) {
+        return EnhancedAsyncClient.create(client)
+                .table(tableName, schema);
+    }
+}
+4. Inject the table manually into the resource
+In your MyResource:
+
+java
+Copy
+Edit
+public class MyResource {
+
+    private final DynamoDbAsyncTable<Customer> customerTable;
+
+    public MyResource(MyAppConfig config, DynamoDbTableFactory tableFactory) {
+        String tableName = config.getDynamoDbConfig().getCustomerTableName();
+        this.customerTable = tableFactory.createTable(Customer.class, tableName, TableSchema.fromBean(Customer.class));
+    }
+
+    // endpoints using customerTable
+}
+5. Wire it in the Application run method
+java
+Copy
+Edit
+@Override
+public void run(MyAppConfig config, Environment environment) {
+    DynamoDbAsyncClient dynamoClient = DynamoDbAsyncClient.create(); // Configure as needed
+    DynamoDbTableFactory tableFactory = new DynamoDbTableFactory(dynamoClient);
+
+    MyResource resource = new MyResource(config, tableFactory);
+    environment.jersey().register(resource);
+}
+✅ Result
+Now the table name used is completely dynamic and environment-dependent, read from the config, while still allowing dependency injection and resource registration within Dropwizard.
+
+Let me know if your @InjectTable is from a framework or custom; I can help refactor that too.
+
+
+
+
+
+
+
+
+
+Ask ChatGPT
