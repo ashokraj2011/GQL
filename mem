@@ -1,0 +1,49 @@
+<dependency>
+  <groupId>org.openjdk.jol</groupId>
+  <artifactId>jol-core</artifactId>
+  <version>0.16</version>
+</dependency>
+import org.openjdk.jol.info.ClassLayout;
+import org.openjdk.jol.info.GraphLayout;
+import org.openjdk.jol.vm.VM;
+
+public class MemoryInspector {
+
+    /**
+     * Prints a detailed memory layout and size of the object.
+     * @param obj Object to inspect
+     */
+    public static void inspect(Object obj) {
+        if (obj == null) {
+            System.out.println("Object is null.");
+            return;
+        }
+
+        System.out.println("========== Memory Inspection ==========");
+        System.out.println("VM Details: " + VM.current().details());
+        System.out.println("---------------------------------------");
+
+        System.out.println("Shallow Layout:");
+        System.out.println(ClassLayout.parseInstance(obj).toPrintable());
+        System.out.println("Shallow Size: " + ClassLayout.parseInstance(obj).instanceSize() + " bytes");
+
+        System.out.println("\nDeep Layout:");
+        System.out.println(GraphLayout.parseInstance(obj).toFootprint());
+        System.out.println("Deep Total Size: " + GraphLayout.parseInstance(obj).totalSize() + " bytes");
+
+        System.out.println("=======================================");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Map<String, String> map = new HashMap<>();
+        map.put("x", "100");
+        map.put("y", "200");
+
+        MemoryInspector.inspect(map);
+
+        Integer boxedInt = 42;
+        MemoryInspector.inspect(boxedInt);
+    }
+}
