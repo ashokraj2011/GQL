@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""
+Rule‑JSON generator that learns the schema + data directly from a live DB.
+
+▪ Requires:  pip install sqlalchemy psycopg2-binary
+▪ Usage:     python rule_gen_from_db.py postgresql://user:pass@host/dbname 3
+             (last arg = how many rules to emit)
+"""
+import json
+import random
+import sys
+from contextlib import closing
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Tuple
+
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import Engine
+
+# ---------------------------------------------------------------------------
+# 1.  CONFIG & HELPERS
+# ---------------------------------------------------------------------------
+
+OPERATORS_NUMERIC = [
+    "equal to", "not equal to",
+    "greater than", "greater than equal to",
+    "less than", "less than equal to",
+    "is null", "exists", "not exists"
+]
+OPERATORS_STRING = [
+    "equal to", "not equal to", "is empty", "is null",
+    "exists", "not exists"
+]
+
+# For exists/not‑exists we need only the column metadata; value is None
+NO_VALUE_OPS = {"exists", "not exists", "is null", "is empty"}
+
+MAX_TERMS_PER_GROUP = 4
+MAX_DEPTH            = 3
+CHANCE_OF_SUBGROUP   = 0.35
+
+
+@dataclass
+class ColumnInfo:
+    table: str
+    column: str
+    dtype: str                # SQLAlchemy dialect name
+    samples: List[Any] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# 2.  SCHEMA & SAMPLE DATA COLLECTION
+# ---------------------------------------------------------------------------
+
+def load_schema(engine: Engine, samples_per_col: int = 5) -> List[ColumnInfo]:
+    insp = inspect(engine)
+    out: List[ColumnInfo] = []
+
+    for table in insp.get_table_names():
+        pkey_cols = {col["name"] for col in insp.get_pk_constraint(table)["constrained_columns"]}
+        # Skip pure linking tables if desired:  if not pkey_cols: continue
+        for col in insp.get_columns(table):
+            colname = col["name"]
+            dtype   = str(col["type"]).lower()
+            # Primitive guess: 'char', 'text' ⇒ string; else numeric
+            is_string = any(k in dtype for k in ("char", "text", "uuid"))
+            samples = fetch_samples(engine, table, colname, samples_per_col)
+            out.append(ColumnInfo(table, colname, "string" if is_string else "numeric", samples))
+    return out
+
+
+def fetch_samples(engine: Engine, table: str, col: str, k: int) -> List[Any]:
+    sql = text(f"SELECT {col} FROM {table} WHERE {col} IS NOT NULL LIMIT :k")
+    with engine.begin() as conn:
+        rows = conn.execute(sql, {"k": k}).fetchall()
+        vals = [r[0] for r in rows if r[0] is not None]
+    return vals
+
+
+# ---------------------------------------------------------------------------
+# 3.  RULE GENERATOR
+# ---------------------------------------------------------------------------
+
+def pick_col(cols: List[ColumnInfo]) -> ColumnInfo:
+    return random.choice(cols)
+
+
+def pick_operator(col: ColumnInfo) -> str:
+    if col.dtype == "string":
+        return random.choice(OPERATORS_STRING)
+    return random.choice(OPERATORS_NUMERIC)
+
+
+def random_value(col: ColumnInfo, op: str):
+    if op in NO_VALUE_OPS:
+        return None
+    if col.samples:
+        return random.choice(col.samples)
+    # Fallback
+    return 0 if col.dtype == "numeric" else ""
+
+
+def make_leaf(colinfo: ColumnInfo, eval_groups: Dict[Tuple[str, str], str]):
+    table, column = colinfo.table, colinfo.column
+    op  = pick_operator(colinfo)
+    val = random_value(colinfo, op)
+
+    key = (table, )  # evaluation_group per table
+    if key not in eval_groups:
+        eval_groups[key] = str(len(eval_groups) + 1)
+
+    leaf = {
+        "field": {
+            "name": column,
+            "datasource": "CASGraphQL",
+            "namespace": table,
+            "evaluation_group": eval_groups[key],
+        },
+        "comp": op,
+    }
+    if val is not None:
+        leaf["value"] = val
+    return leaf
+
+
+def make_subtree(depth: int, cols: List[ColumnInfo], eval_groups):
+    if depth >= MAX_DEPTH or random.random() > CHANCE_OF_SUBGROUP:
+        return make_leaf(pick_col(cols), eval_groups)
+
+    node_op  = random.choice(["and", "or"])
+    children = [make_subtree(depth + 1, cols, eval_groups)
+                for _ in range(random.randint(2, MAX_TERMS_PER_GROUP))]
+    return {"op": node_op, "terms": children}
+
+
+def generate_rule(cols: List[ColumnInfo]) -> Dict:
+    eval_groups = {}
+    root_terms  = [make_subtree(1, cols, eval_groups)
+                   for _ in range(random.randint(2, MAX_TERMS_PER_GROUP))]
+    return {"op": "and", "terms": root_terms, "version": "2"}
+
+
+# ---------------------------------------------------------------------------
+# 4.  MAIN
+# ---------------------------------------------------------------------------
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: rule_gen_from_db.py <db‑url> <num‑rules>")
+        sys.exit(1)
+
+    db_url, num_rules = sys.argv[1], int(sys.argv[2])
+    engine = create_engine(db_url, echo=False)
+
+    print("Scanning schema & sampling data …")
+    cols = load_schema(engine)
+    if not cols:
+        print("No columns found!")
+        sys.exit(1)
+
+    print(f"Found {len(cols)} columns across {len(set(c.table for c in cols))} tables\n")
+
+    for i in range(num_rules):
+        rule = generate_rule(cols)
+        print(json.dumps(rule, default=str, indent=2))
+        print("\n" + "="*60 + "\n")
+
+
+if __name__ == "__main__":
+    random.seed()   # fresh every run
+    main()
