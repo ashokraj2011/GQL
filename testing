@@ -1,0 +1,8 @@
+super‑charges rule‑engine testing
+Testing pain‑point	How the generator helps
+Limited coverage – manual test suites exercise only the “happy paths”.	Random branch creates thousands of structurally valid yet unseen rule combinations in minutes, uncovering edge‑case bugs (e.g., double self‑joins, NOT EXISTS on missing indexes).
+Natural‑language requirements – analysts phrase tests in English, devs rewrite them by hand.	LLM branch maps plain English → rule JSON → SQL instantly, eliminating mis‑interpretation and saving hours per ticket.
+Syntax drift – grammar evolves, old tests rot.	Grammar‑masked decoding + JSON‑Schema validation ensure every generated rule always fits the current spec; CI fails the moment the spec changes.
+Performance blind spots – real data skew causes unexpected full‑table scans.	Schema‑aware sampling picks actual high‑cardinality columns and values, so generated SQL mimics production load patterns.
+Reproducibility – random fuzz often impossible to replay.	Each rule is timestamped and hashed; the seed is logged. Re‑running the same seed recreates the exact rule & SQL for debugging.
+Regression drift – fixes introduce new regressions.	Add the failing rule to an “expected pass/fail” corpus; LLM can mutate it to generate families of similar tests for future runs.
