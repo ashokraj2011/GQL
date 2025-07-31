@@ -1,0 +1,59 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="CCRE Diagram" id="5abcd123-4567-89ef-abcd-0123456789ef">
+    <mxGraphModel dx="1226" dy="671" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Rule Builder -->
+        <mxCell id="2" value="Rule Builder" style="shape=rectangle;fillColor=#d5e8d4;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Data Preparation -->
+        <mxCell id="3" value="Data Preparation" style="shape=rectangle;fillColor=#fff2cc;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="180" y="20" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Rule Parser -->
+        <mxCell id="4" value="Rule Parser" style="shape=rectangle;fillColor=#dae8fc;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="20" y="120" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Dependency Resolver -->
+        <mxCell id="5" value="Dependency Resolver" style="shape=rectangle;fillColor=#dae8fc;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="180" y="120" width="160" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Rule Optimizer -->
+        <mxCell id="6" value="Rule Optimizer" style="shape=rectangle;fillColor=#f8cecc;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="360" y="120" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Rule Short-Circuiting -->
+        <mxCell id="7" value="Rule Short-Circuiting" style="shape=rectangle;fillColor=#e1d5e7;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="520" y="120" width="160" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Unified Data Access Layer -->
+        <mxCell id="8" value="Unified Data Access Layer" style="shape=rectangle;fillColor=#e1f5fe;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="180" y="220" width="200" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Result Dispatcher -->
+        <mxCell id="9" value="Result Dispatcher" style="shape=rectangle;fillColor=#fce4ec;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="420" y="220" width="160" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Connections -->
+        <mxCell id="10" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="2" target="3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="11" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="3" target="4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="12" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="4" target="5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="13" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="5" target="6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="14" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="6" target="7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="15" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="7" target="8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="16" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="8" target="9"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
