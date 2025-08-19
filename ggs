@@ -1,0 +1,128 @@
+{
+  "namespaces": [
+    {
+      "name": "audienceData",
+      "description": "Per-audience records",
+      "recordPath": "$.audienceData[*]",
+      "primaryKey": [
+        "mid"
+      ],
+      "sources": [
+        {
+          "kind": "API",
+          "conf": {
+            "urlTemplate": "https://example.org/audience?name=${audienceName}",
+            "headers": {
+              "Authorization": "Bearer ${secrets.token}"
+            }
+          },
+          "recordPath": "$.audienceData[*]"
+        },
+        {
+          "kind": "DATABASE",
+          "conf": {
+            "sqlTemplate": "SELECT mid, audience_name, performance_asset_allocation FROM audience WHERE 1=1 ${WHERE}"
+          },
+          "recordPath": "$"
+        },
+        {
+          "kind": "FILESYSTEM",
+          "conf": {
+            "format": "json",
+            "path": "file:///tmp/audience.json"
+          },
+          "recordPath": "$.audienceData[*]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "mid",
+          "type": "string",
+          "format": null,
+          "path": "$.mid",
+          "required": true,
+          "defaultValue": null,
+          "pushdown": [
+            {
+              "kind": "DATABASE",
+              "param": null,
+              "column": "mid",
+              "field": null,
+              "ops": [
+                "eq",
+                "in"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "audienceName",
+          "type": "string",
+          "format": null,
+          "path": "$.audienceName",
+          "required": true,
+          "defaultValue": null,
+          "pushdown": [
+            {
+              "kind": "API",
+              "param": "name",
+              "column": null,
+              "field": null,
+              "ops": [
+                "eq",
+                "in",
+                "prefix"
+              ]
+            },
+            {
+              "kind": "DATABASE",
+              "param": null,
+              "column": "audience_name",
+              "field": null,
+              "ops": [
+                "eq",
+                "in",
+                "like"
+              ]
+            },
+            {
+              "kind": "FILESYSTEM",
+              "param": null,
+              "column": null,
+              "field": "audienceName",
+              "ops": [
+                "eq",
+                "in",
+                "prefix"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "PerformanceAssetAllocation",
+          "type": "string",
+          "format": null,
+          "path": "$.PerformanceAssetAllocation",
+          "required": false,
+          "defaultValue": null,
+          "pushdown": []
+        }
+      ],
+      "indexes": [
+        {
+          "type": "hash",
+          "fields": [
+            "audienceName"
+          ]
+        },
+        {
+          "type": "roaring_pair",
+          "fields": [
+            "mid",
+            "PerformanceAssetAllocation"
+          ]
+        }
+      ]
+    }
+  ]
+}
