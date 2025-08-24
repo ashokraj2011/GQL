@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CCRE Release Notes — Aug 24, 2025</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121821;
+      --panel-2: #0f141c;
+      --text: #edf2f7;
+      --muted: #a0aec0;
+      --accent: #60a5fa;
+      --ok: #34d399;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --code: #0c1220;
+      --border: #1f2937;
+    }
+    html, body { background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; margin: 0; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 64px; }
+    h1, h2 { margin: 0 0 12px; letter-spacing: .2px; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 18px; margin-top: 28px; }
+    .sub { color: var(--muted); margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 16px 0 8px; }
+    .kpi { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+    .kpi .label { color: var(--muted); font-size: 12px; }
+    .kpi .value { font-size: 22px; margin-top: 4px; }
+
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 14px 0 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    caption { text-align: left; padding: 12px 14px; color: var(--muted); font-size: 12px; background: var(--panel-2); border-bottom: 1px solid var(--border); }
+    thead th { background: var(--panel-2); color: var(--muted); text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 13px; }
+    tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: 0; }
+    code, pre { background: var(--code); border: 1px solid var(--border); color: #d1e7ff; border-radius: 8px; padding: 10px 12px; display: block; overflow: auto; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); background: #0d182a; color: #9cc3ff; margin-right: 6px; }
+    .ok { color: var(--ok); }
+    .accent { color: var(--accent); }
+    .muted { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .foot { margin-top: 22px; color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>CCRE Release Notes — Performance & Reliability Upgrade</h1>
+    <div class="sub">Date: <span class="mono">Aug 24, 2025</span> · Change ID: <span class="mono">CCRE-2025-08-24</span> · Owner: <span class="mono">CCRE Platform Team</span></div>
+
+    <div class="grid">
+      <div class="kpi"><div class="label">Latency p95</div><div class="value"><span class="ok">~30 ms</span> <span class="muted">(from ~100 ms)</span></div></div>
+      <div class="kpi"><div class="label">Throughput (perf env)</div><div class="value">~30K RPS</div></div>
+      <div class="kpi"><div class="label">Resource Health</div><div class="value">No leaks · CPU stable</div></div>
+    </div>
+
+    <table>
+      <caption>Release Metadata</caption>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Release Type</td><td>Minor (backward compatible; feature‑flagged)</td></tr>
+        <tr><td>Scope</td><td>Latency reduction, throughput, stability, observability</td></tr>
+        <tr><td>Compatibility</td><td>Legacy DA/Session payloads supported via adapter toggle</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Highlights</caption>
+      <thead>
+        <tr><th>Improvement</th><th>Detail</th><th>Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Latency</td>
+          <td>Hot‑path refactors, operator‑cost planning, short‑circuiting, memoization</td>
+          <td class="ok">p95 ~30 ms (‑70% vs ~100 ms)</td>
+        </tr>
+        <tr>
+          <td>Throughput</td>
+          <td>Optional parallel evaluation for large rule batches</td>
+          <td>~30K RPS in one region (perf env)</td>
+        </tr>
+        <tr>
+          <td>Stability</td>
+          <td>Null‑object pattern, standardized payloads, cache hygiene</td>
+          <td>No memory leaks; CPU headroom under peak</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Feature Changes</caption>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Feature</th>
+          <th>Description</th>
+          <th>Operational Toggle / Config</th>
+          <th>Primary Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Code Refactoring</td>
+          <td>Clear module boundaries (parse→plan→evaluate→explain), reduced allocations, immutable plans, reflection‑free hot path.</td>
+          <td><span class="muted">—</span></td>
+          <td>Lower GC, tighter CPU profiles</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Rule Optimizer (Operator‑Cost)</td>
+          <td>Orders terms by estimated selectivity × operator cost; namespace hints supported.</td>
+          <td><span class="tag">CCRE_OPTIMIZER_ENABLED=true</span></td>
+          <td>Fewer expensive ops; faster decisions</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Short‑Circuiting</td>
+          <td>AND: cheapest & most selective first; OR: cheapest & most‑likely true first; trace marks reasons.</td>
+          <td><span class="tag">CCRE_SHORTCIRCUIT_STRATEGY=auto</span></td>
+          <td>Reduced predicate invocations</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Array‑Based Evaluations</td>
+          <td>Set‑semantics for anyOf/allOf/noneOf, dedup + hashed views, index‑aware joins.</td>
+          <td><span class="muted">—</span></td>
+          <td>Faster membership checks</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Request‑Scoped Memoization</td>
+          <td>Reuses intermediate results within a single evaluation call; bounded per‑request cache.</td>
+          <td><span class="tag">CCRE_MEMOIZATION_ENABLED=true</span></td>
+          <td>Avoids redundant work</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Standardized DA & Session</td>
+          <td>Consistent envelopes/types; adapter layer for legacy payloads.</td>
+          <td><span class="tag">DA_FORMAT_ADAPTER=true</span></td>
+          <td>Fewer schema errors; simpler tests</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Null Object Handling</td>
+          <td>Null‑object implementations for optional namespaces/fields eliminate branchy checks.</td>
+          <td><span class="tag">NULL_OBJECT_MODE=on</span></td>
+          <td>Stability; cleaner traces</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>Optional Parallel Evaluation</td>
+          <td>Heuristics fan out large, independent rule sets across a bounded pool; deterministic merge.</td>
+          <td><span class="tag">PARALLEL_EVAL_ENABLED=true</span> <span class="tag">PARALLEL_EVAL_THRESHOLD</span> <span class="tag">MAX_PARALLELISM</span></td>
+          <td>Higher throughput on bulk requests</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>Explainability v2</td>
+          <td>Structured JSON trace: order, costs, cache hits/misses, short‑circuit markers, null paths.</td>
+          <td><span class="tag">EXPLAIN_MODE=compact|verbose</span></td>
+          <td>Better debugging & auditability</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>Rule Definition Caching</td>
+          <td>Keyed by tenant|ruleId|ruleVersion; versioned invalidation; optional warm‑up.</td>
+          <td><span class="tag">RULE_CACHE_ENABLED=true</span> <span class="tag">RULE_CACHE_TTL=PT30M</span></td>
+          <td>Lower control‑plane latency</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>Query‑Generator Caching</td>
+          <td>Keyed by namespace + projection + filter signature (+ glossary version); invalidates on schema change.</td>
+          <td><span class="tag">QUERY_CACHE_ENABLED=true</span> <span class="tag">QUERY_CACHE_TTL=PT15M</span></td>
+          <td>Faster data access planning</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Performance Results</caption>
+      <thead>
+        <tr><th>Metric</th><th>Before</th><th>After</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Latency p95</td><td>~100 ms</td><td class="ok">~30 ms</td><td>Varies by rule mix/data size/concurrency</td></tr>
+        <tr><td>Throughput (single region)</td><td>—</td><td>~30K RPS</td><td>Performance environment</td></tr>
+        <tr><td>CPU Stability</td><td>Spiky under peak</td><td>Stable</td><td>Headroom maintained</td></tr>
+        <tr><td>Memory</td><td>Occasional growth</td><td>No leaks observed</td><td>Long‑run soak tests</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Operational Toggles (Environment)</caption>
+      <thead>
+        <tr><th>Key</th><th>Value / Options</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>CCRE_OPTIMIZER_ENABLED</td><td>true|false</td><td>Enable operator‑cost aware term ordering</td></tr>
+        <tr><td>CCRE_SHORTCIRCUIT_STRATEGY</td><td>auto|left-to-right|cost-aware</td><td>Short‑circuit ordering strategy</td></tr>
+        <tr><td>CCRE_MEMOIZATION_ENABLED</td><td>true|false</td><td>Request‑scoped intermediate result cache</td></tr>
+        <tr><td>DA_FORMAT_ADAPTER</td><td>true|false</td><td>Accept legacy DA/Session payloads</td></tr>
+        <tr><td>NULL_OBJECT_MODE</td><td>on|off</td><td>Enable Null Object implementations</td></tr>
+        <tr><td>RULE_CACHE_ENABLED</td><td>true|false</td><td>Enable rule definition caching</td></tr>
+        <tr><td>RULE_CACHE_TTL</td><td>ISO‑8601 duration</td><td>Rule cache time‑to‑live (e.g., PT30M)</td></tr>
+        <tr><td>QUERY_CACHE_ENABLED</td><td>true|false</td><td>Enable query‑generator cache</td></tr>
+        <tr><td>QUERY_CACHE_TTL</td><td>ISO‑8601 duration</td><td>Query cache time‑to‑live (e.g., PT15M)</td></tr>
+        <tr><td>PARALLEL_EVAL_ENABLED</td><td>true|false</td><td>Enable parallel evaluation</td></tr>
+        <tr><td>PARALLEL_EVAL_THRESHOLD</td><td>integer</td><td>Min rule count to trigger fan‑out</td></tr>
+        <tr><td>MAX_PARALLELISM</td><td>integer</td><td>Upper bound on worker concurrency</td></tr>
+        <tr><td>EXPLAIN_MODE</td><td>compact|verbose</td><td>Trace verbosity</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Monitoring Metrics</caption>
+      <thead>
+        <tr><th>Metric</th><th>Meaning</th><th>Why It Matters</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ccre.latency.p50/p95/p99</td><td>End‑to‑end evaluation latency</td><td>Primary SLOs</td></tr>
+        <tr><td>ccre.throughput.rps</td><td>Requests per second</td><td>Capacity & scaling</td></tr>
+        <tr><td>ccre.optimizer.reordered_terms</td><td>Terms reordered by optimizer</td><td>Optimizer effectiveness</td></tr>
+        <tr><td>ccre.shortcircuit.rate</td><td>% evaluations short‑circuited</td><td>Early decision wins</td></tr>
+        <tr><td>ccre.memoization.hit_rate</td><td>Memoization cache hits</td><td>Redundant work avoided</td></tr>
+        <tr><td>ccre.cache.rule.hit_rate</td><td>Rule cache hits</td><td>Control‑plane latency</td></tr>
+        <tr><td>ccre.cache.query.hit_rate</td><td>Query cache hits</td><td>Planning latency</td></tr>
+        <tr><td>ccre.parallel.inflight</td><td>In‑flight parallel tasks</td><td>Pool sizing/back‑pressure</td></tr>
+        <tr><td>ccre.parallel.queue_depth</td><td>Work queue depth</td><td>Bottleneck detection</td></tr>
+        <tr><td>ccre.nullpath.uses</td><td>Null‑object path usage</td><td>Data hygiene & defaults</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Recommended Alerts</caption>
+      <thead>
+        <tr><th>Condition</th><th>Window</th><th>Rationale</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>p95 latency &gt; SLO</td><td>5 min</td><td>Degradation detection</td></tr>
+        <tr><td>Memoization hit‑rate &lt; baseline</td><td>15 min</td><td>Key skew or logic bypass</td></tr>
+        <tr><td>Cache hit‑rate drop post‑deploy</td><td>10 min</td><td>Potential invalidation issue</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Backward Compatibility & Migration</caption>
+      <thead>
+        <tr><th>Area</th><th>Status</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>DA & Session Formats</td><td>New standard recommended; legacy supported via adapter</td><td>Enable <span class="mono">DA_FORMAT_ADAPTER=true</span>; plan migration</td></tr>
+        <tr><td>Explain Output</td><td>Trace v2 adds fields</td><td>Ensure consumers tolerate extras</td></tr>
+        <tr><td>Optimizer & Parallelism</td><td>Default on</td><td>Disable per tenant if needed</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Known Issues & Mitigations</caption>
+      <thead>
+        <tr><th>Risk</th><th>When It Appears</th><th>Mitigation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Cost‑model mis‑calibration</td><td>Highly skewed datasets</td><td>Tune <span class="mono">operatorCost</span> / disable optimizer per tenant</td></tr>
+        <tr><td>Parallel fan‑out pressure</td><td>Downstream rate limits</td><td>Cap <span class="mono">MAX_PARALLELISM</span>, enable back‑pressure</td></tr>
+        <tr><td>Verbose explain inflation</td><td><span class="mono">EXPLAIN_MODE=verbose</span></td><td>Prefer <span class="mono">compact</span> or sample</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Appendix</h2>
+
+    <table>
+      <caption>Cache Keys (Reference)</caption>
+      <thead>
+        <tr><th>Cache</th><th>Key Shape</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Rule cache</td><td><span class="mono">tenant|ruleId|ruleVersion</span></td></tr>
+        <tr><td>Query cache</td><td><span class="mono">namespace|projectionHash|filterHash|glossaryVersion</span></td></tr>
+        <tr><td>Memoization (request)</td><td><span class="mono">ns|field|op|argsHash</span></td></tr>
+      </tbody>
+    </table>
+
+    <details>
+      <summary><span class="accent">View: Example Rule Plan (JSON)</span></summary>
+      <pre>{
+  "planVersion": "2",
+  "order": ["t_flow_eq", "t_var_anyOf", "t_date_range"],
+  "terms": {
+    "t_flow_eq": {"op":"eq", "field":"flow_id", "arg":"100", "cost":1},
+    "t_var_anyOf": {"op":"anyOf", "field":"var_id", "args":["AUTO","399"], "cost":1.8},
+    "t_date_range": {"op":"range", "field":"activate_date", "from":"2009-01-01"}
+  }
+}</pre>
+    </details>
+
+    <details>
+      <summary><span class="accent">View: Example Optimizer Config (JSON)</span></summary>
+      <pre>{
+  "operatorCost": {"eq":1, "neq":1.1, "in":2, "allOf":2.2, "anyOf":1.8, "noneOf":2.0, "range":3, "regex":8},
+  "namespaceHints": {
+    "audienceSegments": {
+      "flow_id": {"selectivityHint": 0.2},
+      "var_id":  {"selectivityHint": 0.35}
+    }
+  }
+}</pre>
+    </details>
+
+    <div class="foot">© 2025 CCRE Platform Team · This document is generated for the performance & reliability upgrade on Aug 24, 2025.</div>
+  </div>
+</body>
+</html>
