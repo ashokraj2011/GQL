@@ -1,0 +1,35 @@
+Delivery-cycle levers (5 points)
+
+Product-aligned ownership (fewer handoffs): Cross-functional teams own build→run→outcomes, cutting queue time between groups.
+
+Small batches + fast feedback: Ship in tiny, reversible changes using trunk-based dev, feature flags, and progressive rollouts.
+
+Platform “golden path”: Standard CI/CD, templates, self-service environments—teams spend time shipping, not reinventing pipelines.
+
+Quality & security built-in: Automated tests + policy-as-code guardrails catch issues early without slowing releases with manual gates.
+
+Reliability by default: Strong observability + SLOs + low MTTR keeps teams out of fire-fighting so velocity doesn’t collapse.
+
+People & culture (5 points)
+
+Reward outcomes, not airtime: Promotions/bonuses tied to measurable impact (cycle time, reliability, simplification), not presentation polish.
+
+Dual ladders with equal status: Technical leadership (Staff/Principal) and management paths have comparable recognition and compensation.
+
+Make technical impact “legible”: Use evidence-based reviews (metrics improved, bottlenecks removed, incidents prevented, reuse enabled).
+
+Spotlight invisible work: Regular recognition for platform, DevEx, reliability, and deletion/simplification wins that accelerate everyone.
+
+Protect maker time: Reduce WIP and meeting load; fewer priorities and more focus creates predictable, faster delivery.
+
+Metrics to prove progress (5 points)
+
+Lead time for changes: Track commit/PR → production; the core indicator of cycle-time improvement.
+
+Deployment frequency: More frequent deploys signal smaller batches and healthier delivery flow.
+
+Change failure rate: Measures quality of releases; speed without stability isn’t “world class.”
+
+MTTR: Faster recovery prevents teams from getting stuck in ops mode and preserves velocity.
+
+Flow efficiency indicators: PR cycle time, build/test time, environment wait time, and dependency blockers expose bottlenecks.
