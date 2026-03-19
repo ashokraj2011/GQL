@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCRE Rule Lifecycle Flow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* ── Core palette ── */
+      --bg: #f0f2f5;
+      --bg-subtle: #e8ebef;
+      --surface: #ffffff;
+      --surface-raised: #ffffff;
+      --surface-sunken: #f8f9fb;
+      --surface-hover: #f5f7fa;
+
+      /* ── Borders ── */
+      --border: #dce1e8;
+      --border-strong: #c1c9d4;
+      --border-subtle: #e9ecf1;
+
+      /* ── Text ── */
+      --text: #0d1b2a;
+      --text-secondary: #475569;
+      --text-tertiary: #7c879a;
+      --text-inverse: #ffffff;
+
+      /* ── Primary (deep navy-blue) ── */
+      --primary: #0f62fe;
+      --primary-hover: #0043ce;
+      --primary-active: #002d9c;
+      --primary-subtle: #edf4ff;
+      --primary-border: #a6c8ff;
+      --primary-text: #0043ce;
+
+      /* ── Success ── */
+      --success: #0e8345;
+      --success-bg: #effbf3;
+      --success-border: #71c197;
+      --success-text: #0a6131;
+
+      /* ── Warning ── */
+      --warning: #c27803;
+      --warning-bg: #fefce8;
+      --warning-border: #f0c950;
+      --warning-text: #854d0e;
+
+      /* ── Danger ── */
+      --danger: #da1e28;
+      --danger-bg: #fff1f1;
+      --danger-border: #fca5a5;
+      --danger-text: #991b1b;
+
+      /* ── Info ── */
+      --info: #0f62fe;
+      --info-bg: #edf4ff;
+      --info-border: #a6c8ff;
+      --info-text: #0043ce;
+
+      /* ── Accent (orange CTA) ── */
+      --accent: #e8590c;
+      --accent-hover: #d2500a;
+      --accent-active: #ba4609;
+      --accent-gradient: linear-gradient(135deg, #f97316 0%, #e8590c 100%);
+
+      /* ── AI Purple ── */
+      --ai: #7c3aed;
+      --ai-hover: #6d28d9;
+      --ai-bg: #f5f3ff;
+      --ai-border: #c4b5fd;
+      --ai-gradient: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+
+      /* ── Neutral tags ── */
+      --tag-gray-bg: #f1f3f6;
+      --tag-gray-border: #c1c9d4;
+      --tag-gray-text: #475569;
+
+      /* ── Depth ── */
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+      --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+      --shadow-focus: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+
+      /* ── Shape ── */
+      --radius-sm: 6px;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      /* ── Transitions ── */
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+      --duration: 0.15s;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* TOP NAVIGATION                                    */
+    /* ══════════════════════════════════════════════════ */
+    .nav-bar {
+      background: linear-gradient(180deg, #1b2838 0%, #161f2d 100%);
+      color: #e2e8f0;
+      padding: 0 28px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-size: 13px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+
+    .nav-logo {
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: -0.03em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 32px;
+    }
+
+    .nav-logo-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--accent-gradient);
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 8px rgba(232,89,12,0.3);
+    }
+
+    .nav-logo-icon svg { width: 16px; height: 16px; color: #fff; }
+
+    .nav-links { display: flex; gap: 0; height: 100%; }
+
+    .nav-link {
+      padding: 0 16px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      color: #94a3b8;
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      transition: color var(--duration) var(--ease), background var(--duration) var(--ease);
+      border-bottom: 2px solid transparent;
+      position: relative;
+    }
+
+    .nav-link:hover { background: rgba(255,255,255,0.04); color: #e2e8f0; }
+
+    .nav-link.active {
+      color: #fff;
+      border-bottom-color: #f97316;
+    }
+
+    .nav-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 2px;
+      background: #f97316;
+      border-radius: 2px 2px 0 0;
+      box-shadow: 0 0 8px rgba(249,115,22,0.4);
+    }
+
+    .nav-spacer { flex: 1; }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .nav-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #475569 0%, #334155 100%);
+      display: grid;
+      place-items: center;
+      border: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .nav-avatar svg { width: 14px; height: 14px; color: #94a3b8; }
+
+    /* ══════════════════════════════════════════════════ */
+    /* PAGE LAYOUT                                       */
+    /* ══════════════════════════════════════════════════ */
+    .page {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px 28px 48px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-bottom: 14px;
+    }
+
+    .breadcrumb a {
+      color: var(--primary-text);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color var(--duration);
+    }
+
+    .breadcrumb a:hover { color: var(--primary); text-decoration: underline; }
+    .breadcrumb .sep { color: var(--border-strong); }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .page-header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .page-header .sub {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    /* ══════════════════════════════════════════════════ */
+    /* BUTTONS                                           */
+    /* ══════════════════════════════════════════════════ */
+    .btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 16px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      transition: all var(--duration) var(--ease);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 20px;
+      white-space: nowrap;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .btn:hover { background: var(--surface-hover); border-color: var(--border-strong); box-shadow: var(--shadow-sm); transform: translateY(-0.5px); }
+    .btn:active { transform: translateY(0); box-shadow: var(--shadow-xs); }
+    .btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+    .btn.primary {
+      background: var(--accent-gradient);
+      color: var(--text-inverse);
+      border: 1px solid var(--accent);
+      box-shadow: var(--shadow-sm), 0 2px 8px rgba(232,89,12,0.2);
+    }
+
+    .btn.primary:hover {
+      box-shadow: var(--shadow-md), 0 4px 12px rgba(232,89,12,0.25);
+      filter: brightness(1.05);
+    }
+
+    .btn.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border-strong);
+    }
+
+    .btn.danger { color: var(--danger); border-color: var(--danger-border); }
+    .btn.danger:hover { background: var(--danger-bg); }
+
+    .btn.link {
+      background: transparent;
+      border-color: transparent;
+      color: var(--primary-text);
+      padding: 7px 8px;
+      box-shadow: none;
+    }
+
+    .btn.link:hover { color: var(--primary); text-decoration: underline; background: transparent; border-color: transparent; box-shadow: none; transform: none; }
+
+    .btn-sm { font-size: 12px; padding: 5px 12px; }
+    .btn-icon { padding: 6px 10px; min-width: 32px; justify-content: center; }
+
+    /* ══════════════════════════════════════════════════ */
+    /* TAGS                                              */
+    /* ══════════════════════════════════════════════════ */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: var(--radius-sm);
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .tag.live {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+    }
+
+    .tag.live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(14,131,69,0.4);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .tag.progress { background: var(--primary-subtle); color: var(--primary-text); border: 1px solid var(--primary-border); }
+    .tag.archived { background: var(--tag-gray-bg); color: var(--tag-gray-text); border: 1px solid var(--tag-gray-border); }
+    .tag.warn { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+    .tag.error { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+
+    /* ══════════════════════════════════════════════════ */
+    /* CONTAINER / PANEL                                 */
+    /* ══════════════════════════════════════════════════ */
+    .container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .container-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: linear-gradient(180deg, #fefefe 0%, var(--surface-sunken) 100%);
+    }
+
+    .container-header h2,
+    .container-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .container-header .description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .container-body { padding: 24px; }
+
+    /* ══════════════════════════════════════════════════ */
+    /* FORM ELEMENTS                                     */
+    /* ══════════════════════════════════════════════════ */
+    .form-field { margin-bottom: 20px; }
+    .form-field:last-child { margin-bottom: 0; }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .form-label .required { color: var(--danger); margin-left: 2px; }
+
+    .form-description {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .form-constraint {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+
+    .input, select, textarea {
+      font-family: inherit;
+      font-size: 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      background: var(--surface);
+      color: var(--text);
+      width: 100%;
+      transition: border-color var(--duration), box-shadow var(--duration);
+      line-height: 22px;
+    }
+
+    .input:hover, select:hover, textarea:hover { border-color: var(--border-strong); }
+
+    .input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15,98,254,0.12);
+    }
+
+    .input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+    textarea { min-height: 80px; resize: vertical; }
+
+    .input-group { display: flex; gap: 16px; }
+    .input-group > .form-field { flex: 1; }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+      cursor: pointer;
+      min-width: 140px;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* ALERTS                                            */
+    /* ══════════════════════════════════════════════════ */
+    .alert {
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .alert-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    .alert.info {
+      background: linear-gradient(135deg, #edf4ff 0%, #e8f0fe 100%);
+      border: 1px solid var(--info-border);
+      color: var(--info-text);
+    }
+
+    .alert.warning {
+      background: linear-gradient(135deg, var(--warning-bg) 0%, #fef9e7 100%);
+      border: 1px solid var(--warning-border);
+      color: var(--warning-text);
+    }
+
+    .alert.success {
+      background: linear-gradient(135deg, var(--success-bg) 0%, #ecfbf0 100%);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* AI EXPANDABLE PANEL                               */
+    /* ══════════════════════════════════════════════════ */
+    .expandable {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color var(--duration), box-shadow var(--duration);
+      background: var(--surface);
+    }
+
+    .expandable:hover { border-color: var(--border-strong); }
+
+    .expandable.expanded {
+      border-color: var(--ai-border);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.08), var(--shadow-sm);
+    }
+
+    .expandable-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+      background: linear-gradient(135deg, #faf8ff 0%, #f5f3ff 100%);
+      transition: background var(--duration);
+      border: none;
+      width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: left;
+    }
+
+    .expandable-toggle:hover { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); }
+
+    .expandable-toggle .chevron {
+      width: 16px;
+      height: 16px;
+      color: var(--ai);
+      transition: transform 0.25s var(--ease);
+      flex-shrink: 0;
+    }
+
+    .expandable.expanded .chevron { transform: rotate(90deg); }
+
+    .expandable-toggle .ai-icon { width: 22px; height: 22px; flex-shrink: 0; }
+
+    .expandable-toggle .tag-ai {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--ai);
+      background: var(--ai-bg);
+      border: 1px solid var(--ai-border);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .expandable-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s var(--ease);
+    }
+
+    .expandable.expanded .expandable-content { max-height: 400px; }
+
+    .expandable-inner {
+      padding: 16px;
+      border-top: 1px solid var(--ai-border);
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: linear-gradient(180deg, #faf8ff 0%, var(--surface) 100%);
+    }
+
+    .expandable-inner textarea {
+      flex: 1;
+      min-height: 72px;
+      border-color: var(--ai-border);
+    }
+
+    .expandable-inner textarea:focus {
+      border-color: var(--ai);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+    }
+
+    .btn-generate {
+      background: var(--ai-gradient);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius);
+      padding: 9px 18px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--duration) var(--ease);
+      box-shadow: 0 2px 8px rgba(124,58,237,0.25);
+    }
+
+    .btn-generate:hover {
+      box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+      filter: brightness(1.08);
+      transform: translateY(-0.5px);
+    }
+
+    .btn-generate svg { width: 15px; height: 15px; }
+
+    /* ══════════════════════════════════════════════════ */
+    /* TAB BAR                                           */
+    /* ══════════════════════════════════════════════════ */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-sunken) 100%);
+      padding: 0 24px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      padding: 14px 18px 12px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+      transition: color var(--duration), border-color var(--duration), background var(--duration);
+      position: relative;
+    }
+
+    .tab-btn:hover { color: var(--text); background: rgba(0,0,0,0.02); }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 700;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ══════════════════════════════════════════════════ */
+    /* TABLE                                             */
+    /* ══════════════════════════════════════════════════ */
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+    th, td {
+      text-align: left;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      font-weight: 700;
+      background: var(--surface-sunken);
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    tbody tr { transition: background var(--duration); }
+    tbody tr:hover td { background: var(--surface-hover); }
+
+    .link-btn {
+      color: var(--primary-text);
+      font-weight: 600;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      padding: 0;
+      transition: color var(--duration);
+    }
+
+    .link-btn:hover { text-decoration: underline; color: var(--primary); }
+
+    /* ── Filter Bar ── */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .filter-bar .input { min-width: 240px; flex: 1; max-width: 400px; }
+    .filter-bar select { width: auto; min-width: 160px; }
+
+    /* ── KV Grid ── */
+    .kv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+    .kv-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      transition: box-shadow var(--duration);
+    }
+
+    .kv-card:hover { box-shadow: var(--shadow-sm); }
+
+    .kv-card .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .kv-card .value {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    /* ── Term Cards ── */
+    .term-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--surface);
+      margin-top: 12px;
+      transition: box-shadow var(--duration), border-color var(--duration);
+    }
+
+    .term-card:hover { box-shadow: var(--shadow-sm); border-color: var(--border-strong); }
+    .term-card:first-child { margin-top: 0; }
+
+    .term-card-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(180deg, var(--surface-sunken) 0%, var(--surface) 100%);
+      flex-wrap: wrap;
+    }
+
+    .term-card-title { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; }
+    .term-card-body { padding: 0; }
+
+    .condition-row {
+      display: grid;
+      grid-template-columns: 26px 1fr 72px;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 14px;
+      transition: background var(--duration);
+    }
+
+    .condition-row:last-child { border-bottom: 0; }
+    .condition-row:hover { background: var(--surface-hover); }
+
+    .check {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .check.ok { background: var(--success-bg); color: var(--success); border: 1.5px solid var(--success-border); }
+    .check.na { background: var(--tag-gray-bg); color: var(--tag-gray-text); border: 1.5px solid var(--tag-gray-border); }
+    .check.fail { background: var(--danger-bg); color: var(--danger); border: 1.5px solid var(--danger-border); }
+
+    .estimate {
+      text-align: right;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Workspace Grid ── */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr 300px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* ── Modal ── */
+    .modal {
+      width: min(600px, 100%);
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      box-shadow: var(--shadow-xl);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-sunken) 100%);
+    }
+
+    .modal-body { padding: 24px; display: grid; gap: 16px; }
+
+    .modal-footer {
+      padding: 14px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--surface-sunken);
+    }
+
+    /* ── Compare ── */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .compare-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--surface);
+      transition: box-shadow var(--duration);
+    }
+
+    .compare-card:hover { box-shadow: var(--shadow-sm); }
+
+    .compare-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-sunken);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .compare-list { padding: 14px 18px; }
+
+    .diff-row {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 14px;
+    }
+
+    .diff-row:last-child { border-bottom: 0; }
+
+    .diff-row .label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+    }
+
+    .delta-banner {
+      margin-top: 16px;
+      background: linear-gradient(135deg, var(--success-bg) 0%, #ecfbf0 100%);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ── Detail Header ── */
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .detail-header h3 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .detail-header .sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* ── Animations ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-panel.active { animation: fadeInUp 0.25s var(--ease) both; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1200px) { .compare-grid, .kv-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .workspace-grid { grid-template-columns: 1fr !important; } }
+    @media (max-width: 860px) {
+      .page-header { flex-direction: column; }
+      .condition-row { grid-template-columns: 22px 1fr; }
+      .estimate { text-align: left; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Top Navigation ═══ -->
+<nav class="nav-bar">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    CCRE Console
+  </div>
+  <div class="nav-links">
+    <div class="nav-link active">Rules</div>
+    <div class="nav-link">Attributes</div>
+    <div class="nav-link">Audiences</div>
+    <div class="nav-link">Governance</div>
+    <div class="nav-link">Analytics</div>
+  </div>
+  <div class="nav-spacer"></div>
+  <div class="nav-user">
+    <div class="nav-avatar">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+    </div>
+    ashok@enterprise.com
+  </div>
+</nav>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="#">CCRE</a><span class="sep">›</span>
+    <a href="#">Rules</a><span class="sep">›</span>
+    <span style="color:var(--text);">Rule Lifecycle Flow</span>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <h1>CCRE Rule Lifecycle Flow</h1>
+      <div class="sub">Versioned editing model for in-progress, live, and archived rules</div>
+    </div>
+    <div class="actions">
+      <span class="tag progress">Editable drafts only</span>
+      <button class="btn secondary">View governance notes</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tab-bar" role="tablist">
+      <button class="tab-btn active" role="tab" data-tab="rules-list">Rules List</button>
+      <button class="tab-btn" role="tab" data-tab="create-rule">Create Rule</button>
+      <button class="tab-btn" role="tab" data-tab="live-detail">Live Detail</button>
+      <button class="tab-btn" role="tab" data-tab="create-draft">Create Draft</button>
+      <button class="tab-btn" role="tab" data-tab="compare-versions">Compare Versions</button>
+    </div>
+
+    <!-- ═══ TAB 1: RULES LIST ═══ -->
+    <section class="tab-panel active" id="rules-list" role="tabpanel">
+      <div class="container-header">
+        <div>
+          <h2>Rules</h2>
+          <div class="description">Lifecycle-aware list with state-specific actions</div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" data-go="create-rule">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 3v10M3 8h10"/></svg>
+            Create Rule
+          </button>
+          <button class="btn secondary">Export</button>
+        </div>
+      </div>
+      <div class="container-body">
+        <div class="filter-bar">
+          <input class="input" placeholder="Search rules..." value="high cash" />
+          <select><option>Status: All</option></select>
+          <select><option>Updated by: Anyone</option></select>
+          <select><option>Sort: Recently updated</option></select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Rule</th><th>Version</th><th>Status</th><th>Last Updated</th><th>Population</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>High Cash Eligibility</strong><br><span style="color:var(--text-secondary);font-size:13px;">Detect customers for advisor outreach</span></td>
+                <td>v3</td>
+                <td><span class="tag progress">In Progress</span></td>
+                <td>Today · Ashok</td>
+                <td>2.4M</td>
+                <td><div style="display:flex;gap:8px;align-items:center;"><button class="link-btn" data-go="create-rule">Edit</button><button class="btn btn-sm btn-icon secondary">···</button></div></td>
+              </tr>
+              <tr>
+                <td><strong>High Cash Eligibility</strong><br><span style="color:var(--text-secondary);font-size:13px;">Current production version</span></td>
+                <td>v2</td>
+                <td><span class="tag live">Live</span></td>
+                <td>Mar 10 · Priya</td>
+                <td>2.7M</td>
+                <td><div style="display:flex;gap:8px;align-items:center;"><button class="link-btn" data-go="live-detail">View</button><button class="btn btn-sm btn-icon secondary">···</button></div></td>
+              </tr>
+              <tr>
+                <td><strong>High Cash Eligibility</strong><br><span style="color:var(--text-secondary);font-size:13px;">Retired version kept for audit</span></td>
+                <td>v1</td>
+                <td><span class="tag archived">Archived</span></td>
+                <td>Jan 18 · System</td>
+                <td>3.1M</td>
+                <td><div style="display:flex;gap:8px;align-items:center;"><button class="link-btn" data-go="live-detail">View</button><button class="btn btn-sm btn-icon secondary">···</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TAB 2: CREATE RULE ═══ -->
+    <section class="tab-panel" id="create-rule" role="tabpanel">
+      <div class="container-header">
+        <div>
+          <h2>Create Rule</h2>
+          <div class="description">Author a new rule with conditions and attribute selection</div>
+        </div>
+        <div class="actions">
+          <span class="tag progress">In Progress</span>
+          <button class="btn secondary">Run Test</button>
+          <button class="btn primary">Save Draft</button>
+        </div>
+      </div>
+      <div class="container-body">
+        <div class="workspace-grid">
+
+          <!-- LEFT: Attribute Tree -->
+          <aside>
+            <div class="container" style="box-shadow:none;">
+              <div class="container-header" style="padding:12px 16px;">
+                <h3 style="font-size:14px;">Attribute Tree</h3>
+                <button class="btn btn-sm secondary">Refresh</button>
+              </div>
+              <div style="padding:14px 16px;">
+                <input class="input" style="margin-bottom:12px;" placeholder="Search attributes..." value="cash" />
+                <div class="term-card" style="margin-top:0;">
+                  <div class="term-card-header"><span class="term-card-title">Customer</span><span class="tag progress">12 namespaces</span></div>
+                  <div class="term-card-body">
+                    <div class="condition-row"><span class="check na">▸</span><div><strong>Accounts</strong><div style="font-size:12px;color:var(--text-tertiary);">account_balance, iraAccountHighCorecashPresent, num_cash_accounts</div></div><div class="estimate">24 attrs</div></div>
+                    <div class="condition-row"><span class="check na">▸</span><div><strong>Profile</strong><div style="font-size:12px;color:var(--text-tertiary);">age, risk_segment, country</div></div><div class="estimate">18 attrs</div></div>
+                  </div>
+                </div>
+                <div class="term-card">
+                  <div class="term-card-header"><span class="term-card-title">Session</span><span class="tag progress">5 namespaces</span></div>
+                  <div class="term-card-body">
+                    <div class="condition-row"><span class="check na">▸</span><div><strong>Insight Session</strong><div style="font-size:12px;color:var(--text-tertiary);">insight_type, device_type, login_status</div></div><div class="estimate">9 attrs</div></div>
+                  </div>
+                </div>
+                <div class="term-card">
+                  <div class="term-card-header"><span class="term-card-title">Rules</span><span class="tag progress">3 namespaces</span></div>
+                  <div class="term-card-body">
+                    <div class="condition-row"><span class="check na">▸</span><div><strong>Prior Rule Results</strong><div style="font-size:12px;color:var(--text-tertiary);">isHighCashCustomer, isRetirementEligible</div></div><div class="estimate">11 attrs</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- CENTER: Rule Configuration -->
+          <main>
+            <!-- Rule Details Form -->
+            <div class="container" style="box-shadow:none; margin-bottom:16px;">
+              <div class="container-header" style="padding:14px 20px;">
+                <h3 style="font-size:15px;">Rule Details</h3>
+              </div>
+              <div style="padding:20px 24px;">
+                <div class="input-group">
+                  <div class="form-field">
+                    <label class="form-label">Rule name<span class="required">*</span></label>
+                    <div class="form-description">A unique name to identify this rule across the system.</div>
+                    <input class="input" value="High Cash Eligibility" placeholder="e.g. High Cash Eligibility" />
+                    <div class="form-constraint">Max 120 characters</div>
+                  </div>
+                  <div class="form-field" style="flex:0 0 200px;">
+                    <label class="form-label">Top-level operator</label>
+                    <div class="form-description">How terms combine.</div>
+                    <select><option>AND</option><option>OR</option></select>
+                  </div>
+                </div>
+                <div class="form-field" style="margin-top:20px;">
+                  <label class="form-label">Description</label>
+                  <div class="form-description">Explain the business purpose and context for this rule.</div>
+                  <textarea placeholder="e.g. Identifies high-cash customers for financial advisor outreach based on account balances and IRA status.">Identify high cash customers for advisor review. Targets customers with significant cash holdings or multiple accounts for proactive wealth management outreach.</textarea>
+                  <div class="form-constraint">Max 500 characters</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Generation Panel -->
+            <div class="expandable expanded" id="aiPanel" style="margin-bottom:16px;">
+              <button class="expandable-toggle" onclick="toggleAI()">
+                <svg class="chevron" viewBox="0 0 16 16" fill="currentColor"><path d="M6 3l5 5-5 5V3z"/></svg>
+                <svg class="ai-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="#7c3aed" opacity="0.9"/>
+                  <path d="M19 14L19.8 16.2L22 17L19.8 17.8L19 20L18.2 17.8L16 17L18.2 16.2L19 14Z" fill="#a78bfa" opacity="0.7"/>
+                  <path d="M6 16L6.5 17.5L8 18L6.5 18.5L6 20L5.5 18.5L4 18L5.5 17.5L6 16Z" fill="#c4b5fd" opacity="0.5"/>
+                </svg>
+                Generate using AI
+                <span class="tag-ai">Preview</span>
+              </button>
+              <div class="expandable-content">
+                <div class="expandable-inner">
+                  <textarea placeholder="Describe the rule in plain English...&#10;e.g. 'Apply this rule when insight_type is high_cash and iraAccountHighCorecashPresent is true, or when account_balance is greater than 100000.'">Apply this rule when insight_type is high_cash and iraAccountHighCorecashPresent is true, or when account_balance is greater than 100000.</textarea>
+                  <button class="btn-generate" onclick="showGenerated()">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="currentColor" opacity="0.9"/>
+                      <path d="M19 14L19.8 16.2L22 17L19.8 17.8L19 20L18.2 17.8L16 17L18.2 16.2L19 14Z" fill="currentColor" opacity="0.6"/>
+                    </svg>
+                    Generate
+                  </button>
+                </div>
+                <div class="alert success" id="aiResult" style="margin:0 16px 16px; display:none;">
+                  <svg class="alert-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><path d="M5.5 8l2 2 3.5-4"/></svg>
+                  <div><strong>AI generated 2 terms with 4 conditions.</strong> Review the terms below and adjust as needed before saving.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selected Attributes -->
+            <div class="term-card" style="margin-bottom:12px;">
+              <div class="term-card-header">
+                <span class="term-card-title">Selected Attributes</span>
+                <span class="tag progress">4 selected</span>
+              </div>
+              <div style="padding:12px 18px; display:flex; gap:8px; flex-wrap:wrap;">
+                <span class="tag progress">account_balance</span>
+                <span class="tag progress">iraAccountHighCorecashPresent</span>
+                <span class="tag progress">insight_type</span>
+                <span class="tag progress">num_cash_accounts</span>
+              </div>
+            </div>
+
+            <!-- Term 1 -->
+            <div class="term-card">
+              <div class="term-card-header">
+                <span class="term-card-title">Term 1 · Core qualification</span>
+                <span class="tag progress">Operator: AND</span>
+              </div>
+              <div class="term-card-body">
+                <div class="condition-row"><span class="check ok">✓</span><div>insight_type equals <strong>high_cash</strong></div><div class="estimate">94.9%</div></div>
+                <div class="condition-row"><span class="check ok">✓</span><div>iraAccountHighCorecashPresent is <strong>true</strong></div><div class="estimate">89.6%</div></div>
+              </div>
+            </div>
+
+            <!-- Term 2 -->
+            <div class="term-card">
+              <div class="term-card-header">
+                <span class="term-card-title">Term 2 · Large account</span>
+                <span class="tag progress">Operator: OR</span>
+              </div>
+              <div class="term-card-body">
+                <div class="condition-row"><span class="check ok">✓</span><div>account_balance greater than <strong>100000</strong></div><div class="estimate">62.7%</div></div>
+                <div class="condition-row"><span class="check ok">✓</span><div>num_cash_accounts greater than or equal to <strong>3</strong></div><div class="estimate">23.4%</div></div>
+              </div>
+            </div>
+          </main>
+
+          <!-- RIGHT: Inspector -->
+          <aside>
+            <div class="container" style="box-shadow:none;">
+              <div class="container-header" style="padding:12px 16px;">
+                <h3 style="font-size:14px;">Inspector</h3>
+                <div style="display:flex;gap:4px;">
+                  <button class="btn btn-sm" style="font-size:12px;background:var(--primary-subtle);color:var(--primary-text);border-color:var(--primary-border);">Summary</button>
+                  <button class="btn btn-sm" style="font-size:12px;">Test</button>
+                  <button class="btn btn-sm" style="font-size:12px;">Sizing</button>
+                </div>
+              </div>
+              <div style="padding:16px;">
+                <div class="kv-card" style="margin-bottom:10px;">
+                  <div class="label">Current estimate</div>
+                  <div class="value" style="font-size:18px;">2.4M <span style="font-size:12px;color:var(--text-tertiary);font-weight:500;">customers</span></div>
+                </div>
+                <div class="kv-card" style="margin-bottom:10px;">
+                  <div class="label">Validation</div>
+                  <div class="value" style="color:var(--success);display:flex;align-items:center;gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M5.5 8l2 2 3-3.5"/></svg>
+                    No blocking issues
+                  </div>
+                </div>
+                <div class="term-card" style="margin-top:14px;">
+                  <div class="term-card-header"><span class="term-card-title">Rule Summary</span></div>
+                  <div style="padding:14px 18px; font-size:13px; color:var(--text-secondary); line-height:1.7;">
+                    <div style="padding:6px 0; border-bottom:1px solid var(--border-subtle);">This rule matches when <strong style="color:var(--text);">all terms</strong> are true.</div>
+                    <div style="padding:6px 0; border-bottom:1px solid var(--border-subtle);">Term 1 requires all conditions (AND).</div>
+                    <div style="padding:6px 0;">Term 2 allows any condition (OR).</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TAB 3: LIVE DETAIL ═══ -->
+    <section class="tab-panel" id="live-detail" role="tabpanel">
+      <div class="container-header">
+        <div>
+          <h2>Live Rule Detail</h2>
+          <div class="description">Read-only mode with create-draft action</div>
+        </div>
+        <span class="tag live">Live</span>
+      </div>
+      <div class="container-body">
+        <div class="alert info">
+          <svg class="alert-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><path d="M8 7v4M8 5.5v.01"/></svg>
+          <div>This rule is <strong>live in production</strong> and cannot be edited directly. Create a new draft version to make changes.</div>
+        </div>
+        <div class="detail-header">
+          <div>
+            <h3>High Cash Eligibility</h3>
+            <div class="sub">Rule ID: R-1024 · Version v2 · Effective since Mar 10</div>
+          </div>
+          <div class="actions">
+            <button class="btn secondary">Run Test</button>
+            <button class="btn secondary">Population Sizing</button>
+            <button class="btn primary" data-go="create-draft">Create Draft Version</button>
+          </div>
+        </div>
+        <div class="kv-grid" style="margin-bottom:20px;">
+          <div class="kv-card"><div class="label">Description</div><div class="value" style="font-weight:500;">Identify high cash customers for advisor review</div></div>
+          <div class="kv-card"><div class="label">Top-level operator</div><div class="value">AND</div></div>
+          <div class="kv-card"><div class="label">Owner</div><div class="value">Wealth Personalization</div></div>
+          <div class="kv-card"><div class="label">Estimated population</div><div class="value">2.7M customers</div></div>
+        </div>
+        <div class="term-card">
+          <div class="term-card-header"><span class="term-card-title">Term 1 · Core qualification</span><span class="tag progress">Operator: AND</span></div>
+          <div class="term-card-body">
+            <div class="condition-row"><span class="check na">•</span><div>insight_type equals <strong>high_cash</strong></div><div class="estimate">94.9%</div></div>
+            <div class="condition-row"><span class="check na">•</span><div>iraAccountHighCorecashPresent is <strong>true</strong></div><div class="estimate">89.6%</div></div>
+          </div>
+        </div>
+        <div class="term-card">
+          <div class="term-card-header"><span class="term-card-title">Term 2 · Large account</span><span class="tag progress">Operator: OR</span></div>
+          <div class="term-card-body">
+            <div class="condition-row"><span class="check na">•</span><div>account_balance greater than <strong>100000</strong></div><div class="estimate">62.7%</div></div>
+            <div class="condition-row"><span class="check na">•</span><div>num_cash_accounts greater than or equal to <strong>3</strong></div><div class="estimate">23.4%</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TAB 4: CREATE DRAFT ═══ -->
+    <section class="tab-panel" id="create-draft" role="tabpanel">
+      <div class="container-header">
+        <div>
+          <h2>Create Draft from Live</h2>
+          <div class="description">Safe versioned editing instead of direct mutation</div>
+        </div>
+        <span class="tag warn">Confirmation required</span>
+      </div>
+      <div class="container-body" style="display:flex;align-items:center;justify-content:center;min-height:480px;">
+        <div class="modal">
+          <div class="modal-header">Create draft from live rule?</div>
+          <div class="modal-body">
+            <div class="kv-grid" style="grid-template-columns:1fr 1fr;">
+              <div class="kv-card"><div class="label">Source Rule</div><div class="value">High Cash Eligibility</div></div>
+              <div class="kv-card"><div class="label">Source Version</div><div class="value">v2 · Live</div></div>
+              <div class="kv-card"><div class="label">New Version</div><div class="value">v3</div></div>
+              <div class="kv-card"><div class="label">New Status</div><div class="value">In Progress</div></div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Reason for change</label>
+              <input class="input" value="Tighten threshold and reduce false positives" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Change summary</label>
+              <input class="input" value="Increase account_balance threshold to 125000 and refine supporting condition" />
+            </div>
+            <div class="alert info" style="margin:0;">
+              <svg class="alert-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><path d="M8 7v4M8 5.5v.01"/></svg>
+              <div>The live version stays unchanged. Editing begins in a <strong>new draft version</strong> only.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn" data-go="live-detail">Cancel</button>
+            <button class="btn primary" data-go="compare-versions">Create Draft</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TAB 5: COMPARE VERSIONS ═══ -->
+    <section class="tab-panel" id="compare-versions" role="tabpanel">
+      <div class="container-header">
+        <div>
+          <h2>Compare Draft vs Live</h2>
+          <div class="description">Review impact before publish</div>
+        </div>
+        <div class="actions">
+          <button class="btn secondary">Run delta sizing</button>
+          <button class="btn primary">Publish Draft</button>
+        </div>
+      </div>
+      <div class="container-body">
+        <div class="compare-grid">
+          <div class="compare-card">
+            <div class="compare-head"><strong>Live · v2</strong><span class="tag live">Current Production</span></div>
+            <div class="compare-list">
+              <div class="diff-row"><div class="label">Description</div>Identify high cash customers for advisor review</div>
+              <div class="diff-row"><div class="label">Term 2</div>account_balance greater than 100000</div>
+              <div class="diff-row"><div class="label">Supporting condition</div>num_cash_accounts ≥ 3</div>
+              <div class="diff-row"><div class="label">Estimated population</div>2.7M customers</div>
+            </div>
+          </div>
+          <div class="compare-card">
+            <div class="compare-head"><strong>Draft · v3</strong><span class="tag progress">Pending Publish</span></div>
+            <div class="compare-list">
+              <div class="diff-row"><div class="label">Description</div>Reduce false positives while preserving high-value customers</div>
+              <div class="diff-row"><div class="label">Term 2</div>account_balance greater than 125000</div>
+              <div class="diff-row"><div class="label">Supporting condition</div>num_cash_accounts ≥ 2</div>
+              <div class="diff-row"><div class="label">Estimated population</div>2.4M customers</div>
+            </div>
+          </div>
+        </div>
+        <div class="delta-banner">Estimated population change: <strong>-300K customers</strong>. Main driver: tighter account_balance threshold with broader supporting account count condition.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('[data-tab]');
+  const panels = document.querySelectorAll('.tab-panel');
+  const goLinks = document.querySelectorAll('[data-go]');
+
+  function activateTab(name) {
+    tabs.forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === name);
+      t.setAttribute('aria-selected', t.dataset.tab === name ? 'true' : 'false');
+    });
+    panels.forEach(p => p.classList.toggle('active', p.id === name));
+  }
+
+  tabs.forEach(t => t.addEventListener('click', () => activateTab(t.dataset.tab)));
+  goLinks.forEach(l => l.addEventListener('click', () => activateTab(l.dataset.go)));
+
+  function toggleAI() {
+    document.getElementById('aiPanel').classList.toggle('expanded');
+  }
+
+  function showGenerated() {
+    const r = document.getElementById('aiResult');
+    r.style.display = 'flex';
+    r.style.animation = 'fadeIn 0.3s ease';
+  }
+
+  document.head.insertAdjacentHTML('beforeend', '<style>@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}</style>');
+</script>
+</body>
+</html>
