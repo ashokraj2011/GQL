@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>High Cash Eligibility Rule — Rule Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --surface-alt: #f7f9fb;
+    --border: #e2e6ed;
+    --border-light: #edf0f5;
+    --text-primary: #1a1f2e;
+    --text-secondary: #5a6278;
+    --text-muted: #8b93a7;
+    --accent: #2b7de9;
+    --accent-hover: #1a6cd8;
+    --accent-light: #e8f1fd;
+    --green: #22c55e;
+    --green-bg: #e8faf0;
+    --red: #ef4444;
+    --red-bg: #fef2f2;
+    --orange: #f97316;
+    --orange-light: #fff7ed;
+    --gold-bar: #f0c850;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+    --radius: 8px;
+    --radius-sm: 6px;
+    --radius-lg: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Top Header ── */
+  .top-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .rule-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .rule-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .draft-badge {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: all 0.15s ease;
+  }
+
+  .btn:hover { background: var(--surface-alt); box-shadow: var(--shadow-sm); }
+
+  .btn-outline-blue {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--surface);
+  }
+
+  .btn-outline-blue:hover { background: var(--accent-light); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  .btn-publish {
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-publish-main {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    border-right: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .btn-publish-arrow {
+    padding: 8px 10px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    border-left: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-publish-arrow:hover { background: var(--accent-hover); }
+
+  .btn-more {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    letter-spacing: 2px;
+  }
+
+  /* ── Meta Panels (Description + NLP) ── */
+  .meta-panels {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Description Box */
+  .desc-panel {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .desc-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .desc-textarea {
+    width: 100%;
+    min-height: 56px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--surface-alt);
+    resize: vertical;
+    outline: none;
+    line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+
+  .desc-textarea:focus { border-color: var(--accent); }
+  .desc-textarea::placeholder { color: var(--text-muted); }
+
+  /* Collapsible NLP Card */
+  .nlp-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+  }
+
+  .nlp-toggle:hover { background: var(--surface-alt); }
+
+  .nlp-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nlp-toggle-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .nlp-chevron {
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+
+  .nlp-chevron.open { transform: rotate(180deg); }
+
+  .nlp-ai-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #7c3aed;
+    background: #f3f0ff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .nlp-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+    padding: 0 28px;
+  }
+
+  .nlp-content.open {
+    max-height: 300px;
+    padding: 0 28px 20px;
+  }
+
+  .nlp-box {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .nlp-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-primary);
+  }
+
+  .nlp-text code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: #eef1f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #374151;
+  }
+
+  .btn-generate {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 18px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .btn-generate:hover { background: var(--accent-hover); }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr 290px;
+    gap: 0;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* ── Left Sidebar ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-title {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 0 20px;
+    margin-bottom: 14px;
+  }
+
+  .search-box {
+    margin: 0 16px 16px;
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--surface-alt);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box input::placeholder { color: var(--text-muted); }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+  }
+
+  .filter-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  /* Tree */
+  .tree { padding: 0 8px; }
+  .tree-section { margin-bottom: 4px; }
+
+  .tree-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    user-select: none;
+    transition: background 0.1s;
+  }
+
+  .tree-header:hover { background: var(--surface-alt); }
+
+  .tree-header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .tree-chevron {
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+
+  .tree-chevron.open { transform: rotate(90deg); }
+
+  .tree-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+  }
+
+  .tree-children { padding-left: 18px; }
+
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .tree-item:hover { background: var(--surface-alt); }
+
+  .tree-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .tree-item-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .tree-item-icon.attr { color: #6366f1; }
+  .tree-item-icon.child { color: var(--text-muted); }
+
+  .beta-tag {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8b5cf6;
+    background: #f3f0ff;
+    padding: 1px 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .attr-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .tree-item:hover .attr-actions { opacity: 1; }
+
+  .attr-action-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .attr-action-btn:hover { background: var(--border-light); color: var(--accent); }
+
+  /* Selected Attributes */
+  .selected-section {
+    padding: 16px 16px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+  }
+
+  .selected-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+
+  .selected-tags { display: flex; flex-direction: column; gap: 6px; }
+
+  .selected-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface-alt);
+    border: 1px solid var(--border-light);
+  }
+
+  .tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .tag-dot.green { background: var(--green); }
+  .tag-dot.blue { background: var(--accent); }
+
+  .tag-close {
+    margin-left: auto;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1;
+    transition: color 0.1s;
+  }
+
+  .tag-close:hover { color: var(--red); }
+
+  .tag-info {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.1s;
+  }
+
+  .tag-info:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+
+  /* ── Center: Rule Builder ── */
+  .center {
+    padding: 24px 28px;
+    overflow-y: auto;
+  }
+
+  .rule-match-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .rule-match-bar strong {
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .or-pill {
+    background: var(--orange);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 12px;
+    border-radius: 12px;
+    letter-spacing: 0.8px;
+  }
+
+  /* ── OR Connector (top-level between terms) ── */
+  .or-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    position: relative;
+  }
+
+  .or-connector::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--orange) 20%, var(--orange) 80%, transparent);
+    opacity: 0.35;
+  }
+
+  .or-badge {
+    background: var(--orange);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 20px;
+    border-radius: 20px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 1px 6px rgba(249,115,22,0.25);
+  }
+
+  /* ── Inline connector (between conditions inside a term) ── */
+  .cond-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 0;
+    position: relative;
+  }
+
+  .cond-connector::before {
+    content: '';
+    position: absolute;
+    left: 40px;
+    right: 40px;
+    top: 50%;
+    height: 1px;
+    opacity: 0.35;
+  }
+
+  .cond-connector.and-line::before { background: var(--gold-bar); }
+  .cond-connector.or-line::before { background: var(--orange); }
+
+  .cond-badge {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 2px 12px;
+    border-radius: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cond-badge.and { background: var(--gold-bar); color: #7c5e00; box-shadow: 0 1px 3px rgba(240,200,80,0.25); }
+  .cond-badge.or { background: var(--orange); color: #fff; box-shadow: 0 1px 3px rgba(249,115,22,0.2); }
+
+  /* ── Term Card ── */
+  .term-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: visible;
+    animation: fadeInUp 0.35s ease both;
+  }
+
+  .term-card:nth-child(2) { animation-delay: 0.08s; }
+
+  .term-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+  }
+
+  .term-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .term-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  /* AND/OR toggle inside each term */
+  .logic-toggle {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--surface-alt);
+  }
+
+  .logic-toggle-btn {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 14px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+
+  .logic-toggle-btn.active-and {
+    background: var(--gold-bar);
+    color: #7c5e00;
+    box-shadow: 0 1px 3px rgba(240,200,80,0.3);
+  }
+
+  .logic-toggle-btn.active-or {
+    background: var(--orange);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(249,115,22,0.3);
+  }
+
+  .term-menu {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 18px;
+    letter-spacing: 2px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.1s;
+  }
+
+  .term-menu:hover { background: var(--surface-alt); }
+
+  .term-body { padding: 0 20px 16px; }
+
+  /* Condition Rows */
+  .condition-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+  }
+
+  .condition-label {
+    width: 32px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  .cond-select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 28px 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    color: var(--text-primary);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b93a7' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .cond-select:focus { border-color: var(--accent); }
+  .cond-select.wide { min-width: 180px; }
+  .cond-select.med { min-width: 130px; }
+
+  .cond-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 28px 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 100px;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b93a7' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    cursor: pointer;
+  }
+
+  .cond-value-input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 100px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .cond-value-input:focus { border-color: var(--accent); }
+
+  .cond-remove {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .cond-remove:hover { background: var(--red-bg); color: var(--red); }
+
+  .add-condition-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+
+  .add-condition-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .add-term-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 8px;
+  }
+
+  .add-term-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* ── Right Panel ── */
+  .right-panel {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 24px 20px;
+    overflow-y: auto;
+  }
+
+  .panel-section { margin-bottom: 28px; }
+
+  .panel-heading {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .panel-subheading {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .summary-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .summary-term {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.55;
+  }
+
+  .summary-term strong { color: var(--accent); }
+
+  .summary-or-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--orange);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 6px 0;
+  }
+
+  /* Sample Test */
+  .test-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .test-input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+  }
+
+  .test-input-wrap svg {
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .test-input {
+    border: none;
+    background: transparent;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-primary);
+    outline: none;
+    width: 100%;
+  }
+
+  .btn-run {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-run:hover { background: #16a34a; }
+
+  /* Test Result */
+  .test-result {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .result-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .result-badge {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .result-badge.fail { color: var(--red); }
+  .result-badge.pass { color: var(--green); }
+
+  .result-term-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    margin-top: 12px;
+  }
+
+  .result-term-hint {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 11px;
+  }
+
+  .result-or-divider {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--orange);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 10px 0 6px;
+    position: relative;
+  }
+
+  .result-or-divider::before,
+  .result-or-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    height: 1px;
+    width: 30%;
+    background: var(--orange);
+    opacity: 0.25;
+  }
+
+  .result-or-divider::before { left: 0; }
+  .result-or-divider::after { right: 0; }
+
+  .result-condition {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .result-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .result-icon.pass { background: var(--green); }
+  .result-icon.fail { background: var(--red); }
+
+  .result-icon svg {
+    width: 10px;
+    height: 10px;
+    color: #fff;
+  }
+
+  .result-detail {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .right-panel { border-left: none; border-top: 1px solid var(--border); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ Top Bar ═══ -->
+<header class="top-bar">
+  <div class="top-bar-left">
+    <span class="rule-label">Rule</span>
+    <span class="rule-title">High Cash Eligibility Rule</span>
+    <span class="draft-badge">Draft</span>
+  </div>
+  <div class="top-bar-right">
+    <button class="btn">Save</button>
+    <button class="btn btn-outline-blue">Test</button>
+    <div class="btn-publish">
+      <button class="btn btn-primary btn-publish-main">Publish</button>
+      <button class="btn-publish-arrow">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+    </div>
+    <button class="btn btn-more">···</button>
+  </div>
+</header>
+
+<!-- ═══ Description + NLP ═══ -->
+<div class="meta-panels">
+  <!-- Description -->
+  <div class="desc-panel">
+    <div class="desc-label">Description</div>
+    <textarea class="desc-textarea" placeholder="Add a description for this rule — purpose, context, owner, etc.">Determines eligibility for high-cash customers based on insight type, IRA account status, and account balance thresholds.</textarea>
+  </div>
+
+  <!-- Collapsible NLP -->
+  <div class="nlp-toggle" onclick="toggleNlp()">
+    <div class="nlp-toggle-left">
+      <svg class="nlp-chevron open" id="nlpChevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+      <span class="nlp-toggle-label">Describe the rule in English</span>
+      <span class="nlp-ai-badge">AI</span>
+    </div>
+  </div>
+  <div class="nlp-content open" id="nlpContent">
+    <div class="nlp-box">
+      <div class="nlp-text">
+        Apply this rule when insight_type is high_cash and <code>iraAccountHighCoreccashPresent</code> is true, or when the <code>account_balance</code> is greater than 100000.
+      </div>
+      <button class="btn-generate">Generate Rule</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Main Layout ═══ -->
+<div class="layout">
+
+  <!-- ─── Left Sidebar ─── -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Attribute Library</div>
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+      <input type="text" placeholder="Search attributes or namespaces">
+      <svg class="filter-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+    </div>
+    <div class="tree">
+      <!-- Customer -->
+      <div class="tree-section">
+        <div class="tree-header">
+          <div class="tree-header-left">
+            <svg class="tree-chevron open" viewBox="0 0 16 16" fill="currentColor"><path d="M6 3l5 5-5 5V3z"/></svg>
+            Customer
+          </div>
+          <svg class="tree-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="tree-children">
+          <div class="tree-item">
+            <svg class="tree-item-icon child" viewBox="0 0 16 16" fill="currentColor"><path d="M6 3l5 5-5 5V3z"/></svg>
+            Profile
+          </div>
+          <div class="tree-children" style="padding-left:12px">
+            <div class="tree-item active">
+              <svg class="tree-item-icon attr" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+              account_balance
+              <div class="attr-actions">
+                <button class="attr-action-btn"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 7v4M8 5.5v0"/></svg></button>
+                <button class="attr-action-btn"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h8M8 4v8"/></svg></button>
+              </div>
+            </div>
+            <div class="tree-item">
+              <svg class="tree-item-icon child" viewBox="0 0 16 16" fill="currentColor" opacity="0.4"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>
+              iraAccountHighCore:... <span class="beta-tag">Beta</span>
+              <div class="attr-actions">
+                <button class="attr-action-btn"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h8M8 4v8"/></svg></button>
+              </div>
+            </div>
+            <div class="tree-item">
+              <svg class="tree-item-icon child" viewBox="0 0 16 16" fill="currentColor" opacity="0.4"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>
+              risk_segment
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Session -->
+      <div class="tree-section">
+        <div class="tree-header">
+          <div class="tree-header-left">
+            <svg class="tree-chevron open" viewBox="0 0 16 16" fill="currentColor"><path d="M6 3l5 5-5 5V3z"/></svg>
+            Session
+          </div>
+          <svg class="tree-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="tree-children">
+          <div class="tree-item">
+            <svg class="tree-item-icon child" viewBox="0 0 16 16" fill="currentColor"><path d="M6 3l5 5-5 5V3z"/></svg>
+            Web Session
+          </div>
+          <div class="tree-children" style="padding-left:12px">
+            <div class="tree-item">
+              <svg class="tree-item-icon child" viewBox="0 0 16 16" fill="currentColor" opacity="0.4"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>
+              geolocation
+            </div>
+            <div class="tree-item">
+              <svg class="tree-item-icon child" viewBox="0 0 16 16" fill="currentColor" opacity="0.4"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>
+              login_status
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Rules -->
+      <div class="tree-section">
+        <div class="tree-header">
+          <div class="tree-header-left">
+            <svg class="tree-chevron open" viewBox="0 0 16 16" fill="currentColor"><path d="M6 3l5 5-5 5V3z"/></svg>
+            Rules
+          </div>
+          <svg class="tree-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="tree-children">
+          <div class="tree-item">
+            <svg class="tree-item-icon" viewBox="0 0 16 16" fill="none" stroke="#eab308" stroke-width="1.5"><path d="M8 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z"/></svg>
+            Publisht IR
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="selected-section">
+      <div class="selected-title">Selected Attributes</div>
+      <div class="selected-tags">
+        <div class="selected-tag">
+          <span class="tag-dot green"></span>account_balance<span class="tag-close">&times;</span><span class="tag-info">?</span>
+        </div>
+        <div class="selected-tag">
+          <span class="tag-dot green"></span>iraAccountHighCorecashPres<span class="tag-close">&times;</span>
+        </div>
+        <div class="selected-tag">
+          <span class="tag-dot blue"></span>insight_type<span class="tag-close">&times;</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Center: Rule Builder ─── -->
+  <main class="center">
+    <div class="rule-match-bar">
+      This rule matches when <strong>any</strong> of the following terms are true:
+      <span class="or-pill">OR</span>
+    </div>
+
+    <!-- ═══ Term 1 ═══ -->
+    <div class="term-card" data-term="1">
+      <div class="term-header">
+        <div class="term-header-left">
+          <div class="term-title">Term 1: Core Qualification</div>
+          <div class="logic-toggle" data-term="1">
+            <button class="logic-toggle-btn active-and" onclick="setTermLogic(this,'and',1)">AND</button>
+            <button class="logic-toggle-btn" onclick="setTermLogic(this,'or',1)">OR</button>
+          </div>
+        </div>
+        <div class="term-menu">···</div>
+      </div>
+      <div class="term-body">
+        <div class="condition-row">
+          <div class="condition-label">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#aaa" stroke-width="1.5"><path d="M3 4h10M3 8h10M3 12h10"/></svg>
+          </div>
+          <select class="cond-select wide"><option>insight_type</option></select>
+          <select class="cond-select med"><option>equals</option><option>not equals</option><option>contains</option></select>
+          <button class="cond-remove" style="width:24px;height:24px;font-size:14px;color:var(--accent);">⊙</button>
+          <select class="cond-value"><option>high_cash</option></select>
+          <button class="cond-remove">−</button>
+        </div>
+        <div class="cond-connector and-line" data-term-conn="1"><span class="cond-badge and">AND</span></div>
+        <div class="condition-row">
+          <div class="condition-label" style="font-size:10px">POST</div>
+          <select class="cond-select wide"><option>iraAccountHighCorecashPresent</option></select>
+          <select class="cond-select med"><option>is true</option><option>is false</option></select>
+          <div style="flex:1"></div>
+          <button class="cond-remove">−</button>
+        </div>
+        <div style="padding-left:32px"><button class="add-condition-btn">+ Add condition</button></div>
+      </div>
+    </div>
+
+    <!-- Top-level OR -->
+    <div class="or-connector"><span class="or-badge">OR</span></div>
+
+    <!-- ═══ Term 2 ═══ -->
+    <div class="term-card" data-term="2">
+      <div class="term-header">
+        <div class="term-header-left">
+          <div class="term-title">Term 2: Large Account</div>
+          <div class="logic-toggle" data-term="2">
+            <button class="logic-toggle-btn" onclick="setTermLogic(this,'and',2)">AND</button>
+            <button class="logic-toggle-btn active-or" onclick="setTermLogic(this,'or',2)">OR</button>
+          </div>
+        </div>
+        <div class="term-menu">···</div>
+      </div>
+      <div class="term-body">
+        <div class="condition-row">
+          <div class="condition-label" style="font-size:10px">POST</div>
+          <select class="cond-select wide"><option>account_balance</option></select>
+          <select class="cond-select med"><option>greater than</option><option>less than</option><option>equals</option></select>
+          <button class="cond-remove" style="width:24px;height:24px;font-size:14px;color:var(--accent);">⊙</button>
+          <input class="cond-value-input" type="text" value="25,000" style="max-width:140px">
+          <button class="cond-remove">−</button>
+        </div>
+        <div class="cond-connector or-line" data-term-conn="2"><span class="cond-badge or">OR</span></div>
+        <div class="condition-row">
+          <div class="condition-label" style="font-size:10px">OR</div>
+          <select class="cond-select wide"><option>num_cash_accounts</option></select>
+          <select class="cond-select" style="min-width:180px"><option>greater than or equal to</option><option>less than</option><option>equals</option></select>
+          <select class="cond-value" style="max-width:80px"><option>3</option></select>
+          <div style="flex:1"></div>
+        </div>
+        <div style="padding-left:32px"><button class="add-condition-btn">+ Add condition</button></div>
+      </div>
+    </div>
+
+    <div class="or-connector"><span class="or-badge">OR</span></div>
+    <button class="add-term-btn">+ Add term</button>
+  </main>
+
+  <!-- ─── Right Panel ─── -->
+  <aside class="right-panel">
+    <div class="panel-section">
+      <div class="panel-heading">Explanation/Test</div>
+      <div class="panel-subheading">Rule Summary</div>
+      <div class="summary-text">This rule matches when <strong>any</strong> of the following terms are true:</div>
+      <div class="summary-term">
+        <strong>In Term 1: Core Qualification,</strong><br>
+        all conditions must be true (AND).
+      </div>
+      <div class="summary-or-label">— OR —</div>
+      <div class="summary-term">
+        <strong>In Term 2: Large Account,</strong><br>
+        any condition may be true (OR).
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-subheading">Sample Test</div>
+      <div class="test-row">
+        <div class="test-input-wrap">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1v14M1 8h14"/></svg>
+          <input class="test-input" type="text" value="customer12345">
+        </div>
+        <button class="btn-run">Run Test</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-subheading">Test Result</div>
+      <div class="test-result">
+        <div class="result-header">
+          <span class="result-label">Sample Customer</span>
+          <span class="result-badge fail">FAIL</span>
+        </div>
+        <div class="result-term-label">Term 1: <span class="result-term-hint">(all must pass)</span></div>
+        <div class="result-condition">
+          <div class="result-icon pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 6l2.5 2.5 4.5-5"/></svg></div>
+          <div>insight_type &nbsp;equals &nbsp;high_cash</div>
+        </div>
+        <div class="result-condition">
+          <div class="result-icon pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 6l2.5 2.5 4.5-5"/></svg></div>
+          <div>iraAccountHighCorecashPresent<br>is true</div>
+        </div>
+        <div class="result-or-divider">OR</div>
+        <div class="result-term-label">Term 2: <span class="result-term-hint">(any may pass)</span></div>
+        <div class="result-condition">
+          <div class="result-icon pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 6l2.5 2.5 4.5-5"/></svg></div>
+          <div>account_balance &nbsp;greater than<br>100,000 USD &nbsp;<span class="result-detail">(actual: 11000 USD)</span></div>
+        </div>
+        <div class="result-condition">
+          <div class="result-icon fail"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l6 6M9 3l-6 6"/></svg></div>
+          <div>account_balance &nbsp;greater than<br>220,000 USD &nbsp;<span class="result-detail">(actual: 21130)</span></div>
+        </div>
+      </div>
+    </div>
+    <button class="add-term-btn" style="margin-top:0">+ Add term</button>
+  </aside>
+</div>
+
+<script>
+  function toggleNlp() {
+    document.getElementById('nlpContent').classList.toggle('open');
+    document.getElementById('nlpChevron').classList.toggle('open');
+  }
+
+  function setTermLogic(btn, mode, termNum) {
+    const toggle = btn.parentElement;
+    toggle.querySelectorAll('.logic-toggle-btn').forEach(b => {
+      b.classList.remove('active-and', 'active-or');
+    });
+    btn.classList.add(mode === 'and' ? 'active-and' : 'active-or');
+
+    // Update inline condition connectors
+    document.querySelectorAll(`[data-term-conn="${termNum}"]`).forEach(conn => {
+      conn.classList.remove('and-line', 'or-line');
+      conn.classList.add(mode === 'and' ? 'and-line' : 'or-line');
+      const badge = conn.querySelector('.cond-badge');
+      badge.classList.remove('and', 'or');
+      badge.classList.add(mode);
+      badge.textContent = mode.toUpperCase();
+    });
+  }
+</script>
+</body>
+</html>
