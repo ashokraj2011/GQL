@@ -1,0 +1,836 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fidelity · Story Orchestration Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:       #00A651;
+      --green-dark:  #006633;
+      --green-dim:   rgba(0,166,81,0.12);
+      --green-border:rgba(0,166,81,0.28);
+      --gold:        #C9A84C;
+      --gold-light:  #E4C46A;
+      --gold-dim:    rgba(201,168,76,0.14);
+      --navy:        #0A1628;
+      --navy-2:      #0F1E38;
+      --navy-3:      #152540;
+      --navy-card:   #192d4a;
+      --border:      #1E3358;
+      --muted:       #6B87AB;
+      --soft:        #A8BED8;
+      --white:       #EEF4FF;
+      --red-dim:     rgba(192,57,43,0.13);
+      --blue-dim:    rgba(30,124,192,0.13);
+      --teal-dim:    rgba(13,122,129,0.13);
+      --purple:      #5A3DA0;
+      --teal:        #0D7A81;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      background: var(--navy-2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      flex-wrap: wrap;
+    }
+
+    .brand { display: flex; align-items: center; gap: 14px; }
+
+    .fid-mark {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--green-dark), var(--green));
+      display: grid; place-items: center;
+      box-shadow: 0 0 0 1px var(--green-border), 0 6px 18px rgba(0,100,50,0.45);
+      flex-shrink: 0;
+    }
+    .fid-mark svg { width: 22px; height: 22px; }
+
+    .brand-sep { width: 1px; height: 28px; background: var(--border); }
+    .brand-text h1 { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; }
+    .brand-text p  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .story-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: var(--gold);
+      background: var(--gold-dim);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 8px; padding: 6px 12px;
+    }
+
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600;
+      padding: 8px 16px; border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-ghost { background: transparent; color: var(--muted); border-color: var(--border); }
+    .btn-ghost:hover { color: var(--white); border-color: var(--soft); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--green-dark), var(--green));
+      color: #fff; border-color: var(--green);
+      box-shadow: 0 4px 14px rgba(0,130,60,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 20px rgba(0,166,81,0.45); transform: translateY(-1px); }
+
+    /* ─── PIPELINE STRIP ─── */
+    .pipeline {
+      display: flex; align-items: center;
+      gap: 4px; padding: 10px 0; overflow-x: auto;
+    }
+    .pipe-node {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      color: var(--muted); white-space: nowrap; flex-shrink: 0;
+    }
+    .pipe-node.done  { color: var(--green); background: var(--green-dim); border: 1px solid var(--green-border); }
+    .pipe-node.active{ color: var(--gold);  background: var(--gold-dim);  border: 1px solid rgba(201,168,76,0.3); }
+    .pipe-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .pipe-node.done .pipe-dot { animation: pulse-g 2s infinite; }
+    @keyframes pulse-g {
+      0%,100% { box-shadow: 0 0 0 0 rgba(0,166,81,0.4); }
+      50%      { box-shadow: 0 0 0 5px rgba(0,166,81,0); }
+    }
+    .pipe-sep { color: var(--border); font-size: 14px; flex-shrink: 0; }
+
+    /* ─── NAV TABS ─── */
+    .nav-tabs {
+      display: flex; gap: 2px;
+      background: var(--navy-2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px; overflow-x: auto;
+    }
+    .nav-tab {
+      display: flex; align-items: center; gap: 8px;
+      padding: 13px 18px;
+      font-size: 13px; font-weight: 600;
+      color: var(--muted);
+      background: transparent; border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer; white-space: nowrap;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s; margin-bottom: -1px;
+    }
+    .nav-tab:hover { color: var(--soft); }
+    .nav-tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .tab-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 10px;
+      background: var(--navy-3); color: var(--muted);
+    }
+    .nav-tab.active .tab-badge { background: var(--green-dim); color: var(--green); }
+
+    /* ─── PAGES ─── */
+    .page { display: none; padding: 28px; }
+    .page.active { display: block; }
+
+    .page-title { margin-bottom: 24px; }
+    .page-title h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; }
+    .page-title p  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ─── LAYOUT ─── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+    .stack  { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ─── CARD ─── */
+    .card {
+      background: var(--navy-card);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px;
+    }
+    .card-title {
+      font-size: 13px; font-weight: 700; color: var(--white);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .card-title .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 6px var(--green);
+    }
+
+    /* ─── METRICS ─── */
+    .metric {
+      background: var(--navy-card);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 18px;
+      position: relative; overflow: hidden;
+    }
+    .metric::after {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--green), var(--gold));
+    }
+    .metric .label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    }
+    .metric .value {
+      font-family: 'Playfair Display', serif;
+      font-size: 34px; font-weight: 700; color: var(--white);
+      margin-top: 6px; line-height: 1;
+    }
+    .metric .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* ─── PILLS ─── */
+    .pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; border: 1px solid; white-space: nowrap;
+    }
+    .pill.complete { color: var(--green);  background: var(--green-dim);  border-color: var(--green-border); }
+    .pill.running  { color: var(--gold);   background: var(--gold-dim);   border-color: rgba(201,168,76,0.3); }
+    .pill.review   { color: #60B8F5;       background: var(--blue-dim);   border-color: rgba(96,184,245,0.3); }
+    .pill.blocked  { color: #F07070;       background: var(--red-dim);    border-color: rgba(192,57,43,0.35); }
+    .pill.pending  { color: var(--muted);  background: rgba(107,135,171,0.1); border-color: var(--border); }
+
+    /* ─── AGENT CARD ─── */
+    .agent-card {
+      background: var(--navy-card);
+      border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .agent-card:hover { border-color: var(--soft); }
+
+    .agent-head {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; background: rgba(10,22,40,0.4);
+    }
+    .agent-info { display: flex; align-items: center; gap: 11px; }
+    .agent-icon {
+      width: 38px; height: 38px; border-radius: 9px;
+      display: grid; place-items: center;
+      font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .ic-green  { background: linear-gradient(135deg,#00843D,#00A651); box-shadow:0 4px 10px rgba(0,130,60,0.4); }
+    .ic-gold   { background: linear-gradient(135deg,#9A6B20,#C9A84C); box-shadow:0 4px 10px rgba(160,110,30,0.4); }
+    .ic-blue   { background: linear-gradient(135deg,#0E5C9A,#1E7CC0); box-shadow:0 4px 10px rgba(20,100,170,0.4); }
+    .ic-teal   { background: linear-gradient(135deg,#085860,#0D7A81); box-shadow:0 4px 10px rgba(13,120,129,0.4); }
+    .ic-red    { background: linear-gradient(135deg,#7A1515,#C0392B); box-shadow:0 4px 10px rgba(192,57,43,0.35); }
+    .ic-purple { background: linear-gradient(135deg,#3A1E78,#5A3DA0); box-shadow:0 4px 10px rgba(90,61,160,0.4); }
+
+    .agent-info h3 { font-size: 13px; font-weight: 700; }
+    .agent-info p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .agent-body { padding: 14px 16px; display: grid; gap: 12px; }
+
+    .progress { height: 5px; border-radius: 99px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .progress span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg,var(--green-dark),var(--green)); }
+    .progress.shimmer span {
+      background: linear-gradient(90deg,var(--green-dark) 30%,var(--gold) 50%,var(--green) 70%);
+      background-size: 200% 100%; animation: shimmer 2.2s linear infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .stat {
+      background: rgba(10,22,40,0.5); border: 1px solid var(--border);
+      border-radius: 9px; padding: 9px 10px;
+    }
+    .stat span   { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing:.06em; color: var(--muted); }
+    .stat strong { display: block; font-family:'Playfair Display',serif; font-size: 20px; color: var(--white); margin-top:3px; }
+
+    .bullets { display: grid; gap: 6px; }
+    .bullet  { display: flex; gap: 8px; font-size: 12px; color: var(--soft); line-height: 1.5; }
+    .bullet-dot { width: 5px; height: 5px; border-radius:50%; background:var(--green); margin-top:6px; flex-shrink:0; }
+
+    .agent-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mini-btn {
+      font-family:'DM Sans',sans-serif; font-size:11px; font-weight:700;
+      padding:6px 10px; border-radius:7px;
+      border:1px solid var(--border); background:rgba(10,22,40,0.4);
+      color:var(--soft); cursor:pointer; transition:all 0.14s;
+    }
+    .mini-btn:hover { border-color:var(--green); color:var(--green); background:var(--green-dim); }
+
+    /* ─── STORY CARD ─── */
+    .story-card {
+      background: var(--navy-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 18px; transition: border-color 0.15s;
+    }
+    .story-card:hover { border-color: var(--soft); }
+    .story-top   { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+    .story-title { font-size: 13px; font-weight: 700; }
+    .story-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .narrative {
+      font-size: 12px; color: var(--soft); line-height: 1.6;
+      background: rgba(10,22,40,0.4);
+      border-left: 3px solid var(--green);
+      border-radius: 0 8px 8px 0; padding: 10px 12px; margin: 10px 0;
+    }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+    .tag {
+      font-size: 11px; padding: 4px 9px; border-radius: 16px;
+      background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.22);
+      color: var(--gold-light);
+    }
+    .story-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    .quality     { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+    .quality-bar { width: 90px; height: 5px; border-radius:99px; background:rgba(255,255,255,0.07); overflow:hidden; }
+    .quality-bar span { display:block; height:100%; background:linear-gradient(90deg,var(--green-dark),var(--green)); }
+
+    /* ─── FORM ─── */
+    .form-grid { display: grid; gap: 14px; }
+    .form-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    label {
+      display: block; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--gold); margin-bottom: 5px;
+    }
+    input, select, textarea {
+      width: 100%; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: var(--white);
+      background: rgba(10,22,40,0.6); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 12px; outline: none; transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--green); }
+    select option { background: var(--navy-2); }
+    textarea { min-height: 90px; resize: vertical; line-height: 1.5; color: var(--soft); }
+    .token-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .token {
+      font-size: 11px; padding: 5px 10px; border-radius: 16px;
+      background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.22); color: var(--gold-light);
+    }
+
+    /* ─── FLOW DIAGRAM ─── */
+    .flow {
+      background: rgba(10,22,40,0.4); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 20px;
+    }
+    .flow-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .flow-row:last-child { margin-bottom: 0; }
+    .flow-node {
+      background: var(--navy-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px; min-width: 130px; transition: border-color 0.15s;
+    }
+    .flow-node:hover { border-color: var(--green); }
+    .flow-node strong { display: block; font-size: 12px; }
+    .flow-node span   { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .flow-arrow { color: var(--green); font-size: 16px; opacity: 0.6; }
+    .stage-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--gold); margin-bottom: 5px; }
+
+    /* ─── AC ─── */
+    .ac-item {
+      background: rgba(10,22,40,0.5); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 12px; font-size: 12px; color: var(--soft); line-height: 1.6;
+    }
+    .given { color: var(--gold-light); font-weight: 700; }
+    .when  { color: var(--green);      font-weight: 700; }
+    .then  { color: #60B8F5;           font-weight: 700; }
+
+    /* ─── TABLE ─── */
+    table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+    th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing:.08em; color: var(--muted); padding: 0 12px 4px; text-align: left; }
+    td { padding: 10px 12px; font-size: 12px; color: var(--soft); background: rgba(10,22,40,0.5); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    td:first-child { border-left: 1px solid var(--border); border-radius: 8px 0 0 8px; }
+    td:last-child  { border-right: 1px solid var(--border); border-radius: 0 8px 8px 0; }
+
+    /* ─── TIMELINE ─── */
+    .tl-item { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; padding: 13px 0; border-bottom: 1px solid rgba(30,51,88,0.5); align-items: start; position: relative; }
+    .tl-item:last-child { border-bottom: 0; }
+    .tl-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--green); box-shadow: 0 0 7px rgba(0,166,81,0.55); margin-top: 3px; position: relative; z-index: 1; }
+    .tl-item:not(:last-child)::before { content: ''; position: absolute; left: 5px; top: 22px; bottom: 0; width: 1px; background: linear-gradient(to bottom, rgba(0,166,81,0.3), transparent); }
+    .tl-copy strong { display: block; font-size: 12.5px; font-weight: 700; }
+    .tl-copy p      { font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+    .tl-time { font-family:'JetBrains Mono',monospace; font-size: 11px; color: var(--muted); }
+
+    /* ─── REVIEWER RING ─── */
+    .reviewer-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+    .reviewer {
+      background: var(--navy-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+    }
+    .reviewer-avatar { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; }
+    .reviewer h4 { font-size: 12.5px; font-weight: 700; }
+    .reviewer p  { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+    /* ─── MISC ─── */
+    .jira-child {
+      background: rgba(10,22,40,0.5); border: 1px solid var(--border);
+      border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; padding: 12px 16px;
+    }
+    .jira-child strong { font-size: 12px; font-weight: 700; color: var(--gold-light); }
+    .jira-child p      { font-size: 12px; color: var(--soft); margin-top: 4px; }
+
+    .conflict-box { background: var(--navy-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+    .conflict-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .conflict-box p  { font-size: 12px; color: var(--soft); line-height: 1.55; }
+
+    .callout { border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.55; border: 1px solid; }
+    .callout.blue { color: #80C4F8; background: var(--blue-dim); border-color: rgba(30,124,192,0.3); }
+    .callout.gold { color: var(--gold-light); background: var(--gold-dim); border-color: rgba(201,168,76,0.3); }
+
+    .git-block { background: rgba(10,22,40,0.6); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .git-block p      { font-size: 12px; color: var(--soft); line-height: 1.6; }
+    .git-block strong { color: var(--gold-light); }
+    .mono { font-family:'JetBrains Mono',monospace; font-size:11.5px; color: var(--gold); }
+
+    .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-4 { grid-template-columns: 1fr; }
+      .reviewer-grid    { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="fid-mark">
+          <svg viewBox="0 0 22 22" fill="none">
+            <path d="M4 2h14v3.5H7.5v4H17V13H7.5v7H4V2z" fill="white"/>
+            <rect x="4" y="2" width="1.5" height="18" fill="rgba(201,168,76,0.55)" rx="0.5"/>
+          </svg>
+        </div>
+        <span style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;">Fidelity</span>
+        <div class="brand-sep"></div>
+        <div class="brand-text">
+          <h1>Story Orchestration Studio</h1>
+          <p>Multi-agent decomposition &amp; Jira delivery</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="story-badge">CCRE-1842</div>
+        <select style="width:auto;font-size:12px;padding:7px 10px;">
+          <option>Core Rule Engine</option>
+          <option>Personalization Platform</option>
+        </select>
+        <button class="btn btn-ghost">Save Draft</button>
+        <button class="btn btn-primary">↑ Publish to Jira</button>
+      </div>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-node done"><span class="pipe-dot"></span>Imported</div>
+      <span class="pipe-sep">›</span>
+      <div class="pipe-node done"><span class="pipe-dot"></span>Context Loaded</div>
+      <span class="pipe-sep">›</span>
+      <div class="pipe-node done"><span class="pipe-dot"></span>Agents Running</div>
+      <span class="pipe-sep">›</span>
+      <div class="pipe-node active"><span class="pipe-dot"></span>Review Pending</div>
+      <span class="pipe-sep">›</span>
+      <div class="pipe-node"><span class="pipe-dot"></span>Ready to Publish</div>
+    </div>
+  </div>
+
+  <!-- NAV TABS -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-page="intake">📋 Intake <span class="tab-badge">3</span></button>
+    <button class="nav-tab" data-page="agents">🤖 Agents <span class="tab-badge">10</span></button>
+    <button class="nav-tab" data-page="stories">📖 Stories <span class="tab-badge">7</span></button>
+    <button class="nav-tab" data-page="ac">✅ Acceptance <span class="tab-badge">16</span></button>
+    <button class="nav-tab" data-page="tech">⚙️ Tech &amp; QA <span class="tab-badge">2</span></button>
+    <button class="nav-tab" data-page="delivery">🚀 Delivery <span class="tab-badge">Git</span></button>
+    <button class="nav-tab" data-page="signoff">🔏 Sign-off <span class="tab-badge">5</span></button>
+    <button class="nav-tab" data-page="timeline">🕐 Timeline</button>
+  </nav>
+
+  <!-- PAGE: INTAKE -->
+  <div class="page active" id="page-intake">
+    <div class="page-title">
+      <h2>Story Intake</h2>
+      <p>Source Jira story, business context, linked artifacts and run settings.</p>
+    </div>
+    <div class="grid-2" style="align-items:start;">
+      <div class="stack">
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Jira Story</div>
+          <div class="form-grid">
+            <div><label>Story Title</label><input value="Enable customers to view personalized offers on home page" /></div>
+            <div><label>Description</label><textarea>As part of the home experience redesign, customers should see personalized offers based on eligibility and profile data. The system should handle cases where no offers are returned and provide instrumentation for impressions and clicks.</textarea></div>
+            <div class="form-row">
+              <div><label>Epic</label><input value="Digital Personalization Refresh" /></div>
+              <div><label>Priority</label><select><option>High</option><option>Medium</option><option>Low</option></select></div>
+            </div>
+            <div><label>Labels</label><div class="token-row"><div class="token">personalization</div><div class="token">home-page</div><div class="token">offers</div><div class="token">eligibility</div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Context Enrichment</div>
+          <div class="form-grid">
+            <div><label>Linked Artifacts</label><div class="token-row"><div class="token">Confluence: Offer display UX</div><div class="token">API Spec: Eligibility Service</div><div class="token">Glossary: Offer impression</div><div class="token">Figma: Home card variants</div></div></div>
+            <div><label>Personas</label><div class="token-row"><div class="token">Retail Investor</div><div class="token">Retirement Customer</div><div class="token">No-offer fallback cohort</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Run Settings</div>
+          <div class="form-grid">
+            <div><label>Decomposition Depth</label><select><option>Detailed</option><option>Standard</option><option>Lightweight</option></select></div>
+            <div><label>Output Package</label><select><option>User Stories + AC + Tasks + Tests</option><option>User Stories + AC</option><option>User Stories Only</option></select></div>
+            <div><label>Approval Threshold</label><input value="85% confidence before auto-promote to review" /></div>
+            <div><label>Active Agents</label><div class="token-row"><div class="token">Business Analyst</div><div class="token">Squad Leader</div><div class="token">Requirements</div><div class="token">Architecture</div><div class="token">Story Splitter</div><div class="token">Acceptance Criteria</div><div class="token">Software Dev</div><div class="token">Tech Impact</div><div class="token">QA Agent</div><div class="token">Jira Formatter</div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Epic-to-Delivery Workflow</div>
+          <div class="flow">
+            <div class="flow-row">
+              <div><div class="stage-label">Stage 1</div><div class="flow-node"><strong>Epic Intake</strong><span>Confluence, specs, tickets</span></div></div>
+              <div class="flow-arrow">→</div>
+              <div><div class="stage-label">Stage 2</div><div class="flow-node"><strong>BA + Squad Leader</strong><span>Story package, priorities</span></div></div>
+              <div class="flow-arrow">→</div>
+              <div><div class="stage-label">Stage 3</div><div class="flow-node"><strong>Parallel Agents</strong><span>Architecture, QA, tech impact</span></div></div>
+            </div>
+            <div class="flow-row" style="margin-top:10px;">
+              <div><div class="stage-label">Stage 4</div><div class="flow-node"><strong>Dev + QA</strong><span>Implement, validate, branch</span></div></div>
+              <div class="flow-arrow">→</div>
+              <div><div class="stage-label">Stage 5</div><div class="flow-node"><strong>Review Ring</strong><span>BA, Architecture, stakeholders</span></div></div>
+              <div class="flow-arrow">→</div>
+              <div><div class="stage-label">Stage 6</div><div class="flow-node"><strong>Sign-off</strong><span>Go / no-go &amp; publish</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: AGENTS -->
+  <div class="page" id="page-agents">
+    <div class="page-title"><h2>Agent Orchestration</h2><p>Live status of all 10 agents running in parallel across this story.</p></div>
+    <div class="grid-4" style="margin-bottom:20px;">
+      <div class="metric"><div class="label">Candidate Stories</div><div class="value">7</div><div class="sub">From Story Splitter</div></div>
+      <div class="metric"><div class="label">Acceptance Criteria</div><div class="value">16</div><div class="sub">14 complete, 2 gaps</div></div>
+      <div class="metric"><div class="label">Architecture ADRs</div><div class="value">4</div><div class="sub">2 need review</div></div>
+      <div class="metric"><div class="label">Agents Complete</div><div class="value">5</div><div class="sub">4 running, 1 blocked</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-gold">BA</div><div><h3>Business Analyst Agent</h3><p>Interprets intent, scope &amp; success measures</p></div></div><div class="pill complete">● Complete</div></div>
+        <div class="agent-body">
+          <div><div class="progress"><span style="width:100%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Outcomes</span><strong>3</strong></div><div class="stat"><span>Confidence</span><strong>93%</strong></div><div class="stat"><span>Questions</span><strong>1</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Objective: increasing offer discovery without degrading home experience.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Separated must-have scope from advanced ranking optimizations.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Requested KPIs: impressions, CTR, downstream conversion.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">View Brief</button><button class="mini-btn">Refine</button><button class="mini-btn">Accept</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-gold">SL</div><div><h3>Squad Leader Agent</h3><p>Story package, sequencing &amp; delivery readiness</p></div></div><div class="pill complete">● Complete</div></div>
+        <div class="agent-body">
+          <div><div class="progress"><span style="width:100%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Stories</span><strong>7</strong></div><div class="stat"><span>Confidence</span><strong>90%</strong></div><div class="stat"><span>Deps</span><strong>3</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Prioritized story package with delivery sequencing.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Aligned slices with team capacity and dependency order.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Observability marked as gated follow-on if scope tightens.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">View Package</button><button class="mini-btn">Adjust Priority</button><button class="mini-btn">Accept</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-blue">RA</div><div><h3>Requirements Agent</h3><p>Extracts intent, personas &amp; ambiguity</p></div></div><div class="pill complete">● Complete</div></div>
+        <div class="agent-body">
+          <div><div class="progress"><span style="width:100%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Artifacts</span><strong>4</strong></div><div class="stat"><span>Confidence</span><strong>92%</strong></div><div class="stat"><span>Questions</span><strong>1</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Two core outcomes: offer discovery and offer relevance.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Primary persona: digitally active retail customer.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Flagged missing fallback definition for no-eligibility cohort.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">View Detail</button><button class="mini-btn">Refine</button><button class="mini-btn">Accept</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-purple">SS</div><div><h3>Story Splitter Agent</h3><p>Turns epic into smaller story slices</p></div></div><div class="pill running">⟳ Running</div></div>
+        <div class="agent-body">
+          <div><div class="progress shimmer"><span style="width:72%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Stories</span><strong>6</strong></div><div class="stat"><span>Confidence</span><strong>84%</strong></div><div class="stat"><span>Merges</span><strong>2</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Candidates for display, eligibility, fallback, analytics, cache.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Suggests splitting impression tracking from UI rendering.</span></div><div class="bullet"><span class="bullet-dot"></span><span>⚑ Waiting: API timeout — same story or separate resilience story?</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">Compare Versions</button><button class="mini-btn">Decide</button><button class="mini-btn">Pause</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-teal">AR</div><div><h3>Architecture Agent</h3><p>Design slices, resilience &amp; NFR guidance</p></div></div><div class="pill review">⚑ Needs Review</div></div>
+        <div class="agent-body">
+          <div><div class="progress"><span style="width:90%"></span></div></div>
+          <div class="stats"><div class="stat"><span>ADRs</span><strong>4</strong></div><div class="stat"><span>Confidence</span><strong>82%</strong></div><div class="stat"><span>Risks</span><strong>2</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Recommended separate rendering, eligibility &amp; analytics concerns.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Resilience policy for timeout and stale-cache behavior.</span></div><div class="bullet"><span class="bullet-dot"></span><span>⚑ Needs confirmation on observability scope for first delivery.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">View Design</button><button class="mini-btn">Inspect ADRs</button><button class="mini-btn">Resolve</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-green">AC</div><div><h3>Acceptance Criteria Agent</h3><p>Given / When / Then per candidate story</p></div></div><div class="pill complete">● Complete</div></div>
+        <div class="agent-body">
+          <div><div class="progress"><span style="width:100%"></span></div></div>
+          <div class="stats"><div class="stat"><span>AC Items</span><strong>14</strong></div><div class="stat"><span>Confidence</span><strong>89%</strong></div><div class="stat"><span>Gaps</span><strong>1</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Generated success, no-result and partial-data paths.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Asked for copy behavior when service returns zero offers.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Linked each criterion to a candidate story.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">View Detail</button><button class="mini-btn">Regenerate</button><button class="mini-btn">Approve</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-gold">TI</div><div><h3>Tech Impact Agent</h3><p>APIs, telemetry, caching &amp; NFR dependencies</p></div></div><div class="pill review">⚑ Needs Review</div></div>
+        <div class="agent-body">
+          <div><div class="progress"><span style="width:88%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Deps</span><strong>3</strong></div><div class="stat"><span>Confidence</span><strong>80%</strong></div><div class="stat"><span>Risks</span><strong>2</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Dependency on eligibility API SLA and widget config service.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Separate task for impression/click tracking schema alignment.</span></div><div class="bullet"><span class="bullet-dot"></span><span>⚑ Cache TTL inferred, not sourced from a design artifact.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">Inspect</button><button class="mini-btn">Send to QA</button><button class="mini-btn">Resolve</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-green">SD</div><div><h3>Software Developer Agent</h3><p>Implementation plan, branch &amp; commit package</p></div></div><div class="pill running">⟳ Running</div></div>
+        <div class="agent-body">
+          <div><div class="progress shimmer"><span style="width:68%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Tasks</span><strong>9</strong></div><div class="stat"><span>Confidence</span><strong>81%</strong></div><div class="stat"><span>Commits</span><strong>3</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Slices for UI rendering, API integration, fallback state, telemetry.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Branch: <span class="mono">feature/ccre-1842-personalized-offers-home</span></span></div><div class="bullet"><span class="bullet-dot"></span><span>Commit plan ready after QA test pack finalized.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">View Code Plan</button><button class="mini-btn">Create Branch</button><button class="mini-btn">Preview PR</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-red">QA</div><div><h3>QA Agent</h3><p>Test scenarios, negative paths &amp; delivery validation</p></div></div><div class="pill running">⟳ Running</div></div>
+        <div class="agent-body">
+          <div><div class="progress shimmer"><span style="width:60%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Tests</span><strong>22</strong></div><div class="stat"><span>Confidence</span><strong>78%</strong></div><div class="stat"><span>Gaps</span><strong>3</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>Negative paths: timeout, empty response, stale cache.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Visual regression for widget across breakpoints.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Waiting on Architecture resolution for resilience coverage.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">View Tests</button><button class="mini-btn">Run Smoke</button><button class="mini-btn">Co-sign Git</button></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-head"><div class="agent-info"><div class="agent-icon ic-blue">JF</div><div><h3>Jira Formatter Agent</h3><p>Assembles the final Jira-ready story package</p></div></div><div class="pill blocked">⊘ Blocked</div></div>
+        <div class="agent-body">
+          <div><div class="progress"><span style="width:45%"></span></div></div>
+          <div class="stats"><div class="stat"><span>Ready</span><strong>3</strong></div><div class="stat"><span>Confidence</span><strong>71%</strong></div><div class="stat"><span>Blockers</span><strong>1</strong></div></div>
+          <div class="bullets"><div class="bullet"><span class="bullet-dot"></span><span>⊘ Blocked: needs fallback story packaging decision.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Three child stories ready to structure once resolved.</span></div><div class="bullet"><span class="bullet-dot"></span><span>Will auto-generate Jira markdown, labels &amp; story points.</span></div></div>
+          <div class="agent-btns"><button class="mini-btn">Preview Draft</button><button class="mini-btn">Resolve Blocker</button><button class="mini-btn">Force Generate</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: STORIES -->
+  <div class="page" id="page-stories">
+    <div class="page-title"><h2>Candidate Stories</h2><p>7 stories generated. Review, edit and approve before publishing.</p></div>
+    <div class="stack">
+      <div class="story-card">
+        <div class="story-top"><div><div class="story-title">Display personalized offers on home page</div><div class="story-meta">CCRE-1842-01 · 5 pts · <span style="color:var(--green)">High</span></div></div><div class="pill complete">● Ready</div></div>
+        <div class="narrative">"As a digitally active retail customer, I want to see personalized offers on my home page so I can discover relevant financial products without leaving my primary view."</div>
+        <div class="tags"><div class="tag">personalization</div><div class="tag">home-page</div><div class="tag">eligibility-service</div></div>
+        <div class="story-footer"><div class="quality"><span>Quality</span><div class="quality-bar"><span style="width:94%"></span></div><strong style="color:var(--green);font-size:12px;">94%</strong></div><div style="display:flex;gap:6px;"><button class="mini-btn">Edit</button><button class="mini-btn">Approve</button></div></div>
+      </div>
+      <div class="story-card" style="border-color:rgba(201,168,76,0.3);">
+        <div class="story-top"><div><div class="story-title">Provide fallback experience when no offers available</div><div class="story-meta">CCRE-1842-02 · 3 pts · <span style="color:var(--gold)">⚑ Open Decision</span></div></div><div class="pill review">⚑ Decide</div></div>
+        <div class="narrative">"As a retail customer with no eligible offers, I want a relevant fallback experience so my home page still feels personalized and valuable."</div>
+        <div class="tags"><div class="tag">fallback</div><div class="tag">UX</div><div class="tag">no-offer-cohort</div></div>
+        <div class="story-footer"><div class="quality"><span>Quality</span><div class="quality-bar"><span style="width:76%"></span></div><strong style="color:var(--gold);font-size:12px;">76%</strong></div><div style="display:flex;gap:6px;"><button class="mini-btn">Edit</button><button class="mini-btn">Decide</button></div></div>
+      </div>
+      <div class="story-card">
+        <div class="story-top"><div><div class="story-title">Track offer impressions and clicks for analytics</div><div class="story-meta">CCRE-1842-03 · 3 pts · Medium</div></div><div class="pill complete">● Ready</div></div>
+        <div class="narrative">"As a product analyst, I want impression and click events instrumented on personalized offers so we can measure CTR and downstream conversion performance."</div>
+        <div class="tags"><div class="tag">analytics</div><div class="tag">telemetry</div><div class="tag">impression-tracking</div></div>
+        <div class="story-footer"><div class="quality"><span>Quality</span><div class="quality-bar"><span style="width:88%"></span></div><strong style="color:var(--green);font-size:12px;">88%</strong></div><div style="display:flex;gap:6px;"><button class="mini-btn">Edit</button><button class="mini-btn">Approve</button></div></div>
+      </div>
+      <div class="story-card">
+        <div class="story-top"><div><div class="story-title">Handle eligibility API timeout with graceful degradation</div><div class="story-meta">CCRE-1842-04 · 2 pts · Medium</div></div><div class="pill pending">Pending</div></div>
+        <div class="narrative">"As a customer visiting the home page when the eligibility service is slow, I want the page to load normally with a fallback state rather than showing an error."</div>
+        <div class="tags"><div class="tag">resilience</div><div class="tag">timeout</div><div class="tag">degradation</div></div>
+        <div class="story-footer"><div class="quality"><span>Quality</span><div class="quality-bar"><span style="width:71%"></span></div><strong style="color:var(--muted);font-size:12px;">71%</strong></div><div style="display:flex;gap:6px;"><button class="mini-btn">Edit</button><button class="mini-btn">Review</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: ACCEPTANCE -->
+  <div class="page" id="page-ac">
+    <div class="page-title"><h2>Acceptance Criteria</h2><p>16 Given / When / Then criteria generated and linked to candidate stories.</p></div>
+    <div class="stack">
+      <div class="section-label">Story 1 — Display personalized offers</div>
+      <div class="ac-item"><span><span class="given">Given</span> a customer with eligible offers visits the home page<br><span class="when">When</span> the eligibility service responds within SLA<br><span class="then">Then</span> up to 3 personalized offers render in the widget</span><div class="pill complete">✓</div></div>
+      <div class="ac-item"><span><span class="given">Given</span> a customer views the home page<br><span class="when">When</span> the eligibility service returns an empty list<br><span class="then">Then</span> the fallback experience is displayed with no errors</span><div class="pill review">⚑</div></div>
+      <div class="ac-item"><span><span class="given">Given</span> a customer with offers loads the page<br><span class="when">When</span> an offer card is rendered<br><span class="then">Then</span> an impression event is fired to the analytics pipeline</span><div class="pill complete">✓</div></div>
+      <div class="ac-item"><span><span class="given">Given</span> a customer on a mobile viewport<br><span class="when">When</span> offers are loaded<br><span class="then">Then</span> the widget is fully responsive and meets WCAG AA</span><div class="pill complete">✓</div></div>
+      <div class="section-label" style="margin-top:8px;">Story 3 — Analytics instrumentation</div>
+      <div class="ac-item"><span><span class="given">Given</span> an offer is displayed<br><span class="when">When</span> a customer clicks the offer card<br><span class="then">Then</span> a click event with offer ID and session ID is recorded</span><div class="pill complete">✓</div></div>
+      <div class="ac-item"><span><span class="given">Given</span> an impression event fires<br><span class="when">When</span> the analytics pipeline receives it<br><span class="then">Then</span> it is logged with timestamp, offer ID, and customer segment</span><div class="pill complete">✓</div></div>
+      <div class="section-label" style="margin-top:8px;">Story 4 — Resilience &amp; timeout</div>
+      <div class="ac-item"><span><span class="given">Given</span> the eligibility API exceeds its 300ms timeout<br><span class="when">When</span> the home page is loading<br><span class="then">Then</span> the widget renders the fallback state without a page error</span><div class="pill pending">Pending</div></div>
+      <div class="ac-item"><span><span class="given">Given</span> a stale eligibility cache is available<br><span class="when">When</span> the live API is unavailable<br><span class="then">Then</span> the stale cache is used and a staleness indicator shown</span><div class="pill blocked">⊘ Gap</div></div>
+    </div>
+  </div>
+
+  <!-- PAGE: TECH & QA -->
+  <div class="page" id="page-tech">
+    <div class="page-title"><h2>Tech Notes &amp; QA Coverage</h2><p>Architecture decisions, NFRs, test coverage and open conflicts.</p></div>
+    <div class="grid-2" style="align-items:start;">
+      <div class="stack">
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Architecture Notes</div>
+          <div class="stack" style="gap:10px;">
+            <div class="callout blue"><strong>Component separation:</strong> Rendering, eligibility retrieval and analytics as separate concerns to reduce blast radius.</div>
+            <div class="callout blue"><strong>Resilience:</strong> Timeout and stale-cache fallback required for home-page widget SLA compliance.</div>
+            <div class="callout gold"><strong>ADRs:</strong> 4 recorded — offer rendering, cache TTL, API circuit breaker, telemetry schema.</div>
+            <div class="callout gold"><strong>Observability:</strong> Pending — may be gated to second release if scope tightens.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Non-Functional Requirements</div>
+          <div class="stack" style="gap:8px;">
+            <div class="git-block"><p><strong>Latency SLA:</strong> Offer widget must render within 300ms of page load (P95).</p></div>
+            <div class="git-block"><p><strong>Availability:</strong> Eligibility timeout must not cause page-level failure.</p></div>
+            <div class="git-block"><p><strong>Cache TTL:</strong> Configurable per segment. Default pending Architecture confirmation.</p></div>
+            <div class="git-block"><p><strong>Security:</strong> PII in eligibility response must not be logged or exposed client-side.</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Open Conflicts</div>
+          <div class="stack" style="gap:10px;">
+            <div class="conflict-box" style="border-left:3px solid var(--purple);"><h4>Story Splitter Position</h4><p>Fallback should be its own story — separate UX decisions, QA coverage, and release dependencies.</p></div>
+            <div class="conflict-box" style="border-left:3px solid var(--teal);"><h4>Jira Formatter Position</h4><p>Fallback can stay in the main story to reduce Jira sprawl if scope stays small and UX is decided.</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>QA Test Coverage</div>
+        <table>
+          <thead><tr><th>Scenario</th><th>Type</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Eligible offers render correctly</td><td>Integration</td><td><div class="pill complete" style="font-size:10px;padding:3px 8px;">Ready</div></td></tr>
+            <tr><td>Empty eligibility → fallback UX</td><td>Integration</td><td><div class="pill review" style="font-size:10px;padding:3px 8px;">Pending</div></td></tr>
+            <tr><td>API timeout → graceful degradation</td><td>Negative Path</td><td><div class="pill running" style="font-size:10px;padding:3px 8px;">In Progress</div></td></tr>
+            <tr><td>Impression event fires on render</td><td>Unit</td><td><div class="pill complete" style="font-size:10px;padding:3px 8px;">Ready</div></td></tr>
+            <tr><td>Click event fires with correct payload</td><td>Unit</td><td><div class="pill complete" style="font-size:10px;padding:3px 8px;">Ready</div></td></tr>
+            <tr><td>Visual regression: home widget</td><td>Visual</td><td><div class="pill running" style="font-size:10px;padding:3px 8px;">In Progress</div></td></tr>
+            <tr><td>Stale cache behavior validation</td><td>Negative Path</td><td><div class="pill blocked" style="font-size:10px;padding:3px 8px;">Blocked</div></td></tr>
+            <tr><td>WCAG AA accessibility pass</td><td>Accessibility</td><td><div class="pill complete" style="font-size:10px;padding:3px 8px;">Ready</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: DELIVERY -->
+  <div class="page" id="page-delivery">
+    <div class="page-title"><h2>Git Delivery Package</h2><p>Feature branch, commit plan, QA gates and Jira publish readiness.</p></div>
+    <div class="grid-2" style="align-items:start;">
+      <div class="stack">
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Branch &amp; Commit Plan</div>
+          <div class="stack" style="gap:10px;">
+            <div class="git-block"><p><strong>Feature Branch</strong></p><p style="margin-top:6px;"><span class="mono">feature/ccre-1842-personalized-offers-home</span></p></div>
+            <div class="git-block"><p><strong>Base Branch:</strong> <span class="mono">develop</span></p></div>
+            <div class="git-block"><p><strong>Commit Plan</strong></p><p style="margin-top:6px;">1. Widget shell → 2. Eligibility integration → 3. Fallback UX → 4. Analytics instrumentation → 5. QA automation</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>QA Publish Gate</div>
+          <div class="stack" style="gap:8px;">
+            <div class="git-block"><p><strong>Required checks:</strong> Unit tests, integration tests, visual regression, smoke tests, branch policy compliance.</p></div>
+            <div class="git-block"><p><strong>Publish action:</strong> Push branch → create PR draft → attach Jira link → add QA summary as PR description.</p></div>
+            <div class="git-block"><p><strong>QA co-sign:</strong> QA Agent validates all gates before Software Developer Agent pushes the branch.</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Jira Draft Preview</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Package creates child stories under CCRE-1842 once approved.</p>
+        <div class="stack" style="gap:10px;">
+          <div class="jira-child"><strong>CCRE-1842-01 · Child Story 1</strong><p>Display personalized offers on the home page</p></div>
+          <div class="jira-child"><strong>CCRE-1842-02 · Child Story 2</strong><p>Provide fallback experience when no offers are available</p></div>
+          <div class="jira-child"><strong>CCRE-1842-03 · Child Story 3</strong><p>Track offer impressions and clicks for analytics</p></div>
+          <div class="jira-child" style="border-left-color:var(--muted);opacity:0.55;"><strong>CCRE-1842-04 · Child Story 4 (Pending)</strong><p>Handle eligibility API timeout with graceful degradation</p></div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px;">
+          <button class="btn btn-ghost" style="flex:1;">Export Package</button>
+          <button class="btn btn-primary" style="flex:1;opacity:0.5;cursor:not-allowed;">↑ Publish to Jira</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">2 blockers must be resolved before publishing</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: SIGN-OFF -->
+  <div class="page" id="page-signoff">
+    <div class="page-title"><h2>Review Ring &amp; Sign-off</h2><p>All mandatory reviewers must approve before merge and release.</p></div>
+    <div class="reviewer-grid" style="margin-bottom:24px;">
+      <div class="reviewer"><div class="reviewer-avatar ic-gold">BA</div><h4>Business Analyst</h4><p>Confirms business intent and acceptance coverage</p><span class="pill pending">Awaiting</span></div>
+      <div class="reviewer"><div class="reviewer-avatar ic-gold">SL</div><h4>Squad Leader</h4><p>Confirms sequencing, release readiness &amp; backlog alignment</p><span class="pill pending">Awaiting</span></div>
+      <div class="reviewer"><div class="reviewer-avatar ic-teal">AR</div><h4>Architecture</h4><p>Confirms design, NFR, resilience &amp; dependency alignment</p><span class="pill pending">Awaiting</span></div>
+      <div class="reviewer"><div class="reviewer-avatar ic-green">QA</div><h4>Dev + QA</h4><p>Confirms implementation completeness &amp; quality gate pass</p><span class="pill pending">Awaiting</span></div>
+      <div class="reviewer" style="border-color:rgba(201,168,76,0.3);"><div class="reviewer-avatar ic-blue">ST</div><h4>Stakeholder</h4><p>Final go / no-go before publish and merge</p><span class="pill pending">Awaiting</span></div>
+    </div>
+    <div class="grid-2" style="align-items:start;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Open Assumptions</div>
+        <div class="stack" style="gap:10px;">
+          <div class="callout blue"><strong>Assumption 1:</strong> Personalized offers are ranked by the eligibility service — no client-side sorting needed.</div>
+          <div class="callout gold"><strong>Assumption 2:</strong> Fallback content can be configured independently of the core personalized offers response.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Sign-off Checklist</div>
+        <div class="stack" style="gap:8px;">
+          <div class="git-block"><p>☐ &nbsp;Story package reviewed by BA and Squad Leader</p></div>
+          <div class="git-block"><p>☐ &nbsp;Architecture ADRs reviewed and conflicts resolved</p></div>
+          <div class="git-block"><p>☐ &nbsp;All QA gates passed and co-signed</p></div>
+          <div class="git-block"><p>☐ &nbsp;Feature branch and PR draft ready</p></div>
+          <div class="git-block"><p>☐ &nbsp;Stakeholder final approval received</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: TIMELINE -->
+  <div class="page" id="page-timeline">
+    <div class="page-title"><h2>Timeline &amp; Audit Trail</h2><p>Chronological record of all agent activity and user decisions.</p></div>
+    <div class="grid-2" style="align-items:start;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Agent Timeline</div>
+        <div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>Jira story imported</strong><p>CCRE-1842 loaded with title, description, labels and linked artifacts.</p></div><div class="tl-time">09:41</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>Requirements Agent completed intake</strong><p>Extracted personas, outcomes and one fallback ambiguity.</p></div><div class="tl-time">09:42</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>Story Splitter generated 6 candidates</strong><p>Suggested splitting analytics and fallback into separate stories.</p></div><div class="tl-time">09:43</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>QA Agent added negative-path coverage</strong><p>Added timeout, empty response and stale cache scenarios.</p></div><div class="tl-time">09:44</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>Architecture &amp; Developer agents produced delivery design</strong><p>Architecture notes, implementation slices and branch strategy.</p></div><div class="tl-time">09:45</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>Formatter blocked pending human decision</strong><p>Needs confirmation on fallback packaging before Jira draft and Git publish.</p></div><div class="tl-time">09:46</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>Dev + QA delivery gate staged</strong><p>Feature branch name, commit plan and QA checklist ready.</p></div><div class="tl-time">09:47</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-copy"><strong>Reviewer ring queued</strong><p>BA, Squad Leader, Architecture and stakeholders queued for sign-off review.</p></div><div class="tl-time">09:48</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--gold);box-shadow:0 0 6px var(--gold);"></span>Audit Trail</div>
+        <div>
+          <div class="tl-item"><div class="tl-dot" style="background:var(--gold);box-shadow:0 0 6px rgba(201,168,76,0.5);"></div><div class="tl-copy"><strong>User edited approval threshold</strong><p>Updated from 80% to 85% confidence before auto-promote.</p></div><div class="tl-time">09:39</div></div>
+          <div class="tl-item"><div class="tl-dot" style="background:var(--gold);box-shadow:0 0 6px rgba(201,168,76,0.5);"></div><div class="tl-copy"><strong>System versioned output package</strong><p>Generated artifact set v0.3 with linked source references.</p></div><div class="tl-time">09:45</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.nav-tab');
+    const pages = document.querySelectorAll('.page');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        pages.forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('page-' + tab.dataset.page).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
