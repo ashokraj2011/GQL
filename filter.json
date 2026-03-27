@@ -1,0 +1,73 @@
+{
+  "evaluation_group": {
+    "id": "1",
+    "namespace": "customerPlans",
+    "datasource": "CASGraphQL",
+    "record_selector": {
+      "pre_filter": { ... },
+      "order_by": [ ... ],
+      "pick": {
+        "mode": "first | last | limit | range",
+        "count": 5,
+        "fromRecord": 1,
+        "toRecord": 10
+      }
+    }
+  }
+}
+
+
+{
+  "operator": "AND",
+  "terms": [
+    {
+      "name": "latestPlanCheck",
+      "evaluation_group": {
+        "id": "1",
+        "namespace": "customerPlans",
+        "datasource": "CASGraphQL",
+        "row_selector": {
+          "pre_filter": {
+            "operator": "AND",
+            "conditions": [
+              {
+                "field": "effective_date",
+                "comp": "less than equal to",
+                "value": "${today}"
+              }
+            ]
+          },
+          "order_by": [
+            {
+              "field": "effective_date",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "field": "updated_at",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "pick": {
+            "mode": "first"
+          }
+        },
+        "row_match": "any"
+      },
+      "operator": "AND",
+      "terms": [
+        {
+          "field": {
+            "name": "plan_status",
+            "namespace": "customerPlans",
+            "datasource": "CASGraphQL",
+            "evaluation_group": "1"
+          },
+          "comp": "equal to",
+          "value": "ACTIVE"
+        }
+      ]
+    }
+  ]
+}
