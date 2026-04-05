@@ -1,0 +1,321 @@
+package org.example;
+
+import java.util.*;
+
+public final class RowPicker {
+    private RowPicker() {}
+
+    // Field name that holds the row number in the map (configurable per call)
+    private static int extractRowNum(Map<String, Object> row, int fallbackIndex1Based, String rowNumberField) {
+        if (row == null) return -1; // treat null as invalid
+        if (rowNumberField != null && !rowNumberField.isBlank()) {
+            Object v = row.get(rowNumberField);
+            if (v instanceof Number) return ((Number) v).intValue();
+            if (v instanceof CharSequence) {
+                try { return Integer.parseInt(v.toString().trim()); } catch (NumberFormatException ignored) {}
+            }
+        }
+        return fallbackIndex1Based;
+    }
+
+    // Single row by rownum (1-based). Returns Optional.empty() if not found or out of range.
+    public static Optional<Map<String, Object>> byRowNum(List<Map<String, Object>> sorted,
+                                                         int rownum,
+                                                         String rowNumberField) {
+        if (sorted == null || rownum <= 0) return Optional.empty();
+        // Fast path if no explicit row field: just index into the list
+        if (rowNumberField == null || rowNumberField.isBlank()) {
+            return (rownum <= sorted.size()) ? Optional.ofNullable(sorted.get(rownum - 1)) : Optional.empty();
+        }
+        // When a rownum field exists, locate by that value
+        for (int i = 0; i < sorted.size(); i++) {
+            Map<String, Object> row = sorted.get(i);
+            if (extractRowNum(row, i + 1, rowNumberField) == rownum) return Optional.ofNullable(row);
+        }
+        return Optional.empty();
+    }
+
+    // Inclusive row range [from, to], 1-based. Returns an immutable copy.
+    public static List<Map<String, Object>> byRange(List<Map<String, Object>> sorted,
+                                                    int fromRowInclusive,
+                                                    int toRowInclusive,
+                                                    String rowNumberField) {
+        if (sorted == null || sorted.isEmpty()) return List.of();
+        if (fromRowInclusive <= 0 || toRowInclusive <= 0) return List.of();
+        if (fromRowInclusive > toRowInclusive) return List.of();
+
+        // If no row field is used, we can slice by indices directly
+        if (rowNumberField == null || rowNumberField.isBlank()) {
+            int fromIdx = Math.max(0, fromRowInclusive - 1);
+            int toIdxExcl = Math.min(sorted.size(), toRowInclusive); // exclusive
+            if (fromIdx >= toIdxExcl) return List.of();
+            return List.copyOf(sorted.subList(fromIdx, toIdxExcl));
+        }
+
+        // With a rownum field, stream/filter by that value
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (int i = 0; i < sorted.size(); i++) {
+            Map<String, Object> row = sorted.get(i);
+            int rn = extractRowNum(row, i + 1, rowNumberField);
+            if (rn >= fromRowInclusive && rn <= toRowInclusive) out.add(row);
+        }
+        return List.copyOf(out);
+    }
+
+    // First N rows (1-based). If N <= 0 → empty list.
+    public static List<Map<String, Object>> firstN(List<Map<String, Object>> sorted, int n) {
+        if (sorted == null || sorted.isEmpty() || n <= 0) return List.of();
+        int to = Math.min(sorted.size(), n);
+        return List.copyOf(sorted.subList(0, to));
+    }
+
+    // Last N rows. If N <= 0 → empty list.
+    public static List<Map<String, Object>> lastN(List<Map<String, Object>> sorted, int n) {
+        if (sorted == null || sorted.isEmpty() || n <= 0) return List.of();
+        int from = Math.max(0, sorted.size() - n);
+        return List.copyOf(sorted.subList(from, sorted.size()));
+    }
+
+    // Simple pagination: pageNumber is 1-based, pageSize > 0
+    public static List<Map<String, Object>> page(List<Map<String, Object>> sorted, int pageNumber, int pageSize) {
+        if (sorted == null || sorted.isEmpty() || pageNumber <= 0 || pageSize <= 0) return List.of();
+        int from = (pageNumber - 1) * pageSize;
+        if (from >= sorted.size()) return List.of();
+        int to = Math.min(sorted.size(), from + pageSize);
+        return List.copyOf(sorted.subList(from, to));
+    }
+}
+
+package org.example;
+
+import java.math.BigDecimal;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+
+public final class MapSorter {
+    private MapSorter() {}
+
+    public static List<Map<String, Object>> getSorted(
+            List<Map<String, Object>> data,
+            String sortBy,
+            String sortOrder,          // "asc" or "desc"
+            boolean addRowNumber,      // add row number after sort
+            String rowNumberField,     // e.g., "rownum"
+            boolean nullsLast          // true → nulls last; false → nulls first
+    ) {
+        Objects.requireNonNull(data, "data");
+        Objects.requireNonNull(sortBy, "sortBy");
+        String order = (sortOrder == null ? "asc" : sortOrder.trim().toLowerCase(Locale.ROOT));
+        boolean desc = order.equals("desc");
+
+        // Work on a copy to avoid mutating caller’s list order
+        List<Map<String, Object>> copy = new ArrayList<>(data.size());
+        for (Map<String, Object> row : data) {
+            // Shallow copy to avoid mutating caller’s maps when adding rownum
+            copy.add(row == null ? null : new LinkedHashMap<>(row));
+        }
+
+        Comparator<Map<String, Object>> cmp = comparatorForKey(sortBy, nullsLast);
+        if (desc) cmp = cmp.reversed();
+
+        // Stable sort
+        copy.sort(cmp);
+
+        if (addRowNumber) {
+            String field = (rowNumberField == null || rowNumberField.isBlank()) ? "rownum" : rowNumberField;
+            int i = 1;
+            for (Map<String, Object> row : copy) {
+                if (row != null) row.put(field, i++);
+            }
+        }
+        return copy;
+    }
+
+    private static Comparator<Map<String, Object>> comparatorForKey(String key, boolean nullsLast) {
+        return (a, b) -> {
+            if (a == b) return 0;
+            if (a == null) return nullsLast ? 1 : -1;
+            if (b == null) return nullsLast ? -1 : 1;
+
+            Object va = a.get(key);
+            Object vb = b.get(key);
+            Value pa = Value.of(va);
+            Value pb = Value.of(vb);
+
+            int t = Integer.compare(pa.kind.ordinal(), pb.kind.ordinal());
+            if (t != 0) return t;
+            return pa.compareTo(pb);
+        };
+    }
+
+    private enum Kind { NULL, BOOLEAN, NUMBER, DATE, STRING }
+
+    private static final class Value implements Comparable<Value> {
+        final Kind kind;
+        final Object value; // Comparable when kind != NULL
+
+        private Value(Kind k, Object v) {
+            this.kind = k;
+            this.value = v;
+        }
+
+        static Value of(Object raw) {
+            if (raw == null) return new Value(Kind.NULL, null);
+
+            // Already typed
+            if (raw instanceof Boolean) return new Value(Kind.BOOLEAN, ((Boolean) raw) ? 1 : 0);
+            if (raw instanceof Number) return new Value(Kind.NUMBER, toBigDecimal((Number) raw));
+            if (raw instanceof LocalDate) return new Value(Kind.DATE, ((LocalDate) raw).atStartOfDay(ZoneOffset.UTC).toInstant());
+            if (raw instanceof LocalDateTime) return new Value(Kind.DATE, ((LocalDateTime) raw).toInstant(ZoneOffset.UTC));
+            if (raw instanceof Instant) return new Value(Kind.DATE, (Instant) raw);
+
+            // Strings: try boolean → number → date → fallback string
+            if (raw instanceof CharSequence) {
+                String s = raw.toString().trim();
+                if (s.isEmpty()) return new Value(Kind.STRING, "");
+
+                // Boolean?
+                if (s.equalsIgnoreCase("true")) return new Value(Kind.BOOLEAN, 1);
+                if (s.equalsIgnoreCase("false")) return new Value(Kind.BOOLEAN, 0);
+
+                // Number?
+                BigDecimal num = tryParseBigDecimal(s);
+                if (num != null) return new Value(Kind.NUMBER, num);
+
+                // Date?
+                Instant inst = tryParseDateToInstant(s);
+                if (inst != null) return new Value(Kind.DATE, inst);
+
+                // Fallback string (case-insensitive ordering)
+                return new Value(Kind.STRING, s.toLowerCase(Locale.ROOT));
+            }
+
+            // Unknown type → string via toString
+            return new Value(Kind.STRING, raw.toString().toLowerCase(Locale.ROOT));
+        }
+
+        @Override
+        public int compareTo(Value o) {
+            if (this.kind == Kind.NULL && o.kind == Kind.NULL) return 0;
+            // Values are Comparable for non-NULL kinds
+            @SuppressWarnings("unchecked")
+            Comparable<Object> a = (Comparable<Object>) this.value;
+            return a.compareTo(o.value);
+        }
+
+        private static BigDecimal toBigDecimal(Number n) {
+            if (n instanceof BigDecimal) return (BigDecimal) n;
+            if (n instanceof Long || n instanceof Integer || n instanceof Short || n instanceof Byte)
+                return BigDecimal.valueOf(n.longValue());
+            return BigDecimal.valueOf(n.doubleValue());
+        }
+
+        private static BigDecimal tryParseBigDecimal(String s) {
+            try {
+                // Allow underscores or commas stripping if needed:
+                String normalized = s.replace(",", "");
+                return new BigDecimal(normalized);
+            } catch (NumberFormatException ex) {
+                return null;
+            }
+        }
+
+        private static final List<DateTimeFormatter> DATE_FORMATS = List.of(
+                // Common patterns – extend as needed
+                DateTimeFormatter.ISO_LOCAL_DATE,                    // 2003-03-12
+                DateTimeFormatter.ISO_INSTANT,                       // 2003-03-12T10:15:30Z
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME,              // 2003-03-12T10:15:30+01:00
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME,               // 2003-03-12T10:15:30
+                DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH), // 12-Mar-2003
+                DateTimeFormatter.ofPattern("dd/MM/yyyy"),          // 12/03/2003
+                DateTimeFormatter.ofPattern("MM/dd/yyyy"),          // 03/12/2003
+                DateTimeFormatter.ofPattern("yyyy/MM/dd")           // 2003/03/12
+        );
+
+        private static Instant tryParseDateToInstant(String s) {
+            // If string is quoted like '12-Mar-2003', strip quotes
+            String t = s;
+            if (t.length() >= 2 && ((t.startsWith("\"") && t.endsWith("\"")) || (t.startsWith("'") && t.endsWith("'")))) {
+                t = t.substring(1, t.length() - 1);
+            }
+            for (DateTimeFormatter f : DATE_FORMATS) {
+                try {
+                    if (f == DateTimeFormatter.ISO_INSTANT) return Instant.parse(t);
+                    if (f == DateTimeFormatter.ISO_LOCAL_DATE) return LocalDate.parse(t, f).atStartOfDay(ZoneOffset.UTC).toInstant();
+                    if (f == DateTimeFormatter.ISO_LOCAL_DATE_TIME) return LocalDateTime.parse(t, f).toInstant(ZoneOffset.UTC);
+                    if (f == DateTimeFormatter.ISO_OFFSET_DATE_TIME) return OffsetDateTime.parse(t, f).toInstant();
+                    // pattern-based
+                    try {
+                        return LocalDate.parse(t, f).atStartOfDay(ZoneOffset.UTC).toInstant();
+                    } catch (DateTimeParseException ignore) {
+                        return LocalDateTime.parse(t, f).toInstant(ZoneOffset.UTC);
+                    }
+                } catch (DateTimeParseException ignored) {
+                    // try next
+                }
+            }
+            return null;
+        }
+    }
+}
+
+
+
+package org.example;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) {
+        List<Map<String, Object>> dataFromDal = new ArrayList<>();
+
+        Map<String, Object> row1 = new HashMap<>();
+        row1.put("id", "1");
+        row1.put("date", "12-Mar-2004");
+        row1.put("name", "Ashok");
+        dataFromDal.add(row1);
+
+        Map<String, Object> row2 = new HashMap<>();
+        row2.put("id", "2");
+        row2.put("date", "12-Mar-2034");
+        row2.put("name", "Ashwin");
+        dataFromDal.add(row2);
+
+        // Example: sort by date ascending, add row numbers
+        List<Map<String, Object>> sorted = MapSorter.getSorted(
+                dataFromDal,
+                "date",
+                "desc",
+                true,
+                "rownum",
+                true // nulls last
+        );
+
+      //  sorted.forEach(System.out::println);
+
+
+        // 1) Single row by rownum
+        RowPicker.byRowNum(sorted, 1, "rownum").ifPresent(System.out::println);
+
+        // 2) Range (inclusive)
+        List<Map<String, Object>> r = RowPicker.byRange(sorted, 1, 2, "rownum");
+        r.forEach(System.out::println);
+
+        // 3) First N
+        RowPicker.firstN(sorted, 1).forEach(System.out::println);
+
+        // 4) Last N
+        RowPicker.lastN(sorted, 1).forEach(System.out::println);
+
+        // 5) Page
+        RowPicker.page(sorted, 1, 1).forEach(System.out::println);
+
+    }
+}
+
+
