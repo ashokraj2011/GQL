@@ -1,0 +1,2314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SingularityNeo - Tabbed Views (Readable Source)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .shell {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .hero {
+      background: rgba(15, 23, 42, 0.96);
+      color: white;
+      border-radius: 18px;
+      padding: 24px 24px 20px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16);
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+    }
+    .hero p {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .tab-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: #e2e8f0;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 160ms ease;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.14); }
+    .tab-btn.active {
+      background: white;
+      color: var(--text);
+      border-color: white;
+      font-weight: 600;
+    }
+    .frame-wrap {
+      margin-top: 18px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+    }
+    .frame-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 18px;
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--border);
+    }
+    .frame-title {
+      font-weight: 700;
+      font-size: 0.98rem;
+    }
+    .frame-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    iframe {
+      width: 100%;
+      height: 1100px;
+      border: 0;
+      display: block;
+      background: white;
+    }
+    template { display: none !important; }
+    @media (max-width: 900px) {
+      .shell { padding: 14px; }
+      iframe { height: 1250px; }
+      .frame-bar { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="hero">
+      <h1>SingularityNeo — Tabbed Views</h1>
+      <p>This version keeps the source human-readable. Each tab loads from an inline <code>&lt;template&gt;</code> into an isolated iframe so the original page styles and scripts do not collide.</p>
+      <div class="tabs" id="tabs"></div>
+    </div>
+
+    <div class="frame-wrap">
+      <div class="frame-bar">
+        <div class="frame-title" id="frameTitle">Brokerage Workflow</div>
+        <div class="frame-note">Readable wrapper • isolated tab rendering • Learning Model updated with code understanding module</div>
+      </div>
+      <iframe id="contentFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
+  </div>
+
+  <template id="tpl-brokerage" data-label="Brokerage Workflow">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - Brokerage Workflow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Enterprise Palette Context */
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            
+            /* Corporate Accents */
+            --primary: #0f172a;          /* Deep Navy/Black */
+            --primary-light: #1e293b;
+            --secondary: #334155;        /* Slate */
+            --agent-color: #0284c7;      /* Professional Blue */
+            --human-color: #b45309;      /* Executive Amber */
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 60px 40px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Top Capability Node */
+        .capability-node {
+            background: var(--primary);
+            border: 1px solid var(--primary-light);
+            border-radius: 8px;
+            padding: 24px 48px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+            z-index: 2;
+            position: relative;
+        }
+
+        .capability-node i {
+            color: #fff;
+            width: 32px; height: 32px;
+        }
+
+        .capability-node h2 {
+            font-size: 1.75rem;
+            letter-spacing: 0.01em;
+            color: #fff;
+        }
+
+        /* Connecting Lines */
+        .vertical-connector {
+            width: 2px;
+            height: 48px;
+            background: var(--card-border);
+            position: relative;
+        }
+
+        .vertical-connector::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: -6px;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 8px solid var(--card-border);
+        }
+
+        /* Phase Card */
+        .phase-card {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 32px;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .phase-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1);
+            border-color: #94a3b8;
+        }
+
+        /* Phase Header */
+        .phase-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        .phase-badge {
+            background: var(--primary);
+            color: #fff;
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .phase-header h3 {
+            font-size: 1.4rem;
+            color: var(--text-main);
+            letter-spacing: 0.02em;
+            font-weight: 600;
+        }
+
+        /* Phase Grid */
+        .phase-body {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto 1fr;
+            align-items: stretch;
+            gap: 24px;
+        }
+
+        /* I/O Blocks */
+        .io-block {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 24px;
+            transition: background 0.3s ease;
+        }
+
+        .io-block:hover {
+            background: #f1f5f9;
+        }
+
+        .io-block h4 {
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .io-block ul {
+            margin: 0; 
+            padding-left: 24px;
+            color: var(--text-main);
+            font-weight: 400;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .io-block li {
+            margin-bottom: 8px;
+            position: relative;
+            list-style-type: none;
+        }
+
+        .io-block li::before {
+            content: '';
+            position: absolute;
+            left: -16px;
+            top: 10px;
+            width: 6px; height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+        }
+
+        .inputs li::before { background: var(--secondary); }
+        .outputs li::before { background: var(--primary); }
+
+        /* Flow Arrows */
+        .flow-arrow {
+            color: var(--card-border);
+            align-self: center;
+        }
+
+        /* Agent Blocks */
+        .agent-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px 16px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .agent-block.human {
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+
+        .agent-icon {
+            width: 56px; height: 56px;
+            background: var(--agent-color);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px;
+            color: #fff;
+            box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2);
+        }
+
+        .agent-block.human .agent-icon {
+            background: var(--human-color);
+            box-shadow: 0 4px 6px -1px rgba(180, 83, 9, 0.2);
+        }
+
+        .agent-block h4 {
+            margin: 0 0 6px 0;
+            font-size: 1.15rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .agent-block span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Internal Connectors for multi-row phases */
+        .internal-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 32px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+        }
+
+        .internal-connector::before,
+        .internal-connector::after {
+            content: '';
+            flex-grow: 0.1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        /* Cross Cutting Block */
+        .cross-cutting {
+            width: 100%;
+            margin-top: 60px;
+            border-top: 2px solid #cbd5e1;
+            padding-top: 60px;
+        }
+
+        .cross-cutting h3 {
+            text-align: center;
+            margin-bottom: 32px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        .cc-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .cc-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .cc-card:hover {
+            border-color: #94a3b8;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .cc-icon {
+            color: var(--primary);
+            width: 48px; height: 48px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .cc-card h4 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--text-main);
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .phase-body {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .flow-arrow {
+                transform: rotate(90deg);
+                margin: 8px 0;
+            }
+            .cc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Top Node -->
+        <div class="capability-node">
+            <i data-lucide="layers"></i>
+            <h2>Capability: Rule Engine</h2>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 1. Inception Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">1</div>
+                <h3>Inception Phase</h3>
+            </div>
+            
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Capability Charter</li>
+                        <li>Stakeholder Req.</li>
+                        <li>Business Trigger</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="bot"></i></div>
+                    <h4>Agent: Planning</h4>
+                    <span>Intent & Scope</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Inception Brief</li>
+                        <li>Scope Boundary</li>
+                        <li>POC Hypotheses</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 2. Elaboration Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">2</div>
+                <h3>Elaboration Phase</h3>
+            </div>
+            
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Intake Packet</li>
+                        <li>Framing Notes</li>
+                        <li>Solution Context</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="cpu"></i></div>
+                    <h4>Agent: Architect</h4>
+                    <span>Solution Shaping</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Solution Shape</li>
+                        <li>Architecture Notes</li>
+                        <li>Construction Plan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 3. Construction Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">3</div>
+                <h3>Construction Phase</h3>
+            </div>
+            
+            <!-- Row 1: Developer -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Construction Handoff</li>
+                        <li>Focus Areas</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="code-2"></i></div>
+                    <h4>Agent: Developer</h4>
+                    <span>Build & Test</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Code Change Set</li>
+                        <li>Implementation Notes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="internal-connector">
+                <i data-lucide="arrow-down-circle"></i> Hand-off to QA Review
+            </div>
+
+            <!-- Row 2: QA -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>QA Review Packet</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="check-circle-2"></i></div>
+                    <h4>Agent: QA</h4>
+                    <span>Quality Review</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Quality Review Report</li>
+                        <li>Readiness Notes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 4. Delivery Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">4</div>
+                <h3>Delivery Phase</h3>
+            </div>
+            
+            <!-- Row 1: Owner (Human) -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Delivery Auth Packet</li>
+                        <li>Operational Handoff</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block human">
+                    <div class="agent-icon"><i data-lucide="user-check"></i></div>
+                    <h4>Human Approval</h4>
+                    <span>Capability Owner</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Delivery Authorization</li>
+                        <li>Release Conditions</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="internal-connector">
+                <i data-lucide="arrow-down-circle"></i> Auth Hand-off to DevOps
+            </div>
+
+            <!-- Row 2: DevOps -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Operations Packet</li>
+                        <li>Conditions Register</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="server"></i></div>
+                    <h4>Agent: DevOps</h4>
+                    <span>Deploy & Operate</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Delivery Summary</li>
+                        <li>Verification Report</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cross Cutting Section -->
+        <div class="cross-cutting">
+            <h3>Cross-Cutting Platform Capabilities</h3>
+            <div class="cc-grid">
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="activity"></i></div>
+                    <h4>Continuous Audit Trail<br>& Event Feed</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="shield-check"></i></div>
+                    <h4>Governance Guardrails<br>& Policy Gates</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="git-branch"></i></div>
+                    <h4>Data Provenance<br>& Traceability</h4>
+                </div>
+                <!-- Expanded Core Platform Functions -->
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="brain-circuit"></i></div>
+                    <h4>Agent Learning<br>& Distillation</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="database"></i></div>
+                    <h4>Artifacts &<br>Document Repository</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="users-round"></i></div>
+                    <h4>Role & User<br>Management</h4>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Initialize Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+
+
+  </template>
+
+  <template id="tpl-learning" data-label="Learning Model">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - Agent Learning & Code Understanding</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --secondary: #334155;
+            --agent-color: #0284c7;
+            --human-color: #b45309;
+            --learning-color: #7c3aed; /* Deep Violet for learning models */
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 60px 40px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; margin: 0; }
+        ul { margin: 0; padding-left: 24px; color: var(--text-main); font-size: 0.95rem; line-height: 1.6; }
+        li { margin-bottom: 8px; position: relative; list-style-type: none; }
+        li::before {
+            content: ''; position: absolute; left: -16px; top: 10px;
+            width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+        }
+        .inputs li::before { background: var(--secondary); }
+        .outputs li::before { background: var(--primary); }
+
+        .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+
+        .capability-node {
+            background: var(--primary); border: 1px solid var(--primary-light);
+            border-radius: 8px; padding: 24px 48px; display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); z-index: 2; position: relative;
+        }
+        .capability-node i { color: #fff; width: 32px; height: 32px; }
+        .capability-node h2 { font-size: 1.75rem; letter-spacing: 0.01em; color: #fff; }
+
+        .vertical-connector {
+            width: 2px; height: 48px; background: var(--card-border); position: relative;
+        }
+        .vertical-connector::after {
+            content: ''; position: absolute; bottom: -6px; left: -6px;
+            border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 8px solid var(--card-border);
+        }
+
+        .phase-card {
+            width: 100%; background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 32px; position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+        .phase-card:hover { border-color: #94a3b8; transform: translateY(-2px); box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1); }
+
+        .phase-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; }
+        .phase-badge { background: var(--primary); color: #fff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 600; }
+        .phase-header h3 { font-size: 1.4rem; font-weight: 600; letter-spacing: 0.02em; }
+
+        .phase-body { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 24px; }
+        .io-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; transition: background 0.3s ease; }
+        .io-block:hover { background: #f1f5f9; }
+        .io-block h4 { margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        
+        .flow-arrow { color: var(--card-border); align-self: center; }
+
+        .agent-block {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            padding: 24px 16px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px; position: relative;
+        }
+        .agent-block.human { background: #fff7ed; border-color: #fed7aa; }
+
+        .agent-icon {
+            width: 56px; height: 56px; background: var(--learning-color); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #fff;
+            box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);
+        }
+        .agent-block.human .agent-icon { background: var(--human-color); box-shadow: 0 4px 6px -1px rgba(180, 83, 9, 0.2); }
+
+        .agent-block h4 { font-size: 1.15rem; font-weight: 600; margin: 0 0 6px 0; }
+        .agent-block span { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+    
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .detail-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .detail-card h4 {
+            margin: 0 0 14px 0;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+        .detail-card p {
+            margin: 0 0 12px 0;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+        .detail-card code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.84rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+        .detail-card ul { margin-top: 8px; }
+        .detail-card li { font-size: 0.92rem; }
+        .pill {
+            display: inline-block;
+            margin: 6px 8px 0 0;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            color: #5b21b6;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        @media (max-width: 900px) {
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="capability-node">
+            <i data-lucide="brain-circuit"></i>
+            <h2>Agent Learning & Code Understanding</h2>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 1 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">1</div>
+                <h3>Context Ingestion</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Runtime Logs & Events</li>
+                        <li>Capability Documentation</li>
+                        <li>Stale Session Memory</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="network"></i></div>
+                    <h4>Profiler</h4>
+                    <span>Telemetry Aggregation</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Structured Event Graph</li>
+                        <li>Topic Context Blocks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 2 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">2</div>
+                <h3>Active Distillation</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Source Streams</h4>
+                    <ul>
+                        <li>Topic Context Blocks</li>
+                        <li>Historical Success Logic</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="filter"></i></div>
+                    <h4>Distillation Engine</h4>
+                    <span>Memory Optimization</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Distillates</h4>
+                    <ul>
+                        <li>Agent Learning Profile</li>
+                        <li>Summarized Highlights</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 3 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">3</div>
+                <h3>Human Feedback Loop</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Interactions</h4>
+                    <ul>
+                        <li>Direct Operator Chat</li>
+                        <li>Manual Corrections</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block human">
+                    <div class="agent-icon"><i data-lucide="user-cog"></i></div>
+                    <h4>Operator Override</h4>
+                    <span>Authoritative Feedback</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Guardrails</h4>
+                    <ul>
+                        <li>Updated Operations Contract</li>
+                        <li>Validated Behavior Model</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 4 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">4</div>
+                <h3>Repository Code Understanding</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>CapabilityRepository tarball via GitHub API</li>
+                        <li>Repository source trees across linked repos</li>
+                        <li>Copilot guidance docs plus real code structure</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="git-fork"></i></div>
+                    <h4>Code Indexer</h4>
+                    <span>AST + Symbol Graph + Semantic Lookup</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Repository symbol inventory</li>
+                        <li>Call / import / inheritance references</li>
+                        <li>Optional embeddings per top-level symbol</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="internal-connector">Implementation Surfaces</div>
+
+            <div class="detail-grid">
+                <div class="detail-card">
+                    <h4>Server modules</h4>
+                    <p>The platform should parse code directly, not only fetch copilot guidance files. This lets it reason about impact, symbol meaning, and cross-file references.</p>
+                    <ul>
+                        <li><code>server/codeIndex/ingest.ts</code> — pull repo tarball, walk with <code>tree-sitter-typescript</code>, <code>tree-sitter-python</code>, <code>tree-sitter-go</code>, <code>tree-sitter-java</code>, and emit symbol rows.</li>
+                        <li><code>server/codeIndex/embed.ts</code> — optional embedding pass for top-level symbols.</li>
+                        <li><code>server/codeIndex/query.ts</code> — <code>findSymbol</code>, <code>findReferences</code>, <code>semanticSearch</code>.</li>
+                    </ul>
+                </div>
+
+                <div class="detail-card">
+                    <h4>Storage model</h4>
+                    <p>Goal: answer “what symbols exist in this repo, what calls what, and what does this symbol mean semantically?”</p>
+                    <ul>
+                        <li><code>capability_code_symbols</code> — symbol metadata per repo and file.</li>
+                        <li><code>capability_code_references</code> — edges with kinds <span class="pill">CALLS</span><span class="pill">IMPORTS</span><span class="pill">EXTENDS</span></li>
+                        <li><code>capability_code_embeddings</code> — vector store for semantic lookup when <code>pgvector</code> is available; otherwise stub it cleanly.</li>
+                    </ul>
+                </div>
+
+                <div class="detail-card">
+                    <h4>API and UI</h4>
+                    <ul>
+                        <li><code>POST /api/capabilities/:id/code-index/refresh</code> — background-ingest every linked repo, mirroring <code>copilot-guidance/refresh</code>.</li>
+                        <li><code>GET /api/capabilities/:id/code-index/search?q=</code> — symbol-name and semantic search.</li>
+                        <li><code>CapabilityMetadata.tsx</code> — add a <strong>Code index</strong> card beside Copilot guidance with last indexed timestamp, symbol count by repo, and a <strong>Refresh index</strong> action.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script> lucide.createIcons(); </script>
+</body>
+</html>
+
+
+  </template>
+
+  <template id="tpl-security" data-label="Security Boundary">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - Security & Data Boundary Architecture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --primary: #0f172a;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            
+            --zone-public: #fee2e2;
+            --zone-public-border: #fca5a5;
+            --zone-vpc: #fef3c7;
+            --zone-vpc-border: #fcd34d;
+            --zone-secure: #dcfce7;
+            --zone-secure-border: #86efac;
+            
+            --accent-red: #ef4444;
+            --accent-gold: #f59e0b;
+            --accent-green: #10b981;
+        }
+
+        body {
+            margin: 0; padding: 60px 40px;
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; margin: 0; }
+        
+        .header { text-align: center; margin-bottom: 60px; max-width: 800px; }
+        .header h1 { font-size: 2rem; color: var(--primary); margin-bottom: 12px; }
+        .header p { color: var(--text-muted); font-size: 1.1rem; line-height: 1.5; }
+
+        .diagram-container {
+            display: flex; flex-direction: column; align-items: center; gap: 0;
+            width: 100%; max-width: 1000px;
+        }
+
+        /* Security Zones */
+        .security-zone {
+            width: 100%; border: 3px solid; border-radius: 16px;
+            padding: 40px 40px 60px 40px; position: relative;
+            background: #ffffff; margin-bottom: 20px;
+        }
+
+        .zone-public { border-color: var(--zone-public-border); background: linear-gradient(to bottom, #ffffff, #fff5f5); }
+        .zone-vpc { border-color: var(--zone-vpc-border); background: linear-gradient(to bottom, #ffffff, #fffbeb); }
+        .zone-secure { border-color: var(--zone-secure-border); background: linear-gradient(to bottom, #ffffff, #f0fdf4); }
+
+        .zone-label {
+            position: absolute; top: -16px; left: 40px; background: #ffffff;
+            padding: 4px 16px; font-size: 0.95rem; font-weight: 700; border-radius: 20px;
+            border: 2px solid; text-transform: uppercase; letter-spacing: 0.1em;
+            display: flex; align-items: center; gap: 8px;
+        }
+        
+        .zone-public .zone-label { border-color: var(--zone-public-border); color: var(--accent-red); }
+        .zone-vpc .zone-label { border-color: var(--zone-vpc-border); color: var(--accent-gold); }
+        .zone-secure .zone-label { border-color: var(--zone-secure-border); color: var(--accent-green); }
+
+        .nodes-grid { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-top: 10px; }
+
+        /* Component Cards */
+        .component-card {
+            background: #fff; border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 24px; min-width: 250px; flex: 1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            display: flex; flex-direction: column; gap: 16px; position: relative;
+        }
+
+        .comp-header { display: flex; align-items: center; gap: 12px; }
+        .comp-icon { width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--primary); }
+        .comp-title h3 { font-size: 1.15rem; }
+        .comp-title span { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+        .comp-list { margin: 0; padding-left: 20px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+        
+        /* Protection Layer / Connector */
+        .protection-layer {
+            width: 100%; display: flex; align-items: center; justify-content: center;
+            padding: 20px 0; position: relative; z-index: 10;
+        }
+        
+        .firewall-line {
+            position: absolute; left: 0; right: 0; top: 50%; height: 2px;
+            background: repeating-linear-gradient(90deg, #cbd5e1, #cbd5e1 10px, transparent 10px, transparent 20px);
+        }
+        
+        .firewall-badge {
+            background: #0f172a; color: #fff; padding: 10px 24px; border-radius: 30px;
+            font-size: 0.85rem; font-weight: 600; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;
+            position: relative; z-index: 2; box-shadow: 0 4px 12px rgba(15,23,42,0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Information Security & Data Boundaries</h1>
+        <p>How SingularityNeo protects enterprise Intellectual Property. The architecture strictly partitions raw LLM interactions from the core capability ledger, ensuring proprietary code and audit trails never leak into public models.</p>
+    </div>
+
+    <div class="diagram-container">
+
+        <!-- External LLM Boundary -->
+        <div class="security-zone zone-public">
+            <div class="zone-label"><i data-lucide="cloud"></i> External Boundary (Public / Vendor)</div>
+            <div class="nodes-grid">
+                <div class="component-card">
+                    <div class="comp-header">
+                        <div class="comp-icon" style="background: var(--accent-red);"><i data-lucide="brain"></i></div>
+                        <div class="comp-title">
+                            <span>Stateless APIs</span>
+                            <h3>Foundation LLMs</h3>
+                        </div>
+                    </div>
+                    <ul class="comp-list">
+                        <li>Public Cloud Models (OpenAI, Anthropic)</li>
+                        <li>No continuous memory state held</li>
+                        <li>Strictly processes explicit prompt payloads</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="protection-layer">
+            <div class="firewall-line"></div>
+            <div class="firewall-badge"><i data-lucide="shield-alert" style="width:16px;height:16px;"></i> PII Masking & Context Throttling</div>
+        </div>
+
+        <!-- Corporate Network / VPC -->
+        <div class="security-zone zone-vpc">
+            <div class="zone-label"><i data-lucide="building"></i> Enterprise VPC (Internal Network)</div>
+            <div class="nodes-grid">
+                
+                <div class="component-card">
+                    <div class="comp-header">
+                        <div class="comp-icon" style="background: var(--accent-gold);"><i data-lucide="bot"></i></div>
+                        <div class="comp-title">
+                            <span>Execution Engine</span>
+                            <h3>Copilot Coprocess</h3>
+                        </div>
+                    </div>
+                    <ul class="comp-list">
+                        <li>Executes physical tool & git operations</li>
+                        <li>Sandboxed to specific authorized repos</li>
+                        <li>Transient memory only</li>
+                    </ul>
+                </div>
+                
+                <div class="component-card">
+                    <div class="comp-header">
+                        <div class="comp-icon" style="background: var(--primary);"><i data-lucide="server"></i></div>
+                        <div class="comp-title">
+                            <span>Access Gateways</span>
+                            <h3>Singularity Orchestrator</h3>
+                        </div>
+                    </div>
+                    <ul class="comp-list">
+                        <li>Enforces Capability Identity Access (IAM)</li>
+                        <li>Manages Agent Operating Contracts</li>
+                        <li>Runs continuous compliance validations</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="protection-layer">
+            <div class="firewall-line"></div>
+            <div class="firewall-badge"><i data-lucide="key-round" style="width:16px;height:16px;"></i> Ed25519 Cryptographic Handoff</div>
+        </div>
+
+        <!-- High Security Persistence -->
+        <div class="security-zone zone-secure">
+            <div class="zone-label"><i data-lucide="lock"></i> High-Security Persistence (Air-Gappable)</div>
+            <div class="nodes-grid">
+                
+                <div class="component-card">
+                    <div class="comp-header">
+                        <div class="comp-icon" style="background: var(--accent-green);"><i data-lucide="activity"></i></div>
+                        <div class="comp-title">
+                            <span>Immutable Trail</span>
+                            <h3>Audit Ledger</h3>
+                        </div>
+                    </div>
+                    <ul class="comp-list">
+                        <li>Tamper-proof event logging</li>
+                        <li>Cryptographically signed evidence packets</li>
+                        <li>Stored entirely on-prem or isolated DB</li>
+                    </ul>
+                </div>
+                
+                <div class="component-card">
+                    <div class="comp-header">
+                        <div class="comp-icon" style="background: var(--accent-green);"><i data-lucide="database"></i></div>
+                        <div class="comp-title">
+                            <span>Private Intelligence</span>
+                            <h3>Capability Memory Bank</h3>
+                        </div>
+                    </div>
+                    <ul class="comp-list">
+                        <li>Enterprise IP and workflow history</li>
+                        <li>Distilled vector representations</li>
+                        <li>Never used to train vendor models</li>
+                    </ul>
+                </div>
+                
+            </div>
+        </div>
+
+    </div>
+
+    <script> lucide.createIcons(); </script>
+</body>
+</html>
+
+
+  </template>
+
+  <template id="tpl-deployment" data-label="Deployment">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - Deployment Architecture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --primary: #0f172a;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            
+            --node-client: #eff6ff; /* blue */
+            --node-client-border: #93c5fd;
+            --node-server: #f0fdfa; /* teal */
+            --node-server-border: #5eead4;
+            --node-db: #f5f3ff; /* violet */
+            --node-db-border: #c4b5fd;
+        }
+
+        body {
+            margin: 0; padding: 60px 40px;
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; margin: 0; }
+        
+        .header { text-align: center; margin-bottom: 60px; }
+        .header h1 { font-size: 2rem; color: var(--primary); margin-bottom: 10px; }
+        .header p { color: var(--text-muted); font-size: 1.1rem; }
+
+        .diagram-container {
+            display: flex; flex-direction: column; align-items: center; gap: 40px;
+            width: 100%; max-width: 900px;
+        }
+
+        /* Server / Boundary Boxes */
+        .boundary {
+            width: 100%; border: 2px dashed var(--border-color); border-radius: 16px;
+            padding: 40px; position: relative; background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+        
+        .boundary-title {
+            position: absolute; top: -14px; left: 40px; background: #ffffff;
+            padding: 0 16px; font-size: 0.9rem; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        .nodes-grid {
+            display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;
+        }
+
+        /* Specific Node Cars */
+        .node-card {
+            background: #fff; border: 2px solid; border-radius: 12px;
+            padding: 24px; min-width: 280px; display: flex; flex-direction: column;
+            gap: 12px; position: relative; transition: transform 0.2s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .node-card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); }
+
+        .node-header { display: flex; align-items: center; gap: 12px; }
+        .node-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; }
+        .node-title { flex-grow: 1; }
+        .node-title h3 { font-size: 1.2rem; }
+        .node-title span { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        
+        .node-body { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 16px;}
+        .node-body ul { margin: 0; padding-left: 20px; }
+
+        /* Wiring / Connectors */
+        .connector-vertical {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 60px; width: 2px; background: var(--border-color); position: relative;
+        }
+        .connector-label {
+            background: #f8fafc; padding: 4px 12px; border: 1px solid var(--border-color);
+            border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted);
+            white-space: nowrap; z-index: 2; display: flex; align-items: center; gap: 6px;
+        }
+
+        /* Theming classes */
+        .theme-client { border-color: var(--node-client-border); }
+        .theme-client .node-icon { background: #3b82f6; }
+        
+        .theme-server { border-color: var(--node-server-border); }
+        .theme-server .node-icon { background: #0f766e; }
+
+        .theme-db { border-color: var(--node-db-border); }
+        .theme-db .node-icon { background: #6d28d9; }
+
+        .theme-copilot { border-color: #a1a1aa; }
+        .theme-copilot .node-icon { background: #3f3f46; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Platform Topology</h1>
+        <p>Standard architectural deployment diagram</p>
+    </div>
+
+    <div class="diagram-container">
+
+        <!-- Client Layer -->
+        <div class="boundary">
+            <div class="boundary-title">Operator Environment (Local)</div>
+            <div class="nodes-grid">
+                
+                <!-- Electron App -->
+                <div class="node-card theme-client">
+                    <div class="node-header">
+                        <div class="node-icon"><i data-lucide="monitor"></i></div>
+                        <div class="node-title">
+                            <span>GUI Client</span>
+                            <h3>Singularity Desktop</h3>
+                        </div>
+                    </div>
+                    <div class="node-body">
+                        <ul>
+                            <li>Electron / React App</li>
+                            <li>Workspace Orchestrator UI</li>
+                            <li>Direct FS execution access</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Copilot CLI / Agent -->
+                <div class="node-card theme-copilot">
+                    <div class="node-header">
+                        <div class="node-icon"><i data-lucide="bot"></i></div>
+                        <div class="node-title">
+                            <span>Agent Runner</span>
+                            <h3>Copilot Coprocess</h3>
+                        </div>
+                    </div>
+                    <div class="node-body">
+                        <ul>
+                            <li>Local CLI / Extension runtime</li>
+                            <li>Handles physical code edits</li>
+                            <li>Context discovery & ingestion</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Network connection between Client and Server -->
+        <div class="connector-vertical">
+            <div class="connector-label">
+                <i data-lucide="arrow-down-up" style="width: 14px; height: 14px;"></i>
+                HTTPS / REST API 
+            </div>
+        </div>
+
+        <!-- App Server Layer -->
+        <div class="boundary">
+            <div class="boundary-title">Backend Infrastructure</div>
+            <div class="nodes-grid">
+                
+                <!-- Express Server -->
+                <div class="node-card theme-server">
+                    <div class="node-header">
+                        <div class="node-icon"><i data-lucide="server"></i></div>
+                        <div class="node-title">
+                            <span>API Gateway</span>
+                            <h3>Express Server</h3>
+                        </div>
+                    </div>
+                    <div class="node-body">
+                        <ul>
+                            <li>Node.js / Express</li>
+                            <li>State, Policy & Access Control</li>
+                            <li>Distillation & Workflow routing</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="connector-vertical" style="margin: 20px auto;">
+                <div class="connector-label">
+                    <i data-lucide="arrow-down-up" style="width: 14px; height: 14px;"></i>
+                    TCP / Connection Pool
+                </div>
+            </div>
+
+            <div class="nodes-grid">
+                <!-- Database -->
+                <div class="node-card theme-db">
+                    <div class="node-header">
+                        <div class="node-icon"><i data-lucide="database"></i></div>
+                        <div class="node-title">
+                            <span>Persistence</span>
+                            <h3>Database Server</h3>
+                        </div>
+                    </div>
+                    <div class="node-body">
+                        <ul>
+                            <li>PostgreSQL</li>
+                            <li>Immutable Audit Ledger schema</li>
+                            <li>Continuous capability memory</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script> lucide.createIcons(); </script>
+</body>
+</html>
+
+
+  </template>
+
+  <template id="tpl-identity" data-label="Identity &amp; Access">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - User Access & Identity Model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --secondary: #334155;
+            --agent-color: #4f46e5; /* Indigo for IAM and Access */
+            --human-color: #b45309;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 60px 40px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; margin: 0; }
+        ul { margin: 0; padding-left: 24px; color: var(--text-main); font-size: 0.95rem; line-height: 1.6; }
+        li { margin-bottom: 8px; position: relative; list-style-type: none; }
+        li::before {
+            content: ''; position: absolute; left: -16px; top: 10px;
+            width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+        }
+        .inputs li::before { background: var(--secondary); }
+        .outputs li::before { background: var(--primary); }
+
+        .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+
+        .capability-node {
+            background: var(--primary); border: 1px solid var(--primary-light);
+            border-radius: 8px; padding: 24px 48px; display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); z-index: 2; position: relative;
+        }
+        .capability-node i { color: #fff; width: 32px; height: 32px; }
+        .capability-node h2 { font-size: 1.75rem; letter-spacing: 0.01em; color: #fff; }
+
+        .vertical-connector {
+            width: 2px; height: 48px; background: var(--card-border); position: relative;
+        }
+        .vertical-connector::after {
+            content: ''; position: absolute; bottom: -6px; left: -6px;
+            border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 8px solid var(--card-border);
+        }
+
+        .phase-card {
+            width: 100%; background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 32px; position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+        .phase-card:hover { border-color: #94a3b8; transform: translateY(-2px); box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1); }
+
+        .phase-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; }
+        .phase-badge { background: var(--primary); color: #fff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 600; }
+        .phase-header h3 { font-size: 1.4rem; font-weight: 600; letter-spacing: 0.02em; }
+
+        .phase-body { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 24px; }
+        .io-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; transition: background 0.3s ease; }
+        .io-block:hover { background: #f1f5f9; }
+        .io-block h4 { margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        
+        .flow-arrow { color: var(--card-border); align-self: center; }
+
+        .agent-block {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            padding: 24px 16px; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 12px; position: relative;
+        }
+
+        .agent-icon {
+            width: 56px; height: 56px; background: var(--agent-color); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #fff;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+
+        .agent-block h4 { font-size: 1.15rem; font-weight: 600; margin: 0 0 6px 0; }
+        .agent-block span { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+        .internal-connector {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 32px 0; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .internal-connector::before, .internal-connector::after { content: ''; flex-grow: 0.1; height: 1px; background: #e2e8f0; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="capability-node">
+            <i data-lucide="shield-half"></i>
+            <h2>Hierarchical Identity & Access</h2>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 1 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">1</div>
+                <h3>Workspace Governance Layer</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Base Roles</h4>
+                    <ul>
+                        <li>Workspace Admin</li>
+                        <li>Portfolio Owner</li>
+                        <li>Auditor Overlay</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="globe"></i></div>
+                    <h4>Platform Scope</h4>
+                    <span>Cross-System Rules</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Privileges</h4>
+                    <ul>
+                        <li>Global Read & Audit</li>
+                        <li>Lifecycle Management</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 2 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">2</div>
+                <h3>Team & Operating Groups</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Team Roles</h4>
+                    <ul>
+                        <li>Team Lead</li>
+                        <li>Approver Delegate</li>
+                        <li>Operator & Viewer</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="users"></i></div>
+                    <h4>Team Identity</h4>
+                    <span>Group Aggregation</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Entitlements</h4>
+                    <ul>
+                        <li>Shared Execution Claiming</li>
+                        <li>Approver Routing Logic</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 3 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">3</div>
+                <h3>Capability Resource Granularity</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inherited Sets</h4>
+                    <ul>
+                        <li>Explicit Grants</li>
+                        <li>Rollup Access Trees</li>
+                        <li>Descendant Inheritance</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="lock-keyhole"></i></div>
+                    <h4>Capability Target</h4>
+                    <span>Asset Level AuthZ</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Active Context</h4>
+                    <ul>
+                        <li>Effective Permission Set</li>
+                        <li>Approval Gate Unlocks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script> lucide.createIcons(); </script>
+</body>
+</html>
+
+
+  </template>
+
+  <template id="tpl-audit" data-label="Audit &amp; Governance">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - Auditing & Governance Architecture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --secondary: #334155;
+            --agent-color: #0d9488; /* Teal for audit and governance */
+            --human-color: #b45309;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 60px 40px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; margin: 0; }
+        ul { margin: 0; padding-left: 24px; color: var(--text-main); font-size: 0.95rem; line-height: 1.6; }
+        li { margin-bottom: 8px; position: relative; list-style-type: none; }
+        li::before {
+            content: ''; position: absolute; left: -16px; top: 10px;
+            width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+        }
+        .inputs li::before { background: var(--secondary); }
+        .outputs li::before { background: var(--primary); }
+
+        .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+
+        .capability-node {
+            background: var(--primary); border: 1px solid var(--primary-light);
+            border-radius: 8px; padding: 24px 48px; display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); z-index: 2; position: relative;
+        }
+        .capability-node i { color: #fff; width: 32px; height: 32px; }
+        .capability-node h2 { font-size: 1.75rem; letter-spacing: 0.01em; color: #fff; }
+
+        .vertical-connector {
+            width: 2px; height: 48px; background: var(--card-border); position: relative;
+        }
+        .vertical-connector::after {
+            content: ''; position: absolute; bottom: -6px; left: -6px;
+            border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 8px solid var(--card-border);
+        }
+
+        .phase-card {
+            width: 100%; background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 32px; position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+        .phase-card:hover { border-color: #94a3b8; transform: translateY(-2px); box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1); }
+
+        .phase-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; }
+        .phase-badge { background: var(--primary); color: #fff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 600; }
+        .phase-header h3 { font-size: 1.4rem; font-weight: 600; letter-spacing: 0.02em; }
+
+        .phase-body { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 24px; }
+        .io-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; transition: background 0.3s ease; }
+        .io-block:hover { background: #f1f5f9; }
+        .io-block h4 { margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        
+        .flow-arrow { color: var(--card-border); align-self: center; }
+
+        .agent-block {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            padding: 24px 16px; background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 12px; position: relative;
+        }
+
+        .agent-icon {
+            width: 56px; height: 56px; background: var(--agent-color); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #fff;
+            box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.2);
+        }
+
+        .agent-block h4 { font-size: 1.15rem; font-weight: 600; margin: 0 0 6px 0; }
+        .agent-block span { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+        .internal-connector {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 32px 0; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .internal-connector::before, .internal-connector::after { content: ''; flex-grow: 0.1; height: 1px; background: #e2e8f0; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="capability-node">
+            <i data-lucide="shield-check"></i>
+            <h2>Continuous Governance & Provenance</h2>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 1 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">1</div>
+                <h3>Evidence & Event Ingestion</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Action Executions</li>
+                        <li>API Invocations</li>
+                        <li>Work Items state</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="gavel"></i></div>
+                    <h4>Validation Control</h4>
+                    <span>Event Assessment</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Records</h4>
+                    <ul>
+                        <li>Normalized Event Feed</li>
+                        <li>Evidence Artifacts</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 2 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">2</div>
+                <h3>Cryptographic Provenance Verification</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Signals</h4>
+                    <ul>
+                        <li>Authorized Approver Identity</li>
+                        <li>Raw Payloads / Objects</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="fingerprint"></i></div>
+                    <h4>Signaturing Logic</h4>
+                    <span>Ed25519 Key Signing</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Security Layer</h4>
+                    <ul>
+                        <li>Immutable Handoff Trace</li>
+                        <li>Secure Lineage Tracking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- Stage 3 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">3</div>
+                <h3>Audit Ledger & Discovery</h3>
+            </div>
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Discovery</h4>
+                    <ul>
+                        <li>Control Testing Logs</li>
+                        <li>Policy Exceptions</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="library"></i></div>
+                    <h4>Ledger Repository</h4>
+                    <span>Replayable Audit Trail</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Delivery</h4>
+                    <ul>
+                        <li>Auditor Readiness Views</li>
+                        <li>Exception Reports</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script> lucide.createIcons(); </script>
+</body>
+</html>
+
+
+  </template>
+
+  <template id="tpl-enterprise" data-label="Enterprise Value">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - Enterprise Value Proposition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #2563eb; /* Corporate Blue */
+            --accent-light: #eff6ff;
+            --success: #059669;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; margin: 0; color: var(--primary); }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 80px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .hero h1 { font-size: 3rem; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.02em; line-height: 1.2; }
+        .hero p { font-size: 1.25rem; color: var(--text-muted); }
+
+        /* Section Headers */
+        .section-header {
+            text-align: center; margin-bottom: 40px;
+        }
+        .section-header h2 { font-size: 2rem; margin-bottom: 16px; }
+        .section-header p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 32px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        }
+        .feature-card:hover {
+            transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.06);
+            border-color: #94a3b8;
+        }
+        .feature-icon {
+            width: 48px; height: 48px; background: var(--accent-light); color: var(--accent);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 24px;
+        }
+        .feature-card h3 { font-size: 1.25rem; margin-bottom: 12px; }
+        .feature-card p { font-size: 0.95rem; color: var(--text-muted); margin: 0; }
+
+        /* Comparison Table */
+        .comparison-wrapper {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 16px; overflow: hidden;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+        }
+        .comparison-table {
+            width: 100%; border-collapse: collapse; text-align: left;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .comparison-table th {
+            background: #f8fafc; font-weight: 600; color: var(--primary);
+            font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .comparison-table td { font-size: 0.95rem; }
+        .comparison-table tr:last-child td { border-bottom: none; }
+        
+        .col-highlight { background: var(--accent-light); font-weight: 600; color: var(--primary) !important; border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+        .comparison-table th.col-highlight { background: var(--accent); color: #fff !important; border: 2px solid var(--accent); }
+
+        .x-icon { color: #ef4444; margin-right: 8px; vertical-align: middle; }
+        .check-icon { color: var(--success); margin-right: 8px; vertical-align: middle; }
+
+        /* Enterprise Section */
+        .enterprise-box {
+            background: var(--primary); color: #fff;
+            border-radius: 16px; padding: 60px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+            align-items: center;
+        }
+        .enterprise-content h2 { color: #fff; font-size: 2.25rem; margin-bottom: 20px; }
+        .enterprise-content p { color: #94a3b8; font-size: 1.1rem; margin-bottom: 32px; }
+        
+        .ent-list { list-style: none; padding: 0; margin: 0; }
+        .ent-list li { 
+            display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; 
+            padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .ent-list li:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .ent-list i { color: #38bdf8; flex-shrink: 0; }
+        .ent-list h4 { color: #fff; margin-bottom: 4px; font-size: 1.1rem; }
+        .ent-list p { margin: 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; }
+
+        @media (max-width: 900px) {
+            .enterprise-box { grid-template-columns: 1fr; padding: 40px; }
+            .comparison-wrapper { overflow-x: auto; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Hero -->
+        <header class="hero">
+            <h1>The Enterprise Agentic Orchestration Platform</h1>
+            <p>SingularityNeo transforms unpredictable AI scripts into a fully governed, compliant, and auditable Software Delivery Lifecycle (SDLC) engine.</p>
+        </header>
+
+        <!-- Features -->
+        <section>
+            <div class="section-header">
+                <h2>Platform Features</h2>
+                <p>Designed from the ground up to integrate AI output seamlessly into rigid corporate governance environments.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="shield-check"></i></div>
+                    <h3>Continuous Audit Ledger</h3>
+                    <p>Every read, write, API invocation, and approval is immutably recorded to “prove the negative” during enterprise risk assessments and compliance audits.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="git-branch"></i></div>
+                    <h3>Multi-Phase SDLC Orchestration</h3>
+                    <p>Enforces structured hand-offs across Inception, Elaboration, Construction, and Delivery phases to ensure agents only act when intent constraints are met.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="brain-circuit"></i></div>
+                    <h3>Agent Knowledge Distillation</h3>
+                    <p>Rather than hallucinating in a vacuum, agents compile their learnings into centralized Memory Vectors and transparent Operating Contracts approved by humans.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="fingerprint"></i></div>
+                    <h3>Ed25519 Cryptographic Provenance</h3>
+                    <p>Zero trust execution. Delivery packets and evidence validations are cryptographically signed to prevent untracked shadow modifications.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="users"></i></div>
+                    <h3>Rigid IAM & Role Overlays</h3>
+                    <p>Workspace governance layers map directly to corporate identities, guaranteeing that operator actions and auditor oversight remain heavily partitioned.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="bot"></i></div>
+                    <h3>Human-in-the-Loop Release</h3>
+                    <p>AI executes the work, but humans hold the keys. Deployment targets and phase changes are heavily guarded by physical Operational Handoff packets.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Table -->
+        <section>
+            <div class="section-header">
+                <h2>How It Compares</h2>
+                <p>Understanding the gap between developer copilots, autonomous scripts, and SingularityNeo.</p>
+            </div>
+            <div class="comparison-wrapper">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Platform Capability</th>
+                            <th>Traditional IT Tools <br><span style="font-size:0.8rem;text-transform:none;font-weight:400;color:var(--text-muted)">(e.g., Jira, ServiceNow)</span></th>
+                            <th>Code Assistants <br><span style="font-size:0.8rem;text-transform:none;font-weight:400;color:var(--text-muted)">(e.g., Copilot)</span></th>
+                            <th>Autonomous Agents <br><span style="font-size:0.8rem;text-transform:none;font-weight:400;color:var(--text-muted)">(e.g., AutoGPT)</span></th>
+                            <th class="col-highlight">SingularityNeo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Work Execution</strong></td>
+                            <td><i data-lucide="x" class="x-icon"></i> Tracking only</td>
+                            <td><i data-lucide="check" class="check-icon"></i> Inline snippets</td>
+                            <td><i data-lucide="check" class="check-icon"></i> Unbounded loops</td>
+                            <td class="col-highlight"><i data-lucide="check" class="check-icon"></i> Managed SDLC Phases</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Traceability & Governance</strong></td>
+                            <td><i data-lucide="check" class="check-icon"></i> Human inputs</td>
+                            <td><i data-lucide="x" class="x-icon"></i> Local IDE history</td>
+                            <td><i data-lucide="x" class="x-icon"></i> Terminal logs</td>
+                            <td class="col-highlight"><i data-lucide="check" class="check-icon"></i> Immutable Audit Ledger</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cryptographic Provenance</strong></td>
+                            <td><i data-lucide="x" class="x-icon"></i> No</td>
+                            <td><i data-lucide="x" class="x-icon"></i> No</td>
+                            <td><i data-lucide="x" class="x-icon"></i> No</td>
+                            <td class="col-highlight"><i data-lucide="check" class="check-icon"></i> Ed25519 Signatures</td>
+                        </tr>
+                        <tr>
+                            <td><strong>System Memory</strong></td>
+                            <td><i data-lucide="x" class="x-icon"></i> Static wikis</td>
+                            <td><i data-lucide="x" class="x-icon"></i> Fleeting context limits</td>
+                            <td><i data-lucide="x" class="x-icon"></i> Basic vector storage</td>
+                            <td class="col-highlight"><i data-lucide="check" class="check-icon"></i> Cross-Session Distillation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deployment Control</strong></td>
+                            <td><i data-lucide="x" class="x-icon"></i> Manual/CI hooks</td>
+                            <td><i data-lucide="x" class="x-icon"></i> N/A</td>
+                            <td><i data-lucide="x" class="x-icon"></i> Unsafe terminal eval</td>
+                            <td class="col-highlight"><i data-lucide="check" class="check-icon"></i> Authorized Target Routing</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Enterprise Proposition -->
+        <section class="enterprise-box">
+            <div class="enterprise-content">
+                <h2>Why It Fits The Enterprise</h2>
+                <p>Modern enterprises cannot allow autonomous code execution without rigorous oversight. SingularityNeo bridges the gap between hyper-productive AI and risk-averse corporate governance.</p>
+            </div>
+            <ul class="ent-list">
+                <li>
+                    <i data-lucide="file-badge"></i>
+                    <div>
+                        <h4>"Prove the Negative" Auditability</h4>
+                        <p>Auditors can instantly verify exactly what code was touched by an AI versus a human, backing up claims of compliance or defect tracing seamlessly.</p>
+                    </div>
+                </li>
+                <li>
+                    <i data-lucide="activity"></i>
+                    <div>
+                        <h4>Predictable Failure Domains</h4>
+                        <p>Unlike open-ended generic agents, Singularity limits execution blasts to distinct functional phases. An architectural agent cannot deploy code; it only produces architectural evidence artifacts.</p>
+                    </div>
+                </li>
+                <li>
+                    <i data-lucide="scale"></i>
+                    <div>
+                        <h4>Frictionless Change Management</h4>
+                        <p>It generates its own evidence. Instead of a developer rushing a change ticket later, the DevOps agent builds the delivery summary directly from the phase handoff packets automatically.</p>
+                    </div>
+                </li>
+            </ul>
+        </section>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+
+
+  </template>
+
+  <script>
+    const order = [
+      { key: 'brokerage', label: 'Brokerage Workflow' },
+      { key: 'learning', label: 'Learning Model' },
+      { key: 'security', label: 'Security Boundary' },
+      { key: 'deployment', label: 'Deployment' },
+      { key: 'identity', label: 'Identity & Access' },
+      { key: 'audit', label: 'Audit & Governance' },
+      { key: 'enterprise', label: 'Enterprise Value' }
+    ];
+
+    const tabs = document.getElementById('tabs');
+    const frame = document.getElementById('contentFrame');
+    const frameTitle = document.getElementById('frameTitle');
+
+    function activateTab(key) {
+      const tpl = document.getElementById('tpl-' + key);
+      if (!tpl) return;
+      frame.srcdoc = tpl.innerHTML;
+      const selected = order.find(item => item.key === key);
+      frameTitle.textContent = selected ? selected.label : key;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.key === key);
+      });
+    }
+
+    order.forEach((item) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn';
+      btn.type = 'button';
+      btn.textContent = item.label;
+      btn.dataset.key = item.key;
+      btn.addEventListener('click', () => activateTab(item.key));
+      tabs.appendChild(btn);
+    });
+
+    activateTab('brokerage');
+  </script>
+</body>
+</html>
