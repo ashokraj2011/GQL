@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SingularityNeo — Capability Diagrams</title>
+    <style>
+      :root {
+        --bg: #f7f8fb;
+        --surface: #ffffff;
+        --border: #e5e9f0;
+        --text: #1a2030;
+        --muted: #5d6a82;
+        --accent: #4a6fa5;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.55;
+      }
+      header {
+        background: #0f2540;
+        color: white;
+        padding: 32px 48px;
+      }
+      header h1 {
+        margin: 0 0 6px 0;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+      }
+      header p {
+        margin: 0;
+        opacity: 0.75;
+        font-size: 14px;
+      }
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 48px;
+        display: flex;
+        gap: 20px;
+        font-size: 13px;
+      }
+      nav a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      nav a:hover { text-decoration: underline; }
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px 48px 80px;
+      }
+      section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px 36px;
+        margin-bottom: 32px;
+        box-shadow: 0 6px 20px rgba(12, 23, 39, 0.04);
+      }
+      section h2 {
+        margin: 0 0 4px 0;
+        font-size: 20px;
+        letter-spacing: -0.01em;
+      }
+      section p.lede {
+        margin: 0 0 24px 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .mermaid-wrap {
+        background: #fafbfd;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        overflow-x: auto;
+      }
+      .mermaid {
+        min-width: 900px;
+        font-size: 14px;
+      }
+      details {
+        margin-top: 24px;
+        border-top: 1px solid var(--border);
+        padding-top: 20px;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--accent);
+        font-size: 14px;
+        list-style: none;
+      }
+      details summary::before {
+        content: "▸ ";
+        display: inline-block;
+        transition: transform 0.15s;
+      }
+      details[open] summary::before {
+        transform: rotate(90deg);
+      }
+      details .body {
+        margin-top: 14px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      details .body ol, details .body ul {
+        padding-left: 20px;
+      }
+      details .body li { margin: 6px 0; }
+      details .body strong { color: var(--text); }
+      footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+        padding: 24px;
+      }
+      @media print {
+        nav { display: none; }
+        section { box-shadow: none; break-inside: avoid; }
+        header { break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>SingularityNeo — Capability Diagrams</h1>
+      <p>Two-frame capability overview: the full stack and a zoom into the audit/evidence layer.</p>
+    </header>
+
+    <nav>
+      <a href="#block">1 · Capability block diagram</a>
+      <a href="#audit">2 · Audit + Evidence (zoomed)</a>
+    </nav>
+
+    <main>
+      <section id="block">
+        <h2>1 · Capability block diagram</h2>
+        <p class="lede">
+          Four stacked layers reading top-down: Capability is the anchor; Agents and Artifacts sit on the layer
+          below; Workflows orchestrate them; Audit + Evidence + other features form the base. A narrow column
+          on the right captures the cross-cutting concerns that apply at every layer.
+        </p>
+
+        <div class="mermaid-wrap">
+          <pre class="mermaid">
+flowchart TB
+  subgraph CAP["CAPABILITY"]
+    direction LR
+    CAPD["Business charter &nbsp;·&nbsp; Outcome &nbsp;·&nbsp; Definition of Done &nbsp;·&nbsp; Published contract"]
+  end
+
+  subgraph MID[" "]
+    direction LR
+    AGENTS["AGENTS
+
+    Skills &nbsp;·&nbsp; Tool policy
+    Memory scope &nbsp;·&nbsp; Quality bar
+    Role + approval rules"]
+    ARTIFACTS["ARTIFACTS
+
+    Documents &nbsp;·&nbsp; Code &nbsp;·&nbsp; Configs
+    Test outputs &nbsp;·&nbsp; Deploy manifests
+    Review packets"]
+  end
+
+  subgraph WF["WORKFLOWS"]
+    direction LR
+    WFD["Lifecycle phases &nbsp;·&nbsp; Steps &nbsp;·&nbsp; Waits &nbsp;·&nbsp; Approval gates &nbsp;·&nbsp; Assignments &nbsp;·&nbsp; Handoffs"]
+  end
+
+  subgraph AUD["AUDIT &nbsp;·&nbsp; EVIDENCE &nbsp;·&nbsp; OTHER FEATURES"]
+    direction LR
+    AUDD["Signed attestations (DSSE) &nbsp;·&nbsp; Ledger &nbsp;·&nbsp; 17a-4 records
+    MRM validation &nbsp;·&nbsp; Incident link &nbsp;·&nbsp; Daily-control dashboards
+    Release evidence &nbsp;·&nbsp; Separation-of-duties reports"]
+  end
+
+  CAP --- MID
+  MID --- WF
+  WF --- AUD
+
+  subgraph CROSS["CROSS-CUTTING"]
+    direction TB
+    POLICY["Policy Runtime
+    pre-dispatch gates
+    separation of duties
+    approval routing"]
+    IDENT["Identity + RBAC
+    operators
+    phase-owners
+    break-glass reveal"]
+    KNOW["Knowledge + Memory
+    capability brain
+    agent lens
+    learning deltas"]
+    TEL["Telemetry
+    OTEL GenAI semconv
+    traces · metrics · events"]
+    SEC["Secrets + Vault
+    scoped credentials
+    encrypted references"]
+    CONN["Connectors
+    Jira · Confluence
+    GitHub · ALM"]
+    MRM["MRM + Compliance
+    model risk controls
+    17a-4 · SOX · DORA"]
+  end
+
+  CAP  -.-> CROSS
+  MID  -.-> CROSS
+  WF   -.-> CROSS
+  AUD  -.-> CROSS
+
+  classDef capLayer   fill:#e8f3ff,stroke:#4a6fa5,color:#0f2540,stroke-width:1.5px
+  classDef midLayer   fill:#eef7ee,stroke:#4a8a5c,color:#15341e,stroke-width:1.5px
+  classDef wfLayer    fill:#fff7e4,stroke:#b5872c,color:#3d2a07,stroke-width:1.5px
+  classDef audLayer   fill:#fbe9e7,stroke:#a8452b,color:#3b1410,stroke-width:1.5px
+  classDef crossLayer fill:#f4edff,stroke:#6e4caa,color:#2a1744,stroke-width:1.5px
+
+  class CAP,CAPD capLayer
+  class AGENTS,ARTIFACTS midLayer
+  class WF,WFD wfLayer
+  class AUD,AUDD audLayer
+  class CROSS,POLICY,IDENT,KNOW,TEL,SEC,CONN,MRM crossLayer
+          </pre>
+        </div>
+
+        <details>
+          <summary>How to read it</summary>
+          <div class="body">
+            <ul>
+              <li><strong>Four horizontal bands, top to bottom</strong>: each band is a product layer, always present.</li>
+              <li><strong>Layer 2 is split</strong>: agents and artifacts are peers. Agents produce artifacts; artifacts constrain agents via input/output contracts.</li>
+              <li><strong>Cross-cutting column on the right</strong>: seven concerns that aren't layers of their own — they attach at every layer.</li>
+              <li><strong>Colors encode the layer</strong>: blue (anchor) · green (producing) · amber (orchestration) · red (proof) · purple (cross-cutting).</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <section id="audit">
+        <h2>2 · Audit + Evidence layer — zoomed in</h2>
+        <p class="lede">
+          A zoom into the base band of diagram 1. Four swim-lanes left-to-right: ingress events from the
+          workflow layer, the attestation pipeline (assemble → hash → sign → link), the storage layer
+          (ledger + privacy-aware payload + key vault), and the consumer surfaces (UI, exports, MRM,
+          incidents, control dashboards, privileged reveal).
+        </p>
+
+        <div class="mermaid-wrap">
+          <pre class="mermaid">
+flowchart LR
+  subgraph IN["Ingress &nbsp;·&nbsp; from Workflow layer"]
+    direction TB
+    RUN["Run completion
+    (output hash,
+    tool invocation list,
+    duration, exit code)"]
+    APR["Approval granted
+    (operator DID,
+    approval rule id,
+    timestamp)"]
+    HUM["Human decision
+    (override, reject,
+    claim, guide)"]
+    TOOL["Tool invocation
+    (name, args hash,
+    result hash,
+    policy outcome)"]
+  end
+
+  subgraph ATTEST["Attestation Pipeline"]
+    direction TB
+    ASSEM["1. Assemble Statement
+    in-toto Statement shape
+    subject[] + predicateType
+    + predicate payload"]
+    HASH["2. Canonicalize + SHA-256
+    stable-stringify the payload
+    digest pinned to envelope"]
+    SIGN["3. DSSE envelope
+    payloadType + base64 payload
+    signatures[] (keyId + alg + sig)"]
+    LINK["4. Attach links[]
+    · SLSA build provenance
+    · GitHub artifact attestation
+    · prior evidence digest
+    · capability publish hash"]
+  end
+
+  subgraph STORE["Storage Layer"]
+    direction TB
+    LEDGER["Append-only ledger
+    per-capability stream
+    merkle-chained entries
+    immutable, retention-tagged"]
+    PAYLOAD["Privacy-aware payload
+    { fieldHash,
+    encryptedRef,
+    identityDid,
+    policyOutcome }
+    no raw prompts by default"]
+    KMS["Key vault
+    signing keys (DSSE)
+    reveal keys (break-glass)
+    rotation + revocation"]
+  end
+
+  subgraph CONS["Consumer Surfaces"]
+    direction TB
+    UI["Evidence Packet UI
+    signed attestation view
+    · subject + predicate
+    · signature + keyId
+    · link graph"]
+    EXP["17a-4 Export
+    electronic recordkeeping
+    · records + audit trail
+    · human-readable format
+    · prompt export package"]
+    MRM["MRM Validation
+    control evidence
+    · pre-dispatch gate outcomes
+    · policy trip counts
+    · sample tests for validators"]
+    INC["Incident Link
+    change → incident correlation
+    · lineage graph
+    · blast radius query
+    · time-window join"]
+    DASH["Daily-Control Dashboards
+    · Pre-Dispatch Gates
+    · Separation of Duties
+    · Exception Queue
+    · Release Evidence"]
+    REVEAL["Privileged Reveal Workflow
+    break-glass decrypt
+    · requires dual approval
+    · every reveal itself
+      produces a new attestation"]
+  end
+
+  RUN  --> ASSEM
+  APR  --> ASSEM
+  HUM  --> ASSEM
+  TOOL --> ASSEM
+
+  ASSEM --> HASH
+  HASH  --> SIGN
+  SIGN  --> LINK
+
+  SIGN -. "signs with" .-> KMS
+  LINK --> LEDGER
+  LINK --> PAYLOAD
+
+  LEDGER --> UI
+  LEDGER --> EXP
+  LEDGER --> MRM
+  LEDGER --> INC
+  LEDGER --> DASH
+
+  PAYLOAD --> REVEAL
+  REVEAL -. "decrypt key" .-> KMS
+  REVEAL -. "emits new attestation" .-> ASSEM
+
+  classDef inLayer    fill:#fff7e4,stroke:#b5872c,color:#3d2a07,stroke-width:1.5px
+  classDef attestLayer fill:#eef7ee,stroke:#4a8a5c,color:#15341e,stroke-width:1.5px
+  classDef storeLayer fill:#e8f3ff,stroke:#4a6fa5,color:#0f2540,stroke-width:1.5px
+  classDef consLayer  fill:#fbe9e7,stroke:#a8452b,color:#3b1410,stroke-width:1.5px
+
+  class IN,RUN,APR,HUM,TOOL inLayer
+  class ATTEST,ASSEM,HASH,SIGN,LINK attestLayer
+  class STORE,LEDGER,PAYLOAD,KMS storeLayer
+  class CONS,UI,EXP,MRM,INC,DASH,REVEAL consLayer
+          </pre>
+        </div>
+
+        <details>
+          <summary>Six architectural claims this diagram bakes in</summary>
+          <div class="body">
+            <ol>
+              <li><strong>The ledger is the single source of truth.</strong> Every consumer surface derives its view from the same append-only log. No parallel audit DB.</li>
+              <li><strong>DSSE is not optional.</strong> Unsigned evidence cannot be written to the ledger. Signature + keyId + algorithm live next to the payload.</li>
+              <li><strong>Links make the graph.</strong> <code>links[]</code> references upstream build attestations (SLSA, GitHub), sibling evidence, and prior reveal events. Turns a bag of packets into an attestation graph.</li>
+              <li><strong>Privacy-aware by default.</strong> Stored payload is <code>{ fieldHash, encryptedRef, identityDid, policyOutcome }</code> — not raw prompts/responses.</li>
+              <li><strong>Reveal is audited too.</strong> A break-glass decrypt emits its own attestation (note the loop back to Assemble). Compliance can always answer "who looked at what, when, why."</li>
+              <li><strong>Consumers are opinionated.</strong> Each of the five surfaces is purpose-built for one buyer: operators (UI), compliance (17a-4), model-risk (MRM), SRE (incident), eng managers (daily control).</li>
+            </ol>
+          </div>
+        </details>
+
+        <details>
+          <summary>Compliance mapping — one arrow per framework</summary>
+          <div class="body">
+            <ul>
+              <li><strong>SR 11-7</strong> → MRM Validation surface (policy trip counts, sample tests for validators).</li>
+              <li><strong>SEC 17a-4 (2022 amendments)</strong> → 17a-4 Export surface (records + audit trail in human-readable form, prompt export package).</li>
+              <li><strong>SOX</strong> → Separation-of-Duties column on the Daily-Control dashboards.</li>
+              <li><strong>DORA</strong> → Incident Link + change-to-incident lineage graph.</li>
+              <li><strong>SLSA / in-toto</strong> → <code>links[]</code> references in step 4 of the pipeline.</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      Rendered locally via Mermaid.js · no backend · open in any browser
+    </footer>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "base",
+        themeVariables: {
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSize: "14px",
+          primaryColor: "#ffffff",
+          primaryTextColor: "#1a2030",
+          primaryBorderColor: "#4a6fa5",
+          lineColor: "#5d6a82",
+        },
+        flowchart: {
+          curve: "basis",
+          padding: 14,
+          nodeSpacing: 28,
+          rankSpacing: 36,
+          htmlLabels: true,
+        },
+        securityLevel: "loose",
+      });
+    </script>
+  </body>
+</html>
