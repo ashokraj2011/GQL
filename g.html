@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityNeo - Brokerage Workflow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Enterprise Palette Context */
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            
+            /* Corporate Accents */
+            --primary: #0f172a;          /* Deep Navy/Black */
+            --primary-light: #1e293b;
+            --secondary: #334155;        /* Slate */
+            --agent-color: #0284c7;      /* Professional Blue */
+            --human-color: #b45309;      /* Executive Amber */
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 60px 40px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Top Capability Node */
+        .capability-node {
+            background: var(--primary);
+            border: 1px solid var(--primary-light);
+            border-radius: 8px;
+            padding: 24px 48px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+            z-index: 2;
+            position: relative;
+        }
+
+        .capability-node i {
+            color: #fff;
+            width: 32px; height: 32px;
+        }
+
+        .capability-node h2 {
+            font-size: 1.75rem;
+            letter-spacing: 0.01em;
+            color: #fff;
+        }
+
+        /* Connecting Lines */
+        .vertical-connector {
+            width: 2px;
+            height: 48px;
+            background: var(--card-border);
+            position: relative;
+        }
+
+        .vertical-connector::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: -6px;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 8px solid var(--card-border);
+        }
+
+        /* Phase Card */
+        .phase-card {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 32px;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .phase-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1);
+            border-color: #94a3b8;
+        }
+
+        /* Phase Header */
+        .phase-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        .phase-badge {
+            background: var(--primary);
+            color: #fff;
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .phase-header h3 {
+            font-size: 1.4rem;
+            color: var(--text-main);
+            letter-spacing: 0.02em;
+            font-weight: 600;
+        }
+
+        /* Phase Grid */
+        .phase-body {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto 1fr;
+            align-items: stretch;
+            gap: 24px;
+        }
+
+        /* I/O Blocks */
+        .io-block {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 24px;
+            transition: background 0.3s ease;
+        }
+
+        .io-block:hover {
+            background: #f1f5f9;
+        }
+
+        .io-block h4 {
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .io-block ul {
+            margin: 0; 
+            padding-left: 24px;
+            color: var(--text-main);
+            font-weight: 400;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .io-block li {
+            margin-bottom: 8px;
+            position: relative;
+            list-style-type: none;
+        }
+
+        .io-block li::before {
+            content: '';
+            position: absolute;
+            left: -16px;
+            top: 10px;
+            width: 6px; height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+        }
+
+        .inputs li::before { background: var(--secondary); }
+        .outputs li::before { background: var(--primary); }
+
+        /* Flow Arrows */
+        .flow-arrow {
+            color: var(--card-border);
+            align-self: center;
+        }
+
+        /* Agent Blocks */
+        .agent-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px 16px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .agent-block.human {
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+
+        .agent-icon {
+            width: 56px; height: 56px;
+            background: var(--agent-color);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px;
+            color: #fff;
+            box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2);
+        }
+
+        .agent-block.human .agent-icon {
+            background: var(--human-color);
+            box-shadow: 0 4px 6px -1px rgba(180, 83, 9, 0.2);
+        }
+
+        .agent-block h4 {
+            margin: 0 0 6px 0;
+            font-size: 1.15rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .agent-block span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Internal Connectors for multi-row phases */
+        .internal-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 32px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+        }
+
+        .internal-connector::before,
+        .internal-connector::after {
+            content: '';
+            flex-grow: 0.1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        /* Cross Cutting Block */
+        .cross-cutting {
+            width: 100%;
+            margin-top: 60px;
+            border-top: 2px solid #cbd5e1;
+            padding-top: 60px;
+        }
+
+        .cross-cutting h3 {
+            text-align: center;
+            margin-bottom: 32px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        .cc-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .cc-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .cc-card:hover {
+            border-color: #94a3b8;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .cc-icon {
+            color: var(--primary);
+            width: 48px; height: 48px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .cc-card h4 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--text-main);
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .phase-body {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .flow-arrow {
+                transform: rotate(90deg);
+                margin: 8px 0;
+            }
+            .cc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Top Node -->
+        <div class="capability-node">
+            <i data-lucide="layers"></i>
+            <h2>Capability: Rule Engine</h2>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 1. Inception Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">1</div>
+                <h3>Inception Phase</h3>
+            </div>
+            
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Capability Charter</li>
+                        <li>Stakeholder Req.</li>
+                        <li>Business Trigger</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="bot"></i></div>
+                    <h4>Agent: Planning</h4>
+                    <span>Intent & Scope</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Inception Brief</li>
+                        <li>Scope Boundary</li>
+                        <li>POC Hypotheses</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 2. Elaboration Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">2</div>
+                <h3>Elaboration Phase</h3>
+            </div>
+            
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Intake Packet</li>
+                        <li>Framing Notes</li>
+                        <li>Solution Context</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="cpu"></i></div>
+                    <h4>Agent: Architect</h4>
+                    <span>Solution Shaping</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Solution Shape</li>
+                        <li>Architecture Notes</li>
+                        <li>Construction Plan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 3. Construction Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">3</div>
+                <h3>Construction Phase</h3>
+            </div>
+            
+            <!-- Row 1: Developer -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Construction Handoff</li>
+                        <li>Focus Areas</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="code-2"></i></div>
+                    <h4>Agent: Developer</h4>
+                    <span>Build & Test</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Code Change Set</li>
+                        <li>Implementation Notes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="internal-connector">
+                <i data-lucide="arrow-down-circle"></i> Hand-off to QA Review
+            </div>
+
+            <!-- Row 2: QA -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>QA Review Packet</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="check-circle-2"></i></div>
+                    <h4>Agent: QA</h4>
+                    <span>Quality Review</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Quality Review Report</li>
+                        <li>Readiness Notes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="vertical-connector"></div>
+
+        <!-- 4. Delivery Phase -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <div class="phase-badge">4</div>
+                <h3>Delivery Phase</h3>
+            </div>
+            
+            <!-- Row 1: Owner (Human) -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Delivery Auth Packet</li>
+                        <li>Operational Handoff</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block human">
+                    <div class="agent-icon"><i data-lucide="user-check"></i></div>
+                    <h4>Human Approval</h4>
+                    <span>Capability Owner</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Delivery Authorization</li>
+                        <li>Release Conditions</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="internal-connector">
+                <i data-lucide="arrow-down-circle"></i> Auth Hand-off to DevOps
+            </div>
+
+            <!-- Row 2: DevOps -->
+            <div class="phase-body">
+                <div class="io-block inputs">
+                    <h4><i data-lucide="download"></i> Inputs</h4>
+                    <ul>
+                        <li>Operations Packet</li>
+                        <li>Conditions Register</li>
+                    </ul>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="agent-block">
+                    <div class="agent-icon"><i data-lucide="server"></i></div>
+                    <h4>Agent: DevOps</h4>
+                    <span>Deploy & Operate</span>
+                </div>
+                <i data-lucide="arrow-right" class="flow-arrow"></i>
+                <div class="io-block outputs">
+                    <h4><i data-lucide="upload"></i> Outputs</h4>
+                    <ul>
+                        <li>Delivery Summary</li>
+                        <li>Verification Report</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cross Cutting Section -->
+        <div class="cross-cutting">
+            <h3>Cross-Cutting Platform Capabilities</h3>
+            <div class="cc-grid">
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="activity"></i></div>
+                    <h4>Continuous Audit Trail<br>& Event Feed</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="shield-check"></i></div>
+                    <h4>Governance Guardrails<br>& Policy Gates</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="git-branch"></i></div>
+                    <h4>Data Provenance<br>& Traceability</h4>
+                </div>
+                <!-- Expanded Core Platform Functions -->
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="brain-circuit"></i></div>
+                    <h4>Agent Learning<br>& Distillation</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="database"></i></div>
+                    <h4>Artifacts &<br>Document Repository</h4>
+                </div>
+                <div class="cc-card">
+                    <div class="cc-icon"><i data-lucide="users-round"></i></div>
+                    <h4>Role & User<br>Management</h4>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Initialize Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+
