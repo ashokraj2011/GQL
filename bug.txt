@@ -1,0 +1,23 @@
+I found a real bug/risk in the MCP edit path.
+Main Issue
+MCP does not currently have a real apply_patch tool. It registers:
+write_file, which overwrites the whole file
+apply_patch_demo, which only records a fake patch and does not touch disk
+The dangerous line is here: fs-git.ts (line 61)
+ts
+
+
+
+await fs.promises.writeFile(abs, content, "utf8");
+
+So if the agent sends only a unified diff hunk as content, MCP writes that diff hunk as the entire file. I reproduced this locally in the MCP sandbox: after sending a small @@ ... diff hunk to write_file, the file contained only the diff text and the rest was gone.
+Why It Happens
+The prompts tell the model to use apply_patch or write_file, for example:
+seed.ts (line 90)
+seed.ts (line 389)
+But the real MCP registry only registers apply_patch_demo, not apply_patch: registry.ts (line 215)
+Also, MCP’s nudge checks for apply_patch as if it might exist: invoke.ts (line 226)
+Fix Direction
+Best fix: add a real apply_patch tool that applies unified diffs safely.
+Immediate guardrail: make write_file reject diff-looking content for existing files, like content starting with diff --git, --- a/, +++ b/, or @@, unless an explicit allowOverwriteWithDiffText flag is set.
+Also update the prompt wording so write_file means “complete new file body only,” never “patch.”
