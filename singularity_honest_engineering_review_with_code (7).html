@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Singularity Honest Engineering Review</title>
+  <style>
+    :root {
+      --green: #006b3f;
+      --green-dark: #004d2d;
+      --green-soft: #edf8f2;
+      --red: #c62828;
+      --red-soft: #fff4f4;
+      --gold: #b7791f;
+      --gold-soft: #fff7ed;
+      --blue: #2563eb;
+      --blue-soft: #eef4ff;
+      --bg: #f7f9f8;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #5f6b7a;
+      --border: #dfe7e2;
+      --code-bg: #0f172a;
+      --code-text: #e5e7eb;
+      --table-head: #f0f7f3;
+      --shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--green-dark), var(--green));
+      color: #fff;
+      padding: 72px 28px 62px;
+      border-bottom: 6px solid var(--red);
+    }
+
+    .hero-inner {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      font-size: 0.78rem;
+      font-weight: 850;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.9;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(2.45rem, 5vw, 4.8rem);
+      line-height: 1.04;
+      margin: 0 0 22px;
+      max-width: 1020px;
+    }
+
+    .subtitle {
+      font-size: clamp(1.05rem, 2vw, 1.32rem);
+      max-width: 980px;
+      margin: 0;
+      opacity: 0.95;
+    }
+
+    .page {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 34px 24px 80px;
+      display: grid;
+      grid-template-columns: 286px minmax(0, 1fr);
+      gap: 30px;
+    }
+
+    aside {
+      position: sticky;
+      top: 22px;
+      align-self: start;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    aside h2 {
+      color: var(--green-dark);
+      font-size: 0.9rem;
+      margin: 0 0 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    aside a {
+      display: block;
+      padding: 8px 0;
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 1px solid #eef2ef;
+      font-size: 0.92rem;
+    }
+
+    aside a:hover { color: var(--green); }
+
+    main { min-width: 0; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 30px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      color: var(--green-dark);
+      font-size: clamp(1.45rem, 3vw, 2.05rem);
+      line-height: 1.22;
+    }
+
+    h3 {
+      margin: 28px 0 12px;
+      font-size: 1.18rem;
+      color: #253f35;
+    }
+
+    p { margin: 0 0 16px; }
+
+    ul, ol { margin-top: 0; padding-left: 22px; }
+    li { margin-bottom: 8px; }
+
+    .callout {
+      background: var(--green-soft);
+      border: 1px solid #cfe2d7;
+      border-left: 5px solid var(--green);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin: 20px 0;
+      font-weight: 600;
+      color: #20362d;
+    }
+
+    .warning {
+      background: var(--gold-soft);
+      border-color: #fed7aa;
+      border-left-color: var(--gold);
+    }
+
+    .danger {
+      background: var(--red-soft);
+      border-color: #f3c3c3;
+      border-left-color: var(--red);
+    }
+
+    .blue {
+      background: var(--blue-soft);
+      border-color: #c7d2fe;
+      border-left-color: var(--blue);
+    }
+
+    .quote {
+      font-size: 1.25rem;
+      line-height: 1.45;
+      color: var(--green-dark);
+      font-weight: 850;
+      margin: 24px 0 4px;
+      padding: 24px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #eef8f2, #ffffff);
+      border: 1px solid #cfe2d7;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 20px 0 4px;
+    }
+
+    .card {
+      background: #fbfdfc;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .card .label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 850;
+      margin-bottom: 6px;
+    }
+
+    .card .value {
+      font-size: 1.35rem;
+      font-weight: 850;
+      color: var(--green-dark);
+      line-height: 1.2;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin: 18px 0;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid #e8eee9;
+      font-size: 0.93rem;
+    }
+
+    th {
+      background: var(--table-head);
+      color: var(--green-dark);
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td strong { color: #1e3a30; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e9f5ee;
+      color: var(--green-dark);
+      font-size: 0.8rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .badge.warn { background: #fff0d9; color: #92400e; }
+    .badge.risk { background: #fff0f0; color: #b42318; }
+    .badge.blue { background: #eef4ff; color: #1d4ed8; }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 20px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      margin: 18px 0;
+      border: 1px solid #1e293b;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .inline-code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      background: #eef2f7;
+      color: #1f2937;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.92em;
+    }
+
+    .score-table td:nth-child(2) {
+      font-weight: 850;
+      color: var(--green-dark);
+      white-space: nowrap;
+    }
+
+    footer {
+      text-align: center;
+      padding: 28px 24px 52px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 960px) {
+      .page { grid-template-columns: 1fr; }
+      aside { position: relative; top: 0; }
+    }
+
+    @media print {
+      body { background: white; }
+      .hero { padding: 36px 24px; }
+      .page { display: block; padding: 24px; }
+      aside { display: none; }
+      section { box-shadow: none; break-inside: avoid; }
+      table { min-width: 0; font-size: 0.78rem; }
+      th, td { padding: 8px; }
+      pre { white-space: pre-wrap; font-size: 0.78rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">Honest Engineering Review</div>
+      <h1>Singularity Platform Review with Code-Level Findings</h1>
+      <p class="subtitle">A candid assessment of Singularity’s strengths, risks, competitor position, and concrete engineering fixes based on the current codebase and implementation milestones.</p>
+    </div>
+  </header>
+
+  <div class="page">
+    <aside>
+      <h2>Sections</h2>
+      <a href="#verdict">Executive Verdict</a>
+      <a href="#architecture">Architecture Reality</a>
+      <a href="#agentic-coding">Agentic Coding Model</a>
+      <a href="#strengths">Genuine Strengths</a>
+      <a href="#pushbacks">Honest Pushbacks</a>
+      <a href="#competitors">Competitor Matrix</a>
+      <a href="#code-findings">Code-Level Findings</a>
+      <a href="#fixes">Top Fixes with Code</a>
+      <a href="#scorecard">Engineering Scorecard</a>
+      <a href="#solo-engineer">The Story</a>
+      <a href="#positioning">Positioning</a>
+    </aside>
+
+    <main>
+      <section id="verdict">
+        <h2>Executive Verdict</h2>
+        <p>Singularity is not merely another coding assistant or generic agent framework. It is emerging as a governed agentic SDLC platform that combines workflow orchestration, context governance, tool control, LLM gateway routing, audit events, replay, code context budgeting, formal verification, and operator review.</p>
+        <div class="quote">Singularity is closest to “Bedrock Agents + Langfuse + a governed workflow engine + AST-aware Cursor, in one stack.”</div>
+        <div class="callout warning">That power comes with a cost: the platform is operationally heavy. It makes sense for regulated or enterprise environments that need governance, auditability, approvals, cost control, and evidence. It is overkill for indie developers or teams that only need a coding assistant.</div>
+        <div class="grid">
+          <div class="card"><div class="label">Best Position</div><div class="value">Governed Agentic SDLC Control Plane</div></div>
+          <div class="card"><div class="label">Strongest Wedge</div><div class="value">Governance + Context + Receipts</div></div>
+          <div class="card"><div class="label">Biggest Risk</div><div class="value">Operational Complexity</div></div>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h2>Architecture Reality</h2>
+        <p>The real architecture is broader than an agent runtime. The platform is a multi-service governed delivery system.</p>
+        <pre><code>Work Item
+  ↓
+Workgraph Workflow Runtime
+  ↓
+Agent Task Executor
+  ↓
+Context Fabric /execute
+  ↓
+Prompt Composer + Context Plan
+  ↓
+Tool Discovery + Execution Routing
+  ↓
+LLM Gateway / Agent Loop
+  ↓
+Audit-Gov + Metrics + Receipts
+  ↓
+Workbench Review + Replay
+  ↓
+Approval / Send-back / Finalize</code></pre>
+        <div class="callout blue">Important naming correction: the outward-facing concept should not be “agent runtime” if direct runtime execution is retired or secondary. A better name is <strong>Agent Control Service</strong>, <strong>Agent Registry</strong>, or <strong>Agent Execution Control Plane</strong>.</div>
+      </section>
+      <section id="agentic-coding">
+        <h2>Agentic Coding Model</h2>
+        <p>Agentic coding in Singularity should be described as a governed software-change loop, not as a one-shot prompt-to-code flow. The agent does not simply receive a requirement and generate files. It moves through a controlled sequence of planning, repository exploration, scoped context assembly, code modification, verification, review, and receipt generation.</p>
+        <div class="quote">Agentic coding is not “AI writes code.” It is “AI proposes, acts, verifies, and explains code changes inside a governed SDLC workflow.”</div>
+
+        <h3>How agentic coding should work in Singularity</h3>
+        <pre><code>Work Item
+  ↓
+Planning / Requirement Understanding
+  ↓
+CapabilityWorldModel + Repo Context
+  ↓
+Code Context Budgeter
+  ↓
+Phased Agent Loop
+  ↓
+Code Change / Patch Generation
+  ↓
+Tests + Static Checks + Formal Checks
+  ↓
+Workbench Review / Send-back
+  ↓
+Approval + Receipt + Merge Readiness</code></pre>
+
+        <h3>Recommended coding phases</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Phase</th>
+                <th>Agent Responsibility</th>
+                <th>Allowed Actions</th>
+                <th>Governance Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>PLAN_DRAFT</strong></td>
+                <td>Understand the work item, identify impacted areas, draft a proposed plan.</td>
+                <td>Read work item, inspect architecture notes, read capability context.</td>
+                <td>Prevents blind code generation.</td>
+              </tr>
+              <tr>
+                <td><strong>EXPLORE</strong></td>
+                <td>Search repository, inspect symbols, read relevant files, understand existing patterns.</td>
+                <td>Search code, read files, get AST slices, inspect dependencies.</td>
+                <td>Grounds the agent in actual code instead of assumptions.</td>
+              </tr>
+              <tr>
+                <td><strong>PLAN_CONFIRM</strong></td>
+                <td>Confirm exact files, functions, tests, and change strategy before mutation.</td>
+                <td>Read-only tools and plan update.</td>
+                <td>Creates a reviewable pre-change checkpoint.</td>
+              </tr>
+              <tr>
+                <td><strong>ACT</strong></td>
+                <td>Apply the smallest safe patch that satisfies the work item.</td>
+                <td>Patch files, generate code, update tests, create artifacts.</td>
+                <td>Limits mutation to an approved plan.</td>
+              </tr>
+              <tr>
+                <td><strong>VERIFY</strong></td>
+                <td>Run tests, static checks, policy checks, and formal constraint checks.</td>
+                <td>Run tests, run verifier, inspect diffs, evaluate policy gates.</td>
+                <td>Separates implementation from proof/evidence.</td>
+              </tr>
+              <tr>
+                <td><strong>FINALIZE</strong></td>
+                <td>Summarize changes, produce receipt, prepare review/merge handoff.</td>
+                <td>Create receipt, summarize evidence, prepare review package.</td>
+                <td>Makes the coding work auditable and replayable.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Code-level contract for agentic coding</h3>
+        <p>Every coding run should produce a structured contract that can be replayed, reviewed, and verified. This is more important than the raw model output.</p>
+        <pre><code>export type AgenticCodingRun = {
+  workItemId: string;
+  capabilityId: string;
+  repository: {
+    url: string;
+    baseRef: string;
+    workingBranch: string;
+  };
+  phases: Array&lt;{
+    phase: "PLAN_DRAFT" | "EXPLORE" | "PLAN_CONFIRM" | "ACT" | "VERIFY" | "FINALIZE";
+    startedAt: string;
+    completedAt?: string;
+    toolsUsed: string[];
+    evidenceRefs: string[];
+    outputSummary: string;
+  }&gt;;
+  contextPlanHash: string;
+  changedFiles: Array&lt;{
+    path: string;
+    changeType: "CREATE" | "UPDATE" | "DELETE";
+    reason: string;
+  }&gt;;
+  verification: {
+    testsRun: string[];
+    testsPassed: boolean;
+    staticChecksPassed: boolean;
+    formalVerificationResult?: "SAT" | "UNSAT" | "UNKNOWN";
+    policyGateResult: "PASSED" | "FAILED" | "REVIEW_REQUIRED";
+  };
+  receipt: {
+    receiptId: string;
+    promptHash: string;
+    diffHash: string;
+    evidenceHash: string;
+    finalStatus: "READY_FOR_REVIEW" | "FAILED" | "BLOCKED";
+  };
+};</code></pre>
+
+        <h3>What makes this different from normal AI coding tools</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Normal Coding Agent</th>
+                <th>Singularity Agentic Coding</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Agent freely explores and edits based on a prompt.</td>
+                <td>Agent acts inside a governed phase model with tool allowlists.</td>
+              </tr>
+              <tr>
+                <td>Context is usually hidden or implicit.</td>
+                <td>Context plan is explicit, hashed, and attached to receipts.</td>
+              </tr>
+              <tr>
+                <td>Diff review is the main evidence.</td>
+                <td>Diff, tests, prompts, tool calls, formal checks, and approvals are evidence.</td>
+              </tr>
+              <tr>
+                <td>Failure is often just an agent message.</td>
+                <td>Failure becomes a structured event with replay and send-back path.</td>
+              </tr>
+              <tr>
+                <td>Governance is outside the coding loop.</td>
+                <td>Governance is part of the coding loop.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout blue">The right claim: Singularity does not try to be the fastest autocomplete or the flashiest coding assistant. It tries to make agentic coding safe enough for enterprise SDLC by adding context control, phase gates, tool permissions, test evidence, formal checks, review loops, and receipts.</div>
+      </section>
+
+      <section id="strengths">
+        <h2>Where Singularity Is Genuinely Strong</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Strength</th>
+                <th>Why It Matters</th>
+                <th>Why It Is Differentiated</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Centralized LLM Gateway</strong></td>
+                <td>Provider keys are held by one service instead of leaking into every service that needs LLM access.</td>
+                <td>Many teams still pass provider keys directly to individual apps. A gateway gives better security, ops control, model routing, and cost policy enforcement.</td>
+                <td><span class="badge">Strong</span></td>
+              </tr>
+              <tr>
+                <td><strong>Code Context Budgeter</strong></td>
+                <td>AST-sliced prompt assembly gives explicit token budgets and structured evidence of what context was included or excluded.</td>
+                <td>Most tools do indexing/retrieval, but few expose budgeted context packages with operator-visible excluded context.</td>
+                <td><span class="badge">Strong</span></td>
+              </tr>
+              <tr>
+                <td><strong>Phased Agent Reasoning</strong></td>
+                <td>PLAN_DRAFT → EXPLORE → PLAN_CONFIRM → ACT → VERIFY → FINALIZE is safer than a flat ReAct loop.</td>
+                <td>LangGraph lets teams build state machines, but Singularity can ship an opinionated SDLC-native phase model.</td>
+                <td><span class="badge warn">Strong but opt-in</span></td>
+              </tr>
+              <tr>
+                <td><strong>Audit-Gov Event Spine</strong></td>
+                <td>Structured events with kind, severity, risk, FTS, and streaming give operators a governance timeline.</td>
+                <td>This is closer to an enterprise event ledger than ordinary application logs or LLM traces.</td>
+                <td><span class="badge">Strong</span></td>
+              </tr>
+              <tr>
+                <td><strong>Z3 Formal Verification Gate</strong></td>
+                <td>Hard constraints can be checked before an agent finishes or before a deployment path proceeds.</td>
+                <td>Most open-source agent frameworks do not ship solver-backed governance checks.</td>
+                <td><span class="badge warn">Early but valuable</span></td>
+              </tr>
+              <tr>
+                <td><strong>Replay / Flight Recorder</strong></td>
+                <td>Stage attempts, prompts, tool calls, review events, send-backs, and annotations can reconstruct the agent journey.</td>
+                <td>This is closer to CI run review than a basic trace viewer.</td>
+                <td><span class="badge">Strong</span></td>
+              </tr>
+              <tr>
+                <td><strong>CapabilityWorldModel</strong></td>
+                <td>Capability-specific context such as README summaries, test commands, architecture notes, and agent rules can be reused.</td>
+                <td>Agents should not rediscover the repository from scratch on every workflow run.</td>
+                <td><span class="badge">Strong</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="pushbacks">
+        <h2>Where I Would Push Back Honestly</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Concern</th>
+                <th>Why It Matters</th>
+                <th>Suggested Direction</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Operational complexity is huge</strong></td>
+                <td>A 20+ container footprint is expensive to run, debug, onboard, and demo. This is acceptable for regulated enterprise, but too heavy for small teams.</td>
+                <td>Create per-component packaging: gateway-only, composer-only, audit-only, workgraph-only, full platform.</td>
+              </tr>
+              <tr>
+                <td><strong>Observability is duplicated</strong></td>
+                <td>Audit-gov, metrics-ledger, local JSONL audit, service logs, learning-service, and SSE streams create multiple sources of truth.</td>
+                <td>Pick audit-gov as canonical. Make all other views derived or temporary caches.</td>
+              </tr>
+              <tr>
+                <td><strong>Too many bespoke abstractions</strong></td>
+                <td>Custom prompt routes, custom workflow concepts, custom audit taxonomy, custom execution adapters increase learning curve.</td>
+                <td>Map custom concepts to standards where possible: OpenTelemetry, OpenAPI, workflow events, policy-as-code.</td>
+              </tr>
+              <tr>
+                <td><strong>Phased reasoning is opt-in</strong></td>
+                <td>If phases are the future, they should be the default. If not, they should be clearly marked experimental.</td>
+                <td>Flip default only after reliability tests and operator UX are strong.</td>
+              </tr>
+              <tr>
+                <td><strong>Timeout math was exposed by provider-flake incident</strong></td>
+                <td>Outer service timeout must exceed inner retry envelope. Otherwise the platform kills its own retry logic.</td>
+                <td>Add deterministic upstream-flake tests and timeout-budget validation.</td>
+              </tr>
+              <tr>
+                <td><strong>Test coverage is uneven</strong></td>
+                <td>Some services have contract tests, while others rely mostly on typecheck. Regulated workflows need stronger test evidence.</td>
+                <td>Define a minimum test bar per service: unit, contract, smoke, and failure-mode tests.</td>
+              </tr>
+              <tr>
+                <td><strong>Cost story needs hardening</strong></td>
+                <td>Static rate cards age quickly. Provider pricing, prompt cache discounts, batch pricing, and model catalogs change often.</td>
+                <td>Add rate-card refresh, versioning, and provider-specific pricing semantics.</td>
+              </tr>
+              <tr>
+                <td><strong>Workbench UI may be operator-heavy</strong></td>
+                <td>Polling across many views can become expensive with many operators and active workflows.</td>
+                <td>Move more views to SSE/websocket streams and shared client-side event caches.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="competitors">
+        <h2>Honest Competitor Matrix</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Concern</th>
+                <th>Singularity</th>
+                <th>LangChain / LangSmith</th>
+                <th>Cursor / Continue</th>
+                <th>Devin / Cognition</th>
+                <th>Bedrock Agents</th>
+                <th>Helicone / Langfuse</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Multi-agent orchestration</strong></td><td>✅ Phased</td><td>✅ LangGraph</td><td>❌</td><td>✅ Autonomous</td><td>✅</td><td>❌</td></tr>
+              <tr><td><strong>Centralized LLM gateway</strong></td><td>✅ Strong</td><td>❌ Caller usually holds keys</td><td>❌</td><td>❌</td><td>✅ Managed</td><td>Partial</td></tr>
+              <tr><td><strong>AST-aware context</strong></td><td>✅ Budgeted slices</td><td>Partial retrievers</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+              <tr><td><strong>Governance / approvals</strong></td><td>✅ First-class</td><td>❌ App-built</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td></tr>
+              <tr><td><strong>Formal verification</strong></td><td>✅ Z3-backed</td><td>❌</td><td>❌</td><td>Claimed / opaque</td><td>❌</td><td>❌</td></tr>
+              <tr><td><strong>Audit trail with FTS</strong></td><td>✅ Strong</td><td>Partial</td><td>❌</td><td>❌</td><td>✅ CloudTrail</td><td>✅ LLM traces</td></tr>
+              <tr><td><strong>Cost tracking</strong></td><td>✅ Needs hardening</td><td>Partial</td><td>❌</td><td>Hidden</td><td>✅</td><td>✅</td></tr>
+              <tr><td><strong>Prompt compression</strong></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+              <tr><td><strong>Operator UI quality</strong></td><td>OK / improving</td><td>Strong</td><td>Strong</td><td>Strong</td><td>Strong</td><td>Strong</td></tr>
+              <tr><td><strong>Self-host complexity</strong></td><td>🔴 High</td><td>🟢 Low-medium</td><td>n/a</td><td>n/a</td><td>n/a</td><td>🟡 Medium</td></tr>
+              <tr><td><strong>Time to first workflow</strong></td><td>Hours</td><td>Minutes</td><td>Minutes</td><td>Minutes</td><td>Hours</td><td>n/a</td></tr>
+              <tr><td><strong>Enterprise / regulated fit</strong></td><td>✅✅ Strong</td><td>Partial</td><td>❌</td><td>Partial</td><td>✅✅ Strong</td><td>Partial</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="code-findings">
+        <h2>Code-Level Findings</h2>
+        <h3>1. Formal verification service shape</h3>
+        <p>The verifier should remain a platform abstraction, not a “Z3-only” concept. Internally it can use Z3, but externally it should speak in terms of constraints, queries, counterexamples, receipts, and risk.</p>
+        <pre><code>POST /api/v1/verification/verify
+{
+  "scope": "DEPLOYMENT_POLICY",
+  "facts": {
+    "deploymentGatePresent": true,
+    "qaApprovalPresent": false
+  },
+  "constraints": [
+    {
+      "id": "deployment_requires_qa",
+      "severity": "HIGH",
+      "expr": {
+        "op": "IMPLIES",
+        "if":   { "field": "deploymentGatePresent", "op": "==", "value": true },
+        "then": { "field": "qaApprovalPresent", "op": "==", "value": true }
+      }
+    }
+  ],
+  "query": {
+    "op": "AND",
+    "args": [
+      { "field": "deploymentGatePresent", "op": "==", "value": true },
+      { "field": "qaApprovalPresent", "op": "==", "value": false }
+    ]
+  }
+}</code></pre>
+
+        <h3>2. Tool approval needs stronger validation</h3>
+        <p>The tool execution layer should not accept an approval merely because an <span class="inline-code">approval_id</span> exists. It must validate scope, actor, expiry, action hash, and capability.</p>
+        <pre><code>// Current risk pattern to avoid:
+if ((risk === "high" || risk === "critical") && !approval_id) {
+  return { status: "waiting_approval" };
+}
+
+// Better pattern:
+const approval = await governanceClient.validateApproval({
+  approvalId: approval_id,
+  capabilityId: capability_id,
+  workflowId: workflow_id,
+  taskId: task_id,
+  toolName: tool_name,
+  toolVersion: version,
+  riskLevel: risk,
+  requestedActionHash: sha256(JSON.stringify(args ?? {})),
+  actorId: agent_uid
+});
+
+if (!approval.valid) {
+  return {
+    status: "blocked",
+    reason: approval.reason,
+    requiredAction: "REQUEST_HUMAN_APPROVAL"
+  };
+}</code></pre>
+
+        <h3>3. Context planning should produce explicit evidence</h3>
+        <p>Context Fabric and Prompt Composer are strongest when every context decision is explicit: what was included, what was excluded, why, and under which budget.</p>
+        <pre><code>type ContextPlan = {
+  task: string;
+  selectedLayers: Array&lt;{
+    layerType: string;
+    priority: number;
+    tokenEstimate: number;
+    inclusionReason: string;
+    layerHash: string;
+  }&gt;;
+  excludedContext: Array&lt;{
+    layerType?: string;
+    reason: string;
+    tokenEstimate?: number;
+  }&gt;;
+  budgetDecision: {
+    maxPromptChars: number;
+    estimatedInputTokens: number;
+    warnings: string[];
+  };
+  contextPlanHash: string;
+};</code></pre>
+
+        <h3>4. Canonical execution path should be documented in code and docs</h3>
+        <pre><code>// Recommended canonical path:
+WORKGRAPH_AGENT_TASK
+  -> CONTEXT_FABRIC_EXECUTE
+  -> PROMPT_COMPOSER_PREVIEW
+  -> TOOL_DISCOVERY
+  -> EXECUTION_GATEWAY
+  -> AUDIT_GOV_RECEIPT
+  -> WORKBENCH_REVIEW</code></pre>
+      </section>
+
+      <section id="fixes">
+        <h2>Top Fixes with Code</h2>
+        <h3>Fix 1: Consolidate observability sinks</h3>
+        <p>Make audit-gov the canonical event sink. Metrics, local JSONL, UI streams, and learning-service inputs should derive from audit-gov, not compete with it.</p>
+        <pre><code>// Canonical event envelope
+export type GovernanceEvent = {
+  traceId: string;
+  runId?: string;
+  workflowInstanceId?: string;
+  capabilityId?: string;
+  actorId?: string;
+  sourceService: string;
+  kind: string;
+  severity: "debug" | "info" | "warn" | "error";
+  riskLevel?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  subjectType?: string;
+  subjectId?: string;
+  payload: Record&lt;string, unknown&gt;;
+  occurredAt: string;
+};
+
+// Rule: every service emits this shape to audit-gov.
+// All dashboards query audit-gov or derived read models.</code></pre>
+
+        <h3>Fix 2: Add timeout-budget validation</h3>
+        <p>Prevent the outer layer from timing out before the inner retry envelope has completed.</p>
+        <pre><code>type TimeoutBudget = {
+  outerTimeoutSec: number;
+  gatewayTimeoutSec: number;
+  providerTimeoutSec: number;
+  retryCount: number;
+  retryDelaySec: number;
+  safetyBufferSec: number;
+};
+
+function validateTimeoutBudget(b: TimeoutBudget) {
+  const innerWorstCase =
+    b.providerTimeoutSec +
+    (b.retryCount * (b.providerTimeoutSec + b.retryDelaySec));
+
+  const requiredOuter = innerWorstCase + b.safetyBufferSec;
+
+  if (b.outerTimeoutSec < requiredOuter) {
+    throw new Error(
+      `Invalid timeout budget: outer=${b.outerTimeoutSec}s, ` +
+      `required>=${requiredOuter}s. Outer layer will abort inner retries.`
+    );
+  }
+}</code></pre>
+
+        <h3>Fix 3: Add provider-flake smoke tests</h3>
+        <p>The smoke matrix should simulate 429, 500, 529, slow responses, malformed JSON, and provider timeout.</p>
+        <pre><code># smoke/provider-flake.matrix.yaml
+scenarios:
+  - name: provider_429_then_success
+    providerResponseSequence:
+      - status: 429
+      - status: 200
+    expected:
+      workflowStatus: COMPLETED
+      retryCount: 1
+
+  - name: provider_529_exceeds_retry_budget
+    providerResponseSequence:
+      - status: 529
+      - status: 529
+      - status: 529
+    expected:
+      workflowStatus: FAILED
+      failureCode: PROVIDER_UNAVAILABLE
+      receiptRequired: true
+
+  - name: gateway_timeout_inside_outer_budget
+    providerDelaySec: 90
+    expected:
+      workflowStatus: COMPLETED
+      outerTimeoutNotTriggered: true</code></pre>
+
+        <h3>Fix 4: Create per-component release modes</h3>
+        <p>Let customers adopt one valuable slice without taking the full 20+ container platform.</p>
+        <pre><code># profiles/gateway-only.yaml
+services:
+  - llm-gateway
+  - audit-gov
+
+# profiles/context-governance.yaml
+services:
+  - prompt-composer
+  - context-api
+  - audit-gov
+  - llm-gateway
+
+# profiles/code-foundry.yaml
+services:
+  - code-foundry-api
+  - code-foundry-web
+  - formal-verifier
+  - audit-gov
+
+# profiles/full-platform.yaml
+services:
+  - iam
+  - agent-control
+  - tool-service
+  - prompt-composer
+  - context-api
+  - workgraph-api
+  - audit-gov
+  - llm-gateway
+  - code-foundry
+  - formal-verifier
+  - portal</code></pre>
+
+        <h3>Fix 5: Make phased reasoning an explicit platform mode</h3>
+        <pre><code>export type AgentReasoningMode =
+  | "flat_react"
+  | "phased_sdlc";
+
+export const PHASED_SDLC = [
+  { id: "PLAN_DRAFT",   allowedTools: ["read_file", "search_code", "find_symbol"] },
+  { id: "EXPLORE",      allowedTools: ["read_file", "search_code", "get_ast_slice"] },
+  { id: "PLAN_CONFIRM", allowedTools: ["read_file"] },
+  { id: "ACT",          allowedTools: ["write_file", "apply_patch", "run_tests"] },
+  { id: "VERIFY",       allowedTools: ["run_tests", "formal_verify", "diff_review"] },
+  { id: "FINALIZE",     allowedTools: ["finish_work_branch", "create_receipt"] }
+];
+
+// Recommendation:
+// Use flat_react for experimental agents.
+// Use phased_sdlc for governed SDLC workflows.</code></pre>
+      </section>
+
+      <section id="scorecard">
+        <h2>Engineering Scorecard</h2>
+        <div class="table-wrap">
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Score</th>
+                <th>Comment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Vision</td><td>9/10</td><td>Governed agentic SDLC is a strong enterprise thesis.</td></tr>
+              <tr><td>Architecture Depth</td><td>8.5/10</td><td>The system has serious design thinking: gateway, context, workflow, audit, replay, verification.</td></tr>
+              <tr><td>Operational Simplicity</td><td>4/10</td><td>The footprint is heavy. Per-component packaging is needed.</td></tr>
+              <tr><td>Governance Model</td><td>8/10</td><td>Strong direction, but approval validation and policy gates need hardening.</td></tr>
+              <tr><td>Formal Verification</td><td>7/10</td><td>Real Z3-backed verifier exists; must be wired into default gates.</td></tr>
+              <tr><td>Context Engineering</td><td>9/10</td><td>Code Context Budgeter and CapabilityWorldModel are major differentiators.</td></tr>
+              <tr><td>Observability</td><td>7/10</td><td>Strong audit direction, but too many overlapping sinks.</td></tr>
+              <tr><td>Testing Maturity</td><td>5.5/10</td><td>Some good tests, but coverage is uneven across services.</td></tr>
+              <tr><td>Market Position</td><td>8/10</td><td>Strong if positioned above Copilot/LangGraph as a governance layer.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section id="solo-engineer">
+        <h2>The Story</h2>
+        <p>Singularity started as a focused engineering effort to explore how agentic development can accelerate governed software delivery. In a short period, it brought together workflow orchestration, prompt composition, context engineering, LLM gateway routing, audit governance, formal verification, replay, Code Foundry, and operator review into one working platform direction.</p>
+
+        <div class="quote">The story behind Singularity is a practical example of how agentic engineering can compress the path from architecture vision to working platform software.</div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>What Was Built</th>
+                <th>Why It Is Notable</th>
+                <th>What It Proves</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Multi-service platform</strong></td>
+                <td>Gateway, context services, workflow runtime, prompt composer, audit, verifier, Code Foundry, and UI surfaces were assembled into one coherent system.</td>
+                <td>Agentic engineering can compress platform prototyping cycles dramatically.</td>
+              </tr>
+              <tr>
+                <td><strong>Governed coding loop</strong></td>
+                <td>The platform is not just a chat UI; it has workflow state, approvals, receipts, replay, and review semantics.</td>
+                <td>AI-assisted coding is most valuable when paired with architecture discipline.</td>
+              </tr>
+              <tr>
+                <td><strong>Context and code intelligence</strong></td>
+                <td>AST-aware context budgeting, capability world model, and prompt layering are advanced concepts for a one-month build.</td>
+                <td>The future engineer is part architect, part product designer, part AI orchestrator.</td>
+              </tr>
+              <tr>
+                <td><strong>Formal verification direction</strong></td>
+                <td>Adding a Z3-backed verifier shows the system is not blindly trusting LLM output.</td>
+                <td>Enterprise agentic systems need deterministic checks in addition to generative reasoning.</td>
+              </tr>
+              <tr>
+                <td><strong>Operator-first thinking</strong></td>
+                <td>Audit timelines, replay, send-back, review, and governance are built into the platform experience.</td>
+                <td>Trust is created through visibility, not just automation.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>How to say it professionally</h3>
+        <div class="callout blue">The first working version of Singularity came together in roughly one month through a focused agentic engineering effort. The result is not just code volume — it is an early proof point that governed AI-assisted delivery can compress the path from architecture vision to executable platform software.</div>
+
+        <h3>Suggested leadership line</h3>
+        <pre><code>In roughly one month, Singularity evolved into a working first version of a governed agentic SDLC platform, bringing together workflow orchestration, prompt governance, context engineering, audit receipts, formal verification, and operator review. It is an early example of how agentic engineering can turn architectural vision into executable platform software with unusual speed.</code></pre>
+      </section>
+
+      <section id="positioning">
+        <h2>Final Positioning</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Do Not Say</th>
+                <th>Say Instead</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Singularity is a better Copilot.</td><td>Singularity governs Copilot-like execution agents.</td></tr>
+              <tr><td>Singularity is a better LangGraph.</td><td>Singularity is an enterprise SDLC control plane above agent runtimes.</td></tr>
+              <tr><td>Singularity is only an agent runtime.</td><td>Singularity is a governed agentic delivery platform.</td></tr>
+              <tr><td>Singularity formally verifies all code.</td><td>Singularity includes early solver-backed checks for workflow, agent, spec, and deployment constraints.</td></tr>
+              <tr><td>Singularity is easy for everyone.</td><td>Singularity is best for teams that need enterprise-grade governance, auditability, approvals, and evidence.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="quote">Singularity’s value is not that it lets agents act. Its value is that it lets enterprises control, verify, replay, audit, and approve how agents act.</div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    Singularity Honest Engineering Review · Governed Agentic SDLC Platform
+  </footer>
+</body>
+</html>
