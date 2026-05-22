@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Programming in Singularity</title>
+  <style>
+    :root {
+      --primary: #006b3f;
+      --primary-dark: #004d2d;
+      --accent: #c62828;
+      --bg: #f7f9f8;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #5f6b7a;
+      --border: #dfe7e2;
+      --code-bg: #0f172a;
+      --code-text: #e5e7eb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      padding: 72px 24px 64px;
+      border-bottom: 6px solid var(--accent);
+    }
+
+    .hero-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+      font-weight: 700;
+      opacity: 0.88;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 4.8rem);
+      line-height: 1.05;
+      margin: 0 0 22px;
+      max-width: 900px;
+    }
+
+    .subtitle {
+      font-size: clamp(1.08rem, 2vw, 1.35rem);
+      max-width: 850px;
+      margin: 0;
+      opacity: 0.95;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 42px 24px 80px;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 36px;
+    }
+
+    aside {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    aside h2 {
+      font-size: 0.9rem;
+      margin: 0 0 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--primary-dark);
+    }
+
+    aside a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.92rem;
+      padding: 8px 0;
+      border-bottom: 1px solid #eef2ef;
+    }
+
+    aside a:hover {
+      color: var(--primary);
+    }
+
+    article {
+      min-width: 0;
+    }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 34px;
+      margin-bottom: 28px;
+      box-shadow: 0 12px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    h2 {
+      font-size: clamp(1.55rem, 3vw, 2.15rem);
+      line-height: 1.2;
+      margin: 0 0 18px;
+      color: var(--primary-dark);
+    }
+
+    h3 {
+      font-size: 1.22rem;
+      margin: 28px 0 10px;
+      color: #243b33;
+    }
+
+    p {
+      margin: 0 0 18px;
+    }
+
+    ul, ol {
+      margin-top: 0;
+      padding-left: 24px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .callout {
+      border-left: 5px solid var(--primary);
+      background: #eef8f2;
+      padding: 20px 22px;
+      border-radius: 14px;
+      margin: 24px 0;
+    }
+
+    .callout strong {
+      color: var(--primary-dark);
+    }
+
+    .warning {
+      border-left-color: var(--accent);
+      background: #fff4f4;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin: 24px 0;
+    }
+
+    .flow-step {
+      background: #f4faf6;
+      border: 1px solid #cfe2d7;
+      border-radius: 16px;
+      padding: 16px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      text-align: center;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 22px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      margin: 24px 0;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin: 22px 0;
+    }
+
+    .mini-card {
+      border: 1px solid var(--border);
+      background: #fbfdfc;
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .mini-card h3 {
+      margin-top: 0;
+      color: var(--primary-dark);
+    }
+
+    .quote {
+      font-size: 1.35rem;
+      line-height: 1.45;
+      color: var(--primary-dark);
+      font-weight: 750;
+      margin: 28px 0 4px;
+      padding: 26px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #eef8f2, #ffffff);
+      border: 1px solid #cfe2d7;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      padding: 28px 24px 52px;
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: relative;
+        top: 0;
+      }
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .hero {
+        padding: 36px 24px;
+      }
+
+      .container {
+        display: block;
+        padding: 24px;
+      }
+
+      aside {
+        display: none;
+      }
+
+      section {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">Governed Agentic Delivery</div>
+      <h1>Agentic Programming in Singularity</h1>
+      <p class="subtitle">How ReAct-style reasoning can power a governed software delivery model where agents reason, act, observe, verify, and produce evidence.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <aside>
+      <h2>Article Sections</h2>
+      <a href="#introduction">Introduction</a>
+      <a href="#agentic-programming">What Is Agentic Programming?</a>
+      <a href="#why-not-prompts">Why Prompts Are Not Enough</a>
+      <a href="#react">ReAct Pattern</a>
+      <a href="#singularity-implementation">How Singularity Implements ReAct</a>
+      <a href="#work-item">Work Item</a>
+      <a href="#agents">Agent Roles</a>
+      <a href="#context-fabric">Context Fabric</a>
+      <a href="#tool-registry">Tool Registry</a>
+      <a href="#observations">Observations</a>
+      <a href="#verifier">Verifier Agent</a>
+      <a href="#governance">Governance</a>
+      <a href="#receipts">Receipts</a>
+      <a href="#example">Example Flow</a>
+      <a href="#conclusion">Conclusion</a>
+    </aside>
+
+    <article>
+      <section id="introduction">
+        <h2>Introduction</h2>
+        <p>Software development is moving from a purely human-driven activity to a collaborative model where humans, AI agents, tools, repositories, policies, and enterprise workflows work together.</p>
+        <p>In this new model, the developer is no longer only writing code line by line. Instead, the developer increasingly defines intent, constraints, acceptance criteria, and architectural boundaries, while AI agents help reason, plan, generate, verify, and improve the implementation.</p>
+        <div class="callout">
+          <strong>Core idea:</strong> Agentic programming in Singularity is not just AI-assisted coding. It is a governed software delivery model where agents reason, act, observe results, correct themselves, and leave evidence behind.
+        </div>
+      </section>
+
+      <section id="agentic-programming">
+        <h2>What Is Agentic Programming?</h2>
+        <p>Agentic programming is the process of building software with AI agents that can take goals, reason through tasks, interact with tools, inspect code, make changes, run validations, and iterate based on feedback.</p>
+        <p>Traditional AI-assisted coding usually follows a simple pattern:</p>
+        <ol>
+          <li>A user asks a model to generate code.</li>
+          <li>The model produces an answer.</li>
+          <li>The developer manually checks and fixes it.</li>
+        </ol>
+        <p>Agentic programming introduces a loop:</p>
+        <div class="flow">
+          <div class="flow-step">Understand</div>
+          <div class="flow-step">Inspect</div>
+          <div class="flow-step">Plan</div>
+          <div class="flow-step">Act</div>
+          <div class="flow-step">Validate</div>
+          <div class="flow-step">Correct</div>
+        </div>
+        <p>The agent does not act as a one-shot code generator. It behaves more like an engineering participant with a bounded role, tool access, memory, policies, and accountability.</p>
+      </section>
+
+      <section id="why-not-prompts">
+        <h2>Why Simple Prompt-Based Coding Is Not Enough</h2>
+        <p>A single prompt cannot reliably capture the complexity of real enterprise software delivery. Enterprise systems involve architecture rules, coding standards, security constraints, data contracts, APIs, deployment policies, test expectations, compliance needs, and historical design decisions.</p>
+        <div class="grid-two">
+          <div class="mini-card">
+            <h3>Common Risks</h3>
+            <ul>
+              <li>Hallucinated APIs, files, classes, or dependencies</li>
+              <li>Ignored architecture patterns</li>
+              <li>Local fixes that break system behavior</li>
+              <li>Missing tests or evidence</li>
+            </ul>
+          </div>
+          <div class="mini-card">
+            <h3>Singularity Response</h3>
+            <ul>
+              <li>Ground agents in real context</li>
+              <li>Constrain tool access</li>
+              <li>Verify against the work item</li>
+              <li>Capture receipts and audit trails</li>
+            </ul>
+          </div>
+        </div>
+        <p>Singularity addresses this by moving from <strong>prompt-to-code</strong> toward <strong>intent-to-governed-delivery</strong>.</p>
+      </section>
+
+      <section id="react">
+        <h2>ReAct: Reasoning and Acting as a Loop</h2>
+        <p>The ReAct pattern combines two important behaviors: reasoning and acting.</p>
+        <p><strong>Reasoning</strong> allows the agent to think through the problem, decompose it, form hypotheses, decide what information is needed, and plan the next step.</p>
+        <p><strong>Acting</strong> allows the agent to use tools to gather information or make progress. These tools may include repository search, file readers, code editors, test runners, build tools, log analyzers, documentation retrievers, policy checkers, or deployment systems.</p>
+        <pre><code>Goal → Reason → Act → Observe → Reason Again → Act Again → Final Output</code></pre>
+        <p>For software engineering, this becomes:</p>
+        <pre><code>Work Item → Understand → Inspect Repo → Plan → Modify Code → Run Tests → Observe Result → Fix → Verify → Handoff</code></pre>
+        <p>The most important idea is that the agent does not blindly generate the final answer. It continuously adjusts based on real observations from tools and the environment.</p>
+      </section>
+
+      <section id="singularity-implementation">
+        <h2>How Singularity Implements ReAct Concepts</h2>
+        <p>In Singularity, ReAct is not treated as a loose prompting trick. It becomes part of the platform architecture.</p>
+        <div class="grid-two">
+          <div class="mini-card"><h3>1. Work Item</h3><p>The structured goal container.</p></div>
+          <div class="mini-card"><h3>2. Agent Roles</h3><p>Bounded reasoners with clear responsibilities.</p></div>
+          <div class="mini-card"><h3>3. Context Fabric</h3><p>Memory, retrieval, and grounding layer.</p></div>
+          <div class="mini-card"><h3>4. Tool Registry</h3><p>Controlled action layer for approved tools.</p></div>
+          <div class="mini-card"><h3>5. Observations</h3><p>Structured feedback from every action.</p></div>
+          <div class="mini-card"><h3>6. Verifier Agent</h3><p>Independent implementation validation.</p></div>
+          <div class="mini-card"><h3>7. Governance</h3><p>Policy, permission, approval, and audit.</p></div>
+          <div class="mini-card"><h3>8. Receipts</h3><p>Evidence trail for delivery decisions.</p></div>
+        </div>
+      </section>
+
+      <section id="work-item">
+        <h2>1. Work Item as the Goal Container</h2>
+        <p>Every agentic programming flow begins with a work item. The work item is not just a ticket title. It becomes the structured goal container for the entire workflow.</p>
+        <p>A work item may include business objective, functional requirements, non-functional requirements, acceptance criteria, target capability, impacted services, repository links, APIs, risk level, security constraints, test expectations, approvals, and definition of done.</p>
+        <div class="callout">
+          Instead of saying, “Generate code for this feature,” Singularity says: “Here is the work item, its constraints, impacted capability, existing architecture, acceptance criteria, and governance rules. Now reason through the safest delivery path.”
+        </div>
+      </section>
+
+      <section id="agents">
+        <h2>2. Agent Roles as Bounded Reasoners</h2>
+        <p>Different agents can represent different SDLC responsibilities: Planning Agent, Architect Agent, Developer Agent, QA Agent, Security Agent, DevOps Agent, Verifier Agent, and Human Approval Agent.</p>
+        <p>Each agent has an operating contract. This means the agent has a role, allowed tools, expected outputs, and policy boundaries.</p>
+        <p>This role-based design makes ReAct safer. Each agent can reason and act, but only within its assigned responsibility.</p>
+      </section>
+
+      <section id="context-fabric">
+        <h2>3. Context Fabric as the Memory and Retrieval Layer</h2>
+        <p>A coding agent needs to understand repository structure, existing code patterns, architecture decisions, API contracts, business rules, prior incidents, dependency relationships, test conventions, team standards, and historical lessons learned.</p>
+        <p>Singularity's Context Fabric acts as the retrieval and memory layer for this information. Instead of sending the entire repository to the model, the Context Fabric retrieves only the most relevant context.</p>
+        <p>In ReAct terms, Context Fabric supports the reasoning phase by giving the agent better grounding. It also supports the observation phase by storing what the agent discovered during tool use.</p>
+      </section>
+
+      <section id="tool-registry">
+        <h2>4. Tool Registry as the Controlled Action Layer</h2>
+        <p>ReAct requires the agent to act. In Singularity, actions happen through a controlled Tool Registry.</p>
+        <p>Tools may include repository search, file reading, file editing, build execution, unit tests, static analysis, log inspection, API contract reading, dependency graph inspection, test generation, policy validation, pull request creation, and implementation summaries.</p>
+        <p>The Tool Registry defines what tools exist, which agents can use them, what inputs are allowed, and how outputs are captured. This keeps the design neutral and avoids tying it to any specific tool protocol or politically sensitive platform name.</p>
+        <pre><code>Reason: I need to understand how this API is currently implemented.
+Act: Search repository for the endpoint name.
+Observe: Found controller, service, DTO, and test files.
+Reason: The change should be made in the service layer.
+Act: Read service and test files.
+Observe: Existing validation pattern uses a shared validator.
+Reason: Extend the validator instead of adding duplicate logic.
+Act: Modify validator and add tests.
+Observe: Unit test failed because a fixture is missing a required field.
+Reason: Update fixture and rerun tests.
+Act: Update fixture and rerun tests.
+Observe: Tests passed.</code></pre>
+      </section>
+
+      <section id="observations">
+        <h2>5. Observation Store as the Feedback Layer</h2>
+        <p>Every action produces an observation. A file search returns matching classes. A test runner returns pass or fail results. A build tool returns compilation errors. A policy checker returns compliance violations. A log analyzer returns runtime symptoms.</p>
+        <p>Singularity can store these observations as structured events. This allows the platform to answer what the agent inspected, what evidence it used, which tests failed, how the issue was corrected, and whether the final output was validated.</p>
+      </section>
+
+      <section id="verifier">
+        <h2>6. Verifier Agent as the Quality Gate</h2>
+        <p>A major weakness of many coding agents is that the same agent that writes the code often claims the code is correct. Singularity improves this by separating generation from verification.</p>
+        <p>The Developer Agent writes or modifies the code. The Verifier Agent independently checks whether the implementation satisfies the specification.</p>
+        <pre><code>Developer Agent → Code Change → Verifier Agent → Pass / Fail / Request Rework</code></pre>
+        <p>If verification fails, the workflow can route back to the Developer Agent with precise feedback. This is ReAct at a multi-agent level.</p>
+      </section>
+
+      <section id="governance">
+        <h2>7. Governance Layer as the Control Plane</h2>
+        <p>Agentic programming becomes risky when agents can act without governance. Singularity solves this by introducing a control plane around the ReAct loop.</p>
+        <p>The governance layer can enforce which agents can act in which phase, which tools each agent can access, which files can be modified, which changes require human approval, which policies must pass before merge, and which evidence must be attached to the handoff.</p>
+        <div class="callout warning">
+          <strong>Important principle:</strong> In Singularity, ReAct is not an uncontrolled loop. It is a governed loop.
+        </div>
+      </section>
+
+      <section id="receipts">
+        <h2>8. Receipts as the Evidence Trail</h2>
+        <p>Every meaningful agentic action should produce a receipt. A receipt is a structured record of what happened, why it happened, what evidence was used, and what output was produced.</p>
+        <p>A receipt may include work item ID, agent role, instruction summary, retrieved context, tools invoked, files read, files modified, tests executed, policy results, verification outcome, human approval status, and final implementation summary.</p>
+        <p>Receipts make agentic programming explainable. They allow teams to trace a code change back to the original goal, reasoning path, tool actions, and validation evidence.</p>
+      </section>
+
+      <section id="example">
+        <h2>A Singularity ReAct Flow Example</h2>
+        <p>Consider a simple work item:</p>
+        <div class="quote">Add validation to prevent an inactive vendor license from being assigned to a new software contract.</div>
+        <h3>Planning Agent</h3>
+        <p>The Planning Agent reads the work item and identifies that the change likely impacts vendor license validation, contract creation, test cases, and possibly API error responses.</p>
+        <h3>Architect Agent</h3>
+        <p>The Architect Agent inspects the capability map and repository model. It identifies the relevant services, domain objects, and existing validation patterns.</p>
+        <h3>Developer Agent</h3>
+        <p>The Developer Agent enters a ReAct loop. It searches the repository, reads relevant files, identifies existing validators, modifies the validation logic, updates error codes, and adds tests.</p>
+        <h3>QA Agent</h3>
+        <p>The QA Agent generates or updates test scenarios for active licenses, inactive licenses, missing licenses, and existing contract flows.</p>
+        <h3>Verifier Agent</h3>
+        <p>The Verifier Agent compares the implementation against the original work item and acceptance criteria. If something is missing, it sends structured feedback back to the Developer Agent.</p>
+        <h3>Human Approval</h3>
+        <p>The human approver receives a review experience with changed files, test results, verification summary, and receipts.</p>
+      </section>
+
+      <section id="agentic-sdlc">
+        <h2>From Agentic Coding to Agentic SDLC</h2>
+        <p>The bigger vision is not just agentic coding. It is agentic SDLC.</p>
+        <p>In agentic coding, an AI helps write code. In agentic SDLC, agents participate across the full lifecycle: inception, requirement discovery, architecture review, design elaboration, development, testing, security review, deployment readiness, change approval, and production learning.</p>
+        <pre><code>Work Item
+   ↓
+Context Fabric
+   ↓
+Agent Reasoning Loop
+   ↓
+Tool Registry
+   ↓
+Observations
+   ↓
+Verifier Agent
+   ↓
+Governance Gate
+   ↓
+Human Approval
+   ↓
+Delivery Receipt</code></pre>
+      </section>
+
+      <section id="benefits">
+        <h2>Benefits of This Model</h2>
+        <div class="grid-two">
+          <div class="mini-card"><h3>Reduced Hallucination</h3><p>Agents inspect real files, APIs, tests, and documentation before acting.</p></div>
+          <div class="mini-card"><h3>Better Code Quality</h3><p>Changes are grounded in existing patterns and validated through tests.</p></div>
+          <div class="mini-card"><h3>Stronger Governance</h3><p>Every action can be tied to a work item, policy, role, and approval path.</p></div>
+          <div class="mini-card"><h3>Higher Productivity</h3><p>Developers focus more on intent, architecture, and review.</p></div>
+          <div class="mini-card"><h3>Enterprise Auditability</h3><p>Receipts provide a traceable record of what happened and why.</p></div>
+          <div class="mini-card"><h3>Continuous Learning</h3><p>Observations and corrections can become reusable lessons for future workflows.</p></div>
+        </div>
+      </section>
+
+      <section id="conclusion">
+        <h2>Conclusion</h2>
+        <p>Agentic programming represents a major shift in how software will be built. The future is not just developers asking AI to generate snippets of code. The future is a governed collaboration between humans, agents, tools, workflows, context, and evidence.</p>
+        <p>Singularity brings this model to enterprise software delivery by implementing ReAct concepts inside a controlled SDLC platform. Agents reason over work items, act through approved tools, observe real system feedback, revise their approach, verify results, and produce receipts.</p>
+        <div class="quote">Singularity turns AI coding from a prompt-based interaction into a governed ReAct-driven software delivery system.</div>
+      </section>
+    </article>
+  </main>
+
+  <footer>
+    Agentic Programming in Singularity · Governed Agentic Delivery
+  </footer>
+</body>
+</html>
