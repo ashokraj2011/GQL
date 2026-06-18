@@ -1,0 +1,64 @@
+SELECT COUNT(*) AS invalid_jsonb_count
+FROM public.rules
+WHERE ruledef IS NOT NULL
+  AND NOT pg_input_is_valid(ruledef, 'jsonb');
+
+If this returns 0, then this update should not fail:
+
+ruledef::jsonb
+2. See the bad rows before updating
+SELECT
+    r.ruleid,
+    LEFT(r.ruledef, 500) AS ruledef_sample,
+    e.message,
+    e.detail,
+    e.hint,
+    e.sql_error_code
+FROM public.rules r
+CROSS JOIN LATERAL pg_input_error_info(r.ruledef, 'jsonb') e
+WHERE r.ruledef IS NOT NULL
+  AND NOT pg_input_is_valid(r.ruledef, 'jsonb')
+LIMIT 100;
+
+This will show which ruleid values cannot be converted.
+
+3. Add new jsonb column and update it
+ALTER TABLE public.rules
+ADD COLUMN IF NOT EXISTS ruledef_jsonb jsonb;
+
+UPDATE public.rules
+SET ruledef_jsonb = ruledef::jsonb
+WHERE ruledef IS NOT NULL
+  AND ruledef_jsonb IS NULL;
+
+ANALYZE public.rules;
+
+ALTER TABLE ... ADD COLUMN is the right command for adding the new column; PostgreSQL documents this form as ADD [ COLUMN ] ... column_name data_type.
+
+4. All-in-one script that aborts if bad rows exist
+DO $$
+DECLARE
+    v_bad_count bigint;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_bad_count
+    FROM public.rules
+    WHERE ruledef IS NOT NULL
+      AND NOT pg_input_is_valid(ruledef, 'jsonb');
+
+    IF v_bad_count > 0 THEN
+        RAISE EXCEPTION
+            'Cannot convert ruledef to jsonb. % invalid rows found. Run the bad-row query first.',
+            v_bad_count;
+    END IF;
+END $$;
+
+ALTER TABLE public.rules
+ADD COLUMN IF NOT EXISTS ruledef_jsonb jsonb;
+
+UPDATE public.rules
+SET ruledef_jsonb = ruledef::jsonb
+WHERE ruledef IS NOT NULL
+  AND ruledef_jsonb IS NULL;
+
+ANALYZE public.rules;
