@@ -1,0 +1,51 @@
+. Content Bundle
+
+A Content Bundle represents a candidate personalization unit. It contains the content reference along with the rules and metadata required to determine whether that content can be shown to a specific customer in a specific context.
+
+A Content Bundle includes:
+
+Component	Description
+Content Reference	Pointer to the treatment, offer, banner, message, module, or campaign content.
+Eligibility Rules	Rules that determine whether the customer is allowed or qualified to receive the content.
+Targeting Rules	Rules that determine whether the content is relevant to the customer, channel, journey, segment, or current context.
+Data Access Rules	Rules that control which customer, account, workplace, or life-event data can be accessed and used during evaluation.
+Filter Object	Structured filters such as channel, placement, product, locale, account type, customer type, device, or campaign constraints.
+Data Requirements	The list of data attributes required to evaluate the rules and enrich downstream treatment resolution.
+
+Example:
+
+Content Bundle: Retirement Rollover Offer
+
+Content Reference:
+  rollover_offer_v3
+
+Eligibility Rules:
+  - Customer has eligible retirement account
+  - Customer is not suppressed for retirement campaigns
+  - Customer has valid communication consent
+
+Targeting Rules:
+  - Customer has recent job change life event
+  - Customer has workplace retirement assets
+  - Customer is in accumulation or transition life stage
+
+Data Access Rules:
+  - Can access customer profile
+  - Can access retirement account indicators
+  - Can access workplace investment indicators
+  - Can access life event signals
+  - Cannot access restricted account-level details unless allowed
+
+Filter Object:
+  - Channel = Mobile
+  - Placement = DashboardHero
+  - Locale = en-US
+  - ProductArea = Retirement
+
+Data Requirements:
+  - Customer profile
+  - Consent status
+  - Retirement account ownership
+  - Workplace investment relationship
+  - Job change or retirement life-event signal
+  - Suppression history
