@@ -1,0 +1,29 @@
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("FlattenJSON_SQL").getOrCreate()
+
+# 1. Create the same sample data
+data = [
+    (1, "Alice", '[{"event_name": "login", "score": 10}, {"event_name": "click", "score": 5}]'),
+    (2, "Bob",   '[{"event_name": "logout", "score": 0}]'),
+    (3, "Charlie", None)
+]
+df = spark.createDataFrame(data, ["user_id", "user_name", "events_json"])
+
+# 2. Register the DataFrame as a SQL table
+df.createOrReplaceTempView("users_table")
+
+# 3. Run the Spark SQL query using inline_outer
+sql_query = """
+    SELECT 
+        user_id, 
+        user_name,
+        INLINE_OUTER(
+            from_json(events_json, 'ARRAY<STRUCT<event_name: STRING, score: INT>>')
+        )
+    FROM 
+        users_table
+"""
+
+# Execute and show results
+spark.sql(sql_query).show()
