@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singularity Flow — Skills &amp; the Loop</title>
+<style>
+:root{--accent:#1e8b5b;--accent-deep:#14623f;--accent-soft:#e3f5eb;--ink:#183126;--muted:#5c6f64;--line:#d9e4dc;--paper:#fbfdfc;--card:#ffffff;--amber:#aa731f;--amber-soft:#fbf3e2;--blue:#426f95;--blue-soft:#edf5fb;--danger:#a2452f;--danger-soft:#faeee9;
+--sans:Inter,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--mono:ui-monospace,Consolas,'SF Mono',Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.62;font-size:15.5px}
+a{color:var(--accent)}
+.wrap{display:flex;max-width:1200px;margin:0 auto}
+nav{width:258px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:30px 16px 30px 24px;border-right:1px solid var(--line)}
+nav .brand{font-weight:900;font-size:17px;color:var(--accent-deep)}
+nav .tag{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;padding:2px 9px;border-radius:12px;margin:6px 0 18px}
+nav a.t{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--muted);font-size:13px;padding:5px 8px;border-radius:7px;border-left:2px solid transparent}
+nav a.t span{font-family:var(--mono);font-size:10px;color:var(--accent);width:20px;flex-shrink:0}
+nav a.t:hover{background:var(--accent-soft);color:var(--ink)}
+nav a.t.on{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;border-left:2px solid var(--accent)}
+main{flex:1;min-width:0;padding:0 44px 110px}
+section{padding-top:56px}
+.kick{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:6px}
+h1{font-size:38px;line-height:1.15;font-weight:900;margin:4px 0 14px;letter-spacing:-.02em}
+h2{font-size:27px;font-weight:900;margin:2px 0 12px;letter-spacing:-.015em}
+h3{font-size:16px;margin:22px 0 8px;color:var(--accent-deep)}
+p{margin:0 0 12px;max-width:74ch;color:#2c3b32}
+.lead{font-size:17px}
+.muted{color:var(--muted)}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);padding:1px 6px;border-radius:5px;color:var(--accent-deep)}
+pre{background:#10281c;color:#d9eadf;border-radius:11px;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.8px;line-height:1.7;margin:12px 0}
+pre b{color:#8fd6ae;font-weight:400}
+pre i{color:#7d9b8a;font-style:normal}
+.role{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.1em;padding:2px 9px;border-radius:11px;margin-left:8px;vertical-align:middle}
+.role.dev{background:var(--accent-soft);color:var(--accent-deep)}
+.role.po{background:var(--blue-soft);color:var(--blue)}
+.role.adm{background:var(--amber-soft);color:var(--amber)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 19px;margin:13px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:13px 0}
+@media(max-width:960px){.grid2{grid-template-columns:1fr}nav{display:none}main{padding:0 20px 80px}}
+.steps{counter-reset:s;margin:14px 0}
+.st{position:relative;padding:0 0 18px 46px;border-left:2px solid var(--line);margin-left:15px}
+.st:last-child{border-left-color:transparent;padding-bottom:4px}
+.st::before{counter-increment:s;content:counter(s);position:absolute;left:-16px;top:-1px;width:31px;height:31px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:3px solid var(--paper)}
+.st h4{font-size:14.5px;margin-bottom:3px;color:var(--accent-deep)}
+.st p{font-size:14px;margin-bottom:6px}
+.note{background:var(--blue-soft);border:1px solid #c4d9ea;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+.win{background:var(--accent-soft);border:1px solid #b7dcc8;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+.warn{background:var(--amber-soft);border:1px solid #e6d3ab;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+table{border-collapse:collapse;width:100%;margin:13px 0;font-size:13.5px}
+th{text-align:left;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);border-bottom:2px solid var(--accent);padding:7px 9px}
+td{border-bottom:1px solid var(--line);padding:8px 9px;vertical-align:top}
+td.c{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:60px;padding-top:16px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+<div class="brand">Singularity Flow</div>
+<div class="tag" style="background:#5b4a8a">SKILLS &amp; THE LOOP</div>
+<a class="t" href="#anatomy"><span>01</span>Anatomy of a skill</a>
+<a class="t" href="#economics"><span>02</span>Why 97 cost 42 tokens</a>
+<a class="t" href="#loop"><span>03</span>One invocation</a>
+<a class="t" href="#contracts"><span>04</span>The six contracts</a>
+<a class="t" href="#continue"><span>05</span>The five-intent loop</a>
+<a class="t" href="#extend"><span>06</span>Adding your own</a>
+</nav>
+<main>
+
+<section id="anatomy">
+<div class="kick">01 · The unit</div>
+<h1>Skills — how the model plugs in</h1>
+<p class="lead">A skill is the only doorway between conversation and kernel: a folder with a <code>SKILL.md</code> body, a registry entry that assigns its behavioral contract, and a CLI command it wraps. This guide covers the anatomy, the invocation loop, and how <code>/sflow-*</code> chains work into a governed flow.</p>
+<pre>plugin/skills/
+├── registry.yml                  # every skill · its contract class · stamped policies
+└── sflow-status/
+    └── SKILL.md                  # frontmatter + body the model reads on invocation</pre>
+<p><code>SKILL.md</code> holds frontmatter (name, description, the command it wraps) and a body: the instructions the model follows — what to run, how to relay, when to ask. The <b>registry</b> assigns each skill a contract class; a mechanical stamper writes the class&rsquo;s canonical contract text into every body, and <code>check</code> (463 validations) fails the build on drift, missing entries, orphan folders, or bodies over the token ceiling (warn 500 · fail 800). Authoring a new skill = one folder + one registry line; the governance arrives by stamping, not by remembering.</p>
+</section>
+
+<section id="economics">
+<div class="kick">02 · Demand paging</div>
+<h2>Why 97 skills cost 42 tokens</h2>
+<p>Only three conversational skills (help, nextsteps, status) sit in the session index — ~14 tokens each, <b>≈42 tokens total, the entire fixed cost of a session</b>. The other 94 are slash-only: their bodies load <em>when a human invokes them</em>, cost once, and are cached for the session. Cost scales with governed work, never with logins. Large command outputs return a bounded preview plus a hash-bound handle instead of flooding the transcript (<code>sflow show</code> expands on request), keeping the context append-only and cache-valid.</p>
+</section>
+
+<section id="loop">
+<div class="kick">03 · One invocation, end to end</div>
+<h2>The invocation loop</h2>
+<pre>you        /sflow-status PAY-1187
+host       loads sflow-status/SKILL.md into context (first use this session)
+model      follows the body → emits a tool call: singularity-flow status PAY-1187
+kernel     child process · resolves subject · reads state · zero tokens
+result     envelope: output + why[] + next[] (+ preview/handle if large)
+model      relays under its contract (concise-relay: the preview, verbatim,
+           no invention) and surfaces the NOW/THEN actions</pre>
+<p>The model never computes state and never executes — it requests, the kernel executes, the model narrates. Every invocation also emits a structured <b>conformance event</b> (output hash, reply hash, receipts consumed, actions executed); pure-function checkers score whether the contract was followed, per skill, per model. Contract-following is a measured rate, not a hope.</p>
+</section>
+
+<section id="contracts">
+<div class="kick">04 · The contracts</div>
+<h2>Six behavioral classes</h2>
+<table>
+<tr><th>Class behavior</th><th>Guarantee</th></tr>
+<tr><td>Relay (status, report, show)</td><td>Deterministic output relayed faithfully — the preview verbatim, nothing invented, nothing summarized away</td></tr>
+<tr><td>Review (inbox, review)</td><td>Presents packets and evidence; renders decisions to humans, never makes them</td></tr>
+<tr><td>Guided (next, run)</td><td>Executes at most one kernel-computed action per invocation, then stops</td></tr>
+<tr><td>Selection-gated mutation (start, approve, submit)</td><td>A question with a one-time receipt precedes the mutation; the mutation must consume that receipt — order in the transcript proves nothing, receipt consumption proves everything</td></tr>
+<tr><td>Clarification + artifact (continue)</td><td>Unresolved questions are asked <em>before</em> drafting; answers become hash-pinned inputs the artifact must cite</td></tr>
+<tr><td>Conversational (help, nextsteps, status)</td><td>Indexed, tiny, read-only — the only always-present surface</td></tr>
+</table>
+</section>
+
+<section id="continue">
+<div class="kick">05 · The big loop</div>
+<h2><code>/sflow-continue</code> — the five-intent cycle</h2>
+<pre>┌─→ WHERE AM I     kernel: phase, generation, gates (L0, zero tokens)
+│   CLARIFY        model asks what pinned inputs don't resolve → answers pinned
+│   GENERATE       model drafts from composed, hash-pinned context (the tokens)
+│   PUBLISH        kernel: template validation · hash · isolated commit · CAS
+│   VERIFY         kernel: gates, floors, reconcile — refusals are to-do lists
+└── NEXT           kernel: nextsteps → NOW/THEN → loop, or stop at a human</pre>
+<p>The kernel owns the loop; the model fills exactly one slot in it (generation) and narrates the rest. The loop stops — loudly, with reasons — at every human boundary: approvals, unanswered questions, gate failures, escalations. A session can die at any arrow: state is on the branch, and the next <code>continue</code>, on any machine, re-enters the loop where truth left it. Mutations along the way ride the action envelope: kernel-computed plans, content-hashed, revision-bound, one action per execution — an invalid call is unexpressible, not caught.</p>
+</section>
+
+<section id="extend">
+<div class="kick">06 · Adding your own</div>
+<h2>Extending the surface</h2>
+<p>New skill: create the folder, add the registry line with a class, run the stamper — contract text, token policy, and check coverage arrive mechanically; the tripwire suite demands a registered case if the wrapped operation is <code>model: never</code>. New workflow verbs come from work types (phases in workflow.yml), not new machinery: skills stay thin doors to kernel commands. The invariant every extension inherits: <b>the skill layer can make the kernel easier to ask — it can never make it possible to bypass.</b></p>
+<footer>Singularity Flow · Skills &amp; the Loop · first release · companions: Architecture Guide, Deep Dive, User Guide · self-contained.</footer>
+</section>
+
+</main>
+</div>
+<script>
+(function(){var L=[].slice.call(document.querySelectorAll('nav a.t')),S=L.map(function(a){return document.querySelector(a.getAttribute('href'))});
+function y(){var p=window.scrollY+130,c=0;for(var i=0;i<S.length;i++){if(S[i]&&S[i].offsetTop<=p)c=i}L.forEach(function(a,i){a.classList.toggle('on',i===c)})}
+window.addEventListener('scroll',y,{passive:true});y()})();
+</script>
+</body>
+</html>

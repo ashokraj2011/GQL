@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singularity Flow — Product Owner Guide</title>
+<style>
+:root{--accent:#1e8b5b;--accent-deep:#14623f;--accent-soft:#e3f5eb;--ink:#183126;--muted:#5c6f64;--line:#d9e4dc;--paper:#fbfdfc;--card:#ffffff;--amber:#aa731f;--amber-soft:#fbf3e2;--blue:#426f95;--blue-soft:#edf5fb;--danger:#a2452f;--danger-soft:#faeee9;
+--sans:Inter,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--mono:ui-monospace,Consolas,'SF Mono',Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.62;font-size:15.5px}
+a{color:var(--accent)}
+.wrap{display:flex;max-width:1200px;margin:0 auto}
+nav{width:258px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:30px 16px 30px 24px;border-right:1px solid var(--line)}
+nav .brand{font-weight:900;font-size:17px;color:var(--accent-deep)}
+nav .tag{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;padding:2px 9px;border-radius:12px;margin:6px 0 18px}
+nav a.t{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--muted);font-size:13px;padding:5px 8px;border-radius:7px;border-left:2px solid transparent}
+nav a.t span{font-family:var(--mono);font-size:10px;color:var(--accent);width:20px;flex-shrink:0}
+nav a.t:hover{background:var(--accent-soft);color:var(--ink)}
+nav a.t.on{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;border-left:2px solid var(--accent)}
+main{flex:1;min-width:0;padding:0 44px 110px}
+section{padding-top:56px}
+.kick{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:6px}
+h1{font-size:38px;line-height:1.15;font-weight:900;margin:4px 0 14px;letter-spacing:-.02em}
+h2{font-size:27px;font-weight:900;margin:2px 0 12px;letter-spacing:-.015em}
+h3{font-size:16px;margin:22px 0 8px;color:var(--accent-deep)}
+p{margin:0 0 12px;max-width:74ch;color:#2c3b32}
+.lead{font-size:17px}
+.muted{color:var(--muted)}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);padding:1px 6px;border-radius:5px;color:var(--accent-deep)}
+pre{background:#10281c;color:#d9eadf;border-radius:11px;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.8px;line-height:1.7;margin:12px 0}
+pre b{color:#8fd6ae;font-weight:400}
+pre i{color:#7d9b8a;font-style:normal}
+.role{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.1em;padding:2px 9px;border-radius:11px;margin-left:8px;vertical-align:middle}
+.role.dev{background:var(--accent-soft);color:var(--accent-deep)}
+.role.po{background:var(--blue-soft);color:var(--blue)}
+.role.adm{background:var(--amber-soft);color:var(--amber)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 19px;margin:13px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:13px 0}
+@media(max-width:960px){.grid2{grid-template-columns:1fr}nav{display:none}main{padding:0 20px 80px}}
+.steps{counter-reset:s;margin:14px 0}
+.st{position:relative;padding:0 0 18px 46px;border-left:2px solid var(--line);margin-left:15px}
+.st:last-child{border-left-color:transparent;padding-bottom:4px}
+.st::before{counter-increment:s;content:counter(s);position:absolute;left:-16px;top:-1px;width:31px;height:31px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:3px solid var(--paper)}
+.st h4{font-size:14.5px;margin-bottom:3px;color:var(--accent-deep)}
+.st p{font-size:14px;margin-bottom:6px}
+.note{background:var(--blue-soft);border:1px solid #c4d9ea;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+.win{background:var(--accent-soft);border:1px solid #b7dcc8;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+.warn{background:var(--amber-soft);border:1px solid #e6d3ab;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+table{border-collapse:collapse;width:100%;margin:13px 0;font-size:13.5px}
+th{text-align:left;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);border-bottom:2px solid var(--accent);padding:7px 9px}
+td{border-bottom:1px solid var(--line);padding:8px 9px;vertical-align:top}
+td.c{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:60px;padding-top:16px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+<div class="brand">Singularity Flow</div>
+<div class="tag" style="background:var(--blue)">PRODUCT OWNER GUIDE</div>
+<a class="t" href="#start"><span>01</span>Your seat at the table</a>
+<a class="t" href="#setup"><span>02</span>Setup — three lines</a>
+<a class="t" href="#intent"><span>03</span>Express intent</a>
+<a class="t" href="#informed"><span>04</span>Stay informed</a>
+<a class="t" href="#review"><span>05</span>Review the exact thing</a>
+<a class="t" href="#decide"><span>06</span>Approve · reject · change</a>
+<a class="t" href="#measure"><span>07</span>Read the evidence</a>
+<a class="t" href="#rescue"><span>08</span>Unusual moments</a>
+<a class="t" href="#crib"><span>09</span>The PO crib</a>
+</nav>
+<main>
+
+<section id="start">
+<div class="kick">01 · Your seat at the table</div>
+<h1>Singularity Flow for Product Owners</h1>
+<p class="lead">You own intent, priorities, and the final word on what ships. This guide is your side of the system, end to end: express what you want, watch it move without chasing anyone, review the exact thing that was built, and sign it with a signature that means something — while the platform mints the evidence.</p>
+<div class="grid2">
+<div class="card"><h3 style="margin-top:0">What you do here</h3><p style="font-size:14px">Bring epics and stories in · answer clarifying questions once · review artifacts against your acceptance criteria · approve or reject on the record · request changes mid-flight without derailing work · read delivery evidence instead of status theater.</p></div>
+<div class="card"><h3 style="margin-top:0">What you never do here</h3><p style="font-size:14px">Ask &ldquo;where are we?&rdquo; in a meeting · write or read status updates · wonder whether what you approved is what shipped · take an AI&rsquo;s word for anything — an agent structurally cannot approve, and a model&rsquo;s claim never changes state.</p></div>
+</div>
+<div class="note"><b>How technical do you need to be?</b> Barely. Your daily home is the Singularity Flow sidebar in VS Code (Inbox · Stories · Lifecycle views), plus Teams links and shareable HTML reports. The terminal commands shown here are the reliable fallback that works from any laptop with a clone — three lines of setup, below.</div>
+</section>
+
+<section id="setup">
+<div class="kick">02 · Three lines, once</div>
+<h2>Setup</h2>
+<pre><b>git clone https://git.corp/payments.git &amp;&amp; cd payments</b>
+<b>sflow doctor</b>          <i># confirms the machine; fix what it names</i>
+<b>sflow inbox</b>           <i># everything awaiting approval here — you're operational</i></pre>
+<p>That is the entire onboarding. No workspace, no capability setup, no Copilot required — the inbox is computed from the repository itself, so a brand-new laptop sees the same list as anyone else&rsquo;s. The one prerequisite someone must have done for you: your name in the repository&rsquo;s <code>approvalAuthorities</code> (typically <code>product-reviewers</code>) — that mapping, not any tool, is what gives your approval force.</p>
+<p class="muted" style="font-size:13px">Reviewing across many repositories? <code>sflow workspace</code> aggregates a capability&rsquo;s repos into one inbox and one panel — a convenience, never a prerequisite.</p>
+</section>
+
+<section id="intent">
+<div class="kick">03 · Getting work in — mostly in VS Code</div>
+<h2>Plan epics and shape user stories</h2>
+<p>Planning lives where you already work: the <b>Singularity Flow sidebar</b> in VS Code. Open the Command Palette (<code>Ctrl/Cmd-Shift-P</code>) and every entry below is a &ldquo;Singularity Flow:&rdquo; command.</p>
+<div class="steps">
+<div class="st"><h4>Connect your sources, once</h4><p><b>Connect Jira Securely</b> (credentials go to the OS keychain, never files) and <b>Configure Teams Notifications</b>. Skip Jira entirely if your team plans locally — IDs are minted for you.</p></div>
+<div class="st"><h4>Open the epic</h4><p><b>Start Work</b> → choose epic intake (Jira epic or local brief). The planning wizard runs the governed stages — intake → requirements → story breakdown — and the assistant asks its open questions <em>before</em> drafting anything. Your brief, decks, and notes attach via <b>Attach Evidence &amp; Designs</b>, each hash-pinned as provenance the drafts must cite.</p></div>
+<div class="st"><h4>Shape the story cut — the review board is yours</h4><p>The drafted breakdown lands in the <b>Stories</b> view as a review package: <b>edit</b> titles and acceptance criteria inline, <b>split</b> a story that&rsquo;s doing two jobs, <b>adopt</b> an existing ticket into the epic, reorder priorities. The UI is the business review boundary — nothing reaches a developer until you&rsquo;ve had this pass, and <em>every change reopens the exact planning package</em>, so the record always reflects your final cut, not the model&rsquo;s first draft.</p></div>
+<div class="st"><h4>Release the stories</h4><p>Approve the breakdown and the stories arrive on developer desks ready to start — each carrying lineage back to your epic, your attached materials, and your acceptance criteria as addressable clauses.</p></div>
+</div>
+<div class="win"><b>Acceptance criteria are first-class.</b> Write them sharply in the story: they become clauses the implementation must <em>claim</em>, coverage becomes arithmetic the kernel checks, and your later review shows exactly which criterion each change serves. Vague ACs are the one thing this system cannot fix for you.</div>
+<p class="muted" style="font-size:13px">Terminal equivalents, when you want them: <code>sflow epic start ID --jira</code> · <code>sflow documents upload FILES</code> · <code>sflow epic stories update / split / adopt</code> · <code>sflow epic review</code>.</p>
+</section>
+
+<section id="informed">
+<div class="kick">04 · Zero chasing</div>
+<h2>Stay informed without meetings</h2>
+<table>
+<tr><th>You want</th><th>Where it lives</th></tr>
+<tr><td>What needs <em>my</em> decision right now</td><td><b>Approvals (Inbox)</b> in the sidebar — or <code>sflow inbox</code> from any clone</td></tr>
+<tr><td>A ping the moment something awaits you</td><td>Teams notification with a direct link into the item</td></tr>
+<tr><td>One story&rsquo;s full journey, visually</td><td><b>Open Journey</b> — phases, generations, approvals, intervals on one timeline</td></tr>
+<tr><td>Portfolio &amp; delivery analytics</td><td><b>Lifecycle Analytics</b> · <b>Flow Impact Studies &amp; Reports</b></td></tr>
+<tr><td>The state of one story, shareable outside VS Code</td><td class="c">sflow report --format html</td></tr>
+<tr><td>The whole epic across repositories</td><td class="c">sflow epic status · sflow stack status --epic ID</td></tr>
+</table>
+<p>Every view reads the same Git-recorded truth developers see — there is no &ldquo;PO version&rdquo; of reality, and nothing here depends on anyone remembering to update you.</p>
+</section>
+
+<section id="review">
+<div class="kick">05 · The craft</div>
+<h2>Review the exact thing</h2>
+<p>When a phase awaits you, open it from <b>Approvals (Inbox)</b>: <b>Open Artifact</b> shows the exact bytes, <b>Open Reconciliation</b> shows reality-vs-plan, and <b>Specification Traceability</b> walks requirement → change → test → approval. Read the packet in this order:</p>
+<div class="steps">
+<div class="st"><h4>The artifact, and its hash</h4><p>You are reviewing exact bytes, identified by SHA-256. What you approve is what ships into evidence — if anyone edits it afterward, your approval goes stale automatically.</p></div>
+<div class="st"><h4>Your criteria, claim by claim</h4><p>Clause coverage shows which acceptance criteria the work claims to satisfy and what remains unclaimed — arithmetic, not narrative. Deviations and escalations arrive as recorded facts with reasons, not surprises.</p></div>
+<div class="st"><h4>Who — and what — authored it</h4><p>Authorship is recorded honestly: human-written, governed-agent generation, or external tool; kernel-invoked AI is observed fact, anything beyond is <code>unknown</code> until attested. You always know whether you&rsquo;re reading a person or a model, and which questions it asked before drafting.</p></div>
+<div class="st"><h4>For mobile work: the pixels</h4><p>Device-profile coverage (which screens were verified, as a checklist the kernel computed) and pixel-diff evidence against the pinned design version — the screenshot you approve is hash-bound into the record.</p></div>
+</div>
+</section>
+
+<section id="decide">
+<div class="kick">06 · The signature</div>
+<h2>Approve, reject, or request change</h2>
+<div class="grid2">
+<div class="card"><h3 style="margin-top:0">Approve — deliberately</h3><pre>Palette → Singularity Flow: Approve…      <i>or:</i> sflow approve PAY-1234</pre><p style="font-size:13.8px">Either surface runs the same ceremony: the artifact, hash, and identity warnings, then requires typing the exact confirmation. Nothing auto-fills it — not the model, not the tool. Your identity, authority group, and the artifact hash bind into one record an auditor can verify offline years later.</p></div>
+<div class="card"><h3 style="margin-top:0">Reject — usefully</h3><pre>sflow reject PAY-1234</pre><p style="font-size:13.8px">Your reasons are required — and become <em>pinned context</em> for the next generation: the regeneration literally reads your note. Write the rejection you&rsquo;d want to receive; specific beats stern. Nothing is lost — the developer&rsquo;s work, checkpoints, and history carry forward.</p></div>
+</div>
+<h3>Change requests, mid-flight</h3>
+<p>Scope moved? <b>Request Changes to Completed Story</b> in the palette (or record a change request against the phase) — optionally naming the exact clauses requiring revision. The affected phase reopens with your comment on the record; only work claiming those clauses is disturbed. Changing your mind is a governed act here, not an ambush.</p>
+<div class="warn"><b>Two things that protect your signature:</b> a <em>waiver</em> (low-risk quick fixes completing under deterministic policy) is always recorded as a waiver — never dressed up as your approval; and self-approval rules mean the person who generated work can be barred from approving it. Your name only ever appears on decisions you actually made.</div>
+</section>
+
+<section id="measure">
+<div class="kick">07 · Evidence, not vibes</div>
+<h2>Read the delivery evidence</h2>
+<p>Every completed story mints an <b>Impact Receipt</b> — velocity, quality, AI exposure, cost, completeness — bound to the completion commit. Study comparisons answer the question executives ask you:</p>
+<pre>sflow impact compare checkout-study</pre>
+<div class="steps">
+<div class="st"><h4>Trust the label, it&rsquo;s load-bearing</h4><p><b>Validated delivery gain</b> means faster <em>and</em> every quality guardrail held. <b>Observed acceleration</b> means faster, full stop — 28% quicker with 24% more rework wears the second label, never the first. The system will not let throughput bury quality.</p></div>
+<div class="st"><h4>Check the fine print by design</h4><p>Every number travels with sample sizes, method, evidence grade (A–D), completeness, and confidence interval — a naked percentage is structurally impossible. Missing data says <code>unavailable</code>; nothing is estimated.</p></div>
+<div class="st"><h4>What you&rsquo;ll never see</h4><p>Individual rankings. Cohorts below the privacy floor refuse to render, by the engine, regardless of how anyone slices. You get delivery truth; nobody gets a surveillance tool.</p></div>
+</div>
+</section>
+
+<section id="rescue">
+<div class="kick">08 · Edge of the map</div>
+<h2>When something needs you unusually</h2>
+<table>
+<tr><th>Situation</th><th>What it means · what to do</th></tr>
+<tr><td>An <b>escalation</b> lands in your inbox</td><td>Work outgrew its rail (touched something protected, grew in scope). The stronger path&rsquo;s approvals now apply — review with the recorded reason; the developer&rsquo;s work is preserved.</td></tr>
+<tr><td>A story was <b>cancelled</b></td><td>An honest ending: artifacts, approvals, and branch remain as reconstructable history. Cancelled never masquerades as complete.</td></tr>
+<tr><td>Completed work must change</td><td><code>sflow reopen</code> brings it back under governance — no editing history in the dark. Its receipt regenerates on re-completion.</td></tr>
+<tr><td>An approval you gave went <b>stale</b></td><td>The artifact changed after you signed. Re-review the new hash; your old signature stays in history, attached to the bytes it actually covered.</td></tr>
+<tr><td>Any link is dead / tooling is down</td><td>A plain terminal always works: <code>clone → sflow inbox → sflow approve</code>. Approvals never require the AI, the panel, or anyone&rsquo;s uptime.</td></tr>
+</table>
+</section>
+
+<section id="crib">
+<div class="kick">09 · One screen to keep</div>
+<h2>The PO crib</h2>
+<table>
+<tr><th>I want to…</th><th>Type</th></tr>
+<tr><td>See what awaits my decision</td><td class="c">sflow inbox</td></tr>
+<tr><td>Start / review an epic</td><td class="c">sflow epic start · sflow epic review</td></tr>
+<tr><td>Shape the story breakdown</td><td class="c">sflow epic stories update · split · adopt</td></tr>
+<tr><td>Attach briefs &amp; materials (hash-pinned)</td><td class="c">sflow documents upload FILES</td></tr>
+<tr><td>Approve / reject with reasons</td><td class="c">sflow approve ID · sflow reject ID</td></tr>
+<tr><td>Request a mid-flight change</td><td class="c">record a change request (panel · reject with clauses)</td></tr>
+<tr><td>Share the real status</td><td class="c">sflow report --format html</td></tr>
+<tr><td>See the epic across repos</td><td class="c">sflow epic status · stack status --epic ID</td></tr>
+<tr><td>Read delivery evidence</td><td class="c">sflow impact compare STUDY</td></tr>
+<tr><td>Know what to do next, always</td><td class="c">sflow nextsteps</td></tr>
+</table>
+<h3>…and the VS Code palette set</h3>
+<table>
+<tr><th>In VS Code</th><th>Palette command (Singularity Flow: …)</th></tr>
+<tr><td>Plan / open an epic</td><td class="c">Start Work</td></tr>
+<tr><td>Shape the breakdown</td><td class="c">Stories</td></tr>
+<tr><td>Attach briefs &amp; designs</td><td class="c">Attach Evidence &amp; Designs</td></tr>
+<tr><td>Decide</td><td class="c">Approvals (Inbox) · Approve…</td></tr>
+<tr><td>See a story&rsquo;s whole journey</td><td class="c">Open Journey</td></tr>
+<tr><td>Trace requirement → shipped</td><td class="c">Specification Traceability</td></tr>
+<tr><td>Delivery evidence</td><td class="c">Flow Impact Studies &amp; Reports</td></tr>
+<tr><td>Change completed work, governed</td><td class="c">Request Changes to Completed Story</td></tr>
+</table>
+<footer>Singularity Flow · Product Owner Guide · first release · companions: User Guide (all roles) and Technical Deep Dive · self-contained, no network required.</footer>
+</section>
+
+</main>
+</div>
+<script>
+(function(){var L=[].slice.call(document.querySelectorAll('nav a.t')),S=L.map(function(a){return document.querySelector(a.getAttribute('href'))});
+function y(){var p=window.scrollY+130,c=0;for(var i=0;i<S.length;i++){if(S[i]&&S[i].offsetTop<=p)c=i}L.forEach(function(a,i){a.classList.toggle('on',i===c)})}
+window.addEventListener('scroll',y,{passive:true});y()})();
+</script>
+</body>
+</html>

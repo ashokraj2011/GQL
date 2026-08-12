@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singularity Flow — Architecture Guide</title>
+<style>
+:root{--accent:#1e8b5b;--accent-deep:#14623f;--accent-soft:#e3f5eb;--ink:#183126;--muted:#5c6f64;--line:#d9e4dc;--paper:#fbfdfc;--card:#ffffff;--amber:#aa731f;--amber-soft:#fbf3e2;--blue:#426f95;--blue-soft:#edf5fb;--danger:#a2452f;--danger-soft:#faeee9;
+--sans:Inter,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--mono:ui-monospace,Consolas,'SF Mono',Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.62;font-size:15.5px}
+a{color:var(--accent)}
+.wrap{display:flex;max-width:1200px;margin:0 auto}
+nav{width:258px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:30px 16px 30px 24px;border-right:1px solid var(--line)}
+nav .brand{font-weight:900;font-size:17px;color:var(--accent-deep)}
+nav .tag{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;padding:2px 9px;border-radius:12px;margin:6px 0 18px}
+nav a.t{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--muted);font-size:13px;padding:5px 8px;border-radius:7px;border-left:2px solid transparent}
+nav a.t span{font-family:var(--mono);font-size:10px;color:var(--accent);width:20px;flex-shrink:0}
+nav a.t:hover{background:var(--accent-soft);color:var(--ink)}
+nav a.t.on{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;border-left:2px solid var(--accent)}
+main{flex:1;min-width:0;padding:0 44px 110px}
+section{padding-top:56px}
+.kick{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:6px}
+h1{font-size:38px;line-height:1.15;font-weight:900;margin:4px 0 14px;letter-spacing:-.02em}
+h2{font-size:27px;font-weight:900;margin:2px 0 12px;letter-spacing:-.015em}
+h3{font-size:16px;margin:22px 0 8px;color:var(--accent-deep)}
+p{margin:0 0 12px;max-width:74ch;color:#2c3b32}
+.lead{font-size:17px}
+.muted{color:var(--muted)}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);padding:1px 6px;border-radius:5px;color:var(--accent-deep)}
+pre{background:#10281c;color:#d9eadf;border-radius:11px;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.8px;line-height:1.7;margin:12px 0}
+pre b{color:#8fd6ae;font-weight:400}
+pre i{color:#7d9b8a;font-style:normal}
+.role{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.1em;padding:2px 9px;border-radius:11px;margin-left:8px;vertical-align:middle}
+.role.dev{background:var(--accent-soft);color:var(--accent-deep)}
+.role.po{background:var(--blue-soft);color:var(--blue)}
+.role.adm{background:var(--amber-soft);color:var(--amber)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 19px;margin:13px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:13px 0}
+@media(max-width:960px){.grid2{grid-template-columns:1fr}nav{display:none}main{padding:0 20px 80px}}
+.steps{counter-reset:s;margin:14px 0}
+.st{position:relative;padding:0 0 18px 46px;border-left:2px solid var(--line);margin-left:15px}
+.st:last-child{border-left-color:transparent;padding-bottom:4px}
+.st::before{counter-increment:s;content:counter(s);position:absolute;left:-16px;top:-1px;width:31px;height:31px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:3px solid var(--paper)}
+.st h4{font-size:14.5px;margin-bottom:3px;color:var(--accent-deep)}
+.st p{font-size:14px;margin-bottom:6px}
+.note{background:var(--blue-soft);border:1px solid #c4d9ea;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+.win{background:var(--accent-soft);border:1px solid #b7dcc8;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+.warn{background:var(--amber-soft);border:1px solid #e6d3ab;border-left-width:4px;border-radius:10px;padding:12px 16px;margin:13px 0;font-size:13.8px}
+table{border-collapse:collapse;width:100%;margin:13px 0;font-size:13.5px}
+th{text-align:left;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);border-bottom:2px solid var(--accent);padding:7px 9px}
+td{border-bottom:1px solid var(--line);padding:8px 9px;vertical-align:top}
+td.c{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:60px;padding-top:16px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+<div class="brand">Singularity Flow</div>
+<div class="tag" style="background:#14623f">ARCHITECTURE GUIDE</div>
+<a class="t" href="#thesis"><span>01</span>The thesis</a>
+<a class="t" href="#state"><span>02</span>State authority</a>
+<a class="t" href="#txn"><span>03</span>Publication transaction</a>
+<a class="t" href="#pins"><span>04</span>Pins &amp; policy fold</a>
+<a class="t" href="#contracts"><span>05</span>The model boundary</a>
+<a class="t" href="#skills"><span>06</span>Skills &amp; the loop</a>
+<a class="t" href="#motion"><span>07</span>Freedom of motion</a>
+<a class="t" href="#tokens"><span>08</span>Token economics</a>
+<a class="t" href="#minima"><span>09</span>Theoretical minima</a>
+<a class="t" href="#different"><span>10</span>What is different</a>
+<a class="t" href="#evidence"><span>11</span>Evidence plane</a>
+<a class="t" href="#extend"><span>12</span>Extensibility</a>
+<a class="t" href="#authoring"><span>13</span>The authoring surface</a>
+<a class="t" href="#primitives"><span>14</span>The primitives</a>
+<a class="t" href="#recap"><span>15</span>Invariants</a>
+</nav>
+<main>
+
+<section id="thesis">
+<div class="kick">01 · The thesis</div>
+<h1>Singularity Flow — Architecture Guide</h1>
+<p class="lead">For architects and technical evaluators: how the system works, where the tokens go, what is genuinely different, and where it extends. Companion to the full Deep Dive; this is the load-bearing subset.</p>
+<div class="card"><p style="margin:0"><b>One sentence:</b> a Git-native lifecycle kernel in which a probabilistic layer (models) may <em>propose, draft, and narrate</em>, and a deterministic layer (a zero-dependency Node CLI) exclusively <em>validates, transitions, commits, publishes, and recovers</em> — so AI participates everywhere and is the authority nowhere. The model&rsquo;s statement never changes lifecycle truth; the kernel&rsquo;s checks do.</p></div>
+<div class="grid2">
+<div class="card"><h3 style="margin-top:0">Freedom of process</h3><p style="font-size:14px;margin:0">Workflows are not fixed product shapes — teams <b>create new work types</b> by composing phases in workflow.yml: reviewed like code on <code>sflow/config</code>, pinned like law at story start, constrained only by the monotone fold (you can tighten the floor, never dig under it). A new rail is a pull request, not a platform release.</p></div>
+<div class="card"><h3 style="margin-top:0">Freedom of motion</h3><p style="font-size:14px;margin:0">Developers <b>enter and leave the loop at will</b>: close the laptop mid-anything — legally, silently; return on any machine with <code>story continue</code> and the loop resumes exactly where truth left it. The interval governs boundaries, never keystrokes; the system waits, it never chases.</p></div>
+</div>
+<pre>┌──────────────── PROBABILISTIC (user space) ───────────────┐
+│  Copilot chat · governed agents · /sflow-* skills          │
+│  drafts artifacts · asks clarifications · ranks actions    │
+└───────────────────────────┬───────────────────────────────┘
+              typed contracts · action envelope
+┌───────────────────────────▼─────────── DETERMINISTIC ─────┐
+│  sflow kernel (Node 20+, zero deps): gates · transitions   │
+│  hashing · approvals · publication txn · recovery · plans  │
+└───────────────────────────┬───────────────────────────────┘
+┌───────────────────────────▼───────────────── AUTHORITY ───┐
+│  Git: work-item branches (state) · sflow/config (law)      │
+│  orphan state branch (ledger/evidence mirror)              │
+└───────────────────────────────────────────────────────────┘</pre>
+<h3>The OS model — rings and surfaces</h3>
+<pre>                    ┌────────────────────────────────────────────┐
+                    │              HUMAN AUTHORITY               │
+                    │   approvals · dispositions · escalations   │
+                    │        (the only writers of consent)       │
+                    └──────────────────────▲─────────────────────┘
+                                           │ exact hashes · typed confirmation
+ ┌── SURFACES (user space) ────────────────┼──────────────────────────────────┐
+ │                                         │                                  │
+ │  Terminal / CI          VS Code         │        Copilot chat              │
+ │  sflow CLI              sidebar · Journey · Inbox   /sflow-* skills        │
+ │  scripts, pipelines     webviews · palette          governed agents        │
+ │       │                      │                          │                  │
+ │       └──────────────┬───────┴───────────┬──────────────┘                  │
+ │                      ▼                   ▼                                 │
+ │            same result envelope   same subject index                       │
+ │            (why · next · preview+handle)                                   │
+ └──────────────────────┬─────────────────────────────────────────────────────┘
+                        │  syscall analog: typed contracts · action envelope
+ ┌── RING 0 · THE KERNEL (deterministic, zero-dep, model-free) ───────────────┐
+ │  scheduler: planner/nextsteps      MMU: pins + policy fold                 │
+ │  syscalls: gates + transitions     filesystem: state authority             │
+ │  transaction: isolated commit + CAS + fingerprint + journals               │
+ │  drivers: Jira · MCP governance · providers (behind one chokepoint)        │
+ └──────────────────────┬─────────────────────────────────────────────────────┘
+                        │  the only write path (publication transaction)
+ ┌── PERSISTENT AUTHORITY · Git ──────────────────────────────────────────────┐
+ │  main (code)   sflow/config (law)   work-items/* (state)   orphan (proof)  │
+ └────────────────────────────────────────────────────────────────────────────┘</pre>
+<p>Read it as an operating system: every surface is a shell over the same kernel — none holds private truth, all speak the same envelope, and the subject index gives each the same resolution of &ldquo;which story am I looking at.&rdquo; The model lives in user space with the other shells; human authority sits <em>above</em> the diagram, not inside it — the kernel enforces that consent flows down as exact typed confirmations and never gets synthesized below. There is exactly one write path into persistent authority, and it is the transaction in section 03.</p>
+
+</section>
+
+<section id="state">
+<div class="kick">02 · State authority</div>
+<h2>Git is the database — deliberately</h2>
+<p>Lifecycle state lives on the work-item branch: <code>singularity/work-items/&lt;ID&gt;/</code> holds <code>workflow.json</code> (the authority), artifacts, approvals, pinned context, telemetry, and evidence. Derived files (STATUS.md, reports) are projections — regenerable, never authoritative. Local session data only <em>selects</em> the active subject.</p>
+<table>
+<tr><th>Plane</th><th>Branch</th><th>Role</th></tr>
+<tr><td>Application code</td><td class="c">main + feature branches</td><td>What ships</td></tr>
+<tr><td>Approved configuration</td><td class="c">sflow/config</td><td>Law — copied byte-for-byte to each story at start</td></tr>
+<tr><td>Lifecycle state</td><td class="c">singularity/work-items/*</td><td>Operational authority per story</td></tr>
+<tr><td>Evidence mirror</td><td class="c">orphan state branch</td><td>Append-only ledger · governed world model — proof, never read/write authority</td></tr>
+</table>
+<p><b>Frame invariance:</b> CLI, VS Code, Copilot, and any fresh clone compute the same truth from the same refs — no daemon, no server, no cache with authority. A reviewer&rsquo;s entire onboarding is <code>git clone</code>.</p>
+</section>
+
+<section id="txn">
+<div class="kick">03 · The core mechanism</div>
+<h2>Publication as a transaction</h2>
+<p>Every governed mutation crosses one boundary with the same guarantees:</p>
+<pre>1  verify branch, HEAD, state revision (+ disk-bytes fingerprint —
+   catches uncommitted foreign writes, not just moved refs)
+2  refuse if a pending publication exists (recovery first)
+3  apply the deterministic transition · validate invariants
+4  stage ONLY allowlisted governed paths (your scratch never enters)
+5  one isolated commit (isolated index — your staging untouched)
+6  advance the branch by compare-and-swap · push without force
+7  on failure: journal under .git/singularity-flow/ →
+   `sflow sync` replays exactly once · races refuse, never clobber</pre>
+<p>Concurrent same-subject writers are serialized by a PID-safe subject lock (atomic-rename reclaim). The property that falls out: <b>kill anything at any moment</b> — a dead laptop or Ctrl-C leaves either nothing or a journaled, exactly-once-recoverable step. Retry is replaced by recovery.</p>
+</section>
+
+<section id="pins">
+<div class="kick">04 · Time control</div>
+<h2>Pins and the monotone policy fold</h2>
+<p>At story start, the effective policy is computed once — <em>fold(workflow defaults → work-type overrides → capability constraints root→leaf)</em> — where later layers may <b>tighten but never weaken</b> (protected paths union; approval floors hold; a capability&rsquo;s self-approval ban cannot be re-allowed downstream). The folded result, templates, agents, and budgets are pinned: hashes recorded, config bytes copied to the story branch. In-flight work is immune to later edits; escalation ladders are pinned too and only ever strengthen. The same monotone one-way rule appears at three altitudes — the protection boundary, the policy fold, the escalation ladder — which is why delegated configuration is safe.</p>
+</section>
+
+<section id="contracts">
+<div class="kick">05 · The model-facing boundary</div>
+<h2>Typed contracts, one envelope, measured conformance</h2>
+<table>
+<tr><th>Mechanism</th><th>What it guarantees</th></tr>
+<tr><td>Skill registry (97 skills, 6 contract classes)</td><td>Every conversational surface machine-stamped with its behavioral contract (relay verbatim · ask-before-mutate · one action per execution…); <code>check</code> (463 validations) rejects drift</td></tr>
+<tr><td>Action envelope</td><td>Mutations execute only as kernel-computed plans: content-hashed, revision-bound, precondition-checked, one action per execution — invalid calls are unexpressible, not caught</td></tr>
+<tr><td>Operation registry</td><td>Every operation classified <code>never | optional | required</code> for model use; unclassified = rejected; <code>optional</code> must name an acyclic deterministic fallback</td></tr>
+<tr><td>Model chokepoint</td><td>One module invokes providers; policy = most restrictive in the async call stack; a child can never escape a <code>never</code> root</td></tr>
+<tr><td>Runtime conformance</td><td>Structured invocation events + pure-function checkers score contract-following per skill, per model — governance as a measured rate, not documentation</td></tr>
+</table>
+</section>
+
+
+<section id="skills">
+<div class="kick">06 · The skill layer</div>
+<h2>Skills, SKILL.md, and the loop</h2>
+<p>A skill is the only doorway between conversation and kernel: a folder with a <code>SKILL.md</code> body, a registry entry assigning one of six behavioral contract classes (relay · review · guided · selection-gated mutation · clarification+artifact · conversational), and the CLI command it wraps. Contract text and token policy are <b>mechanically stamped</b> into every body; <code>check</code> (463 validations) fails on drift, orphans, or bodies over the ceiling (warn 500 · fail 800 tokens). Only three conversational skills are session-indexed (~14 tokens each — the ≈42-token login); the other 94 demand-page on invocation.</p>
+<pre>you      /sflow-status PAY-1187
+host     loads SKILL.md (first use) → model emits the tool call
+kernel   child process · resolves subject · reads state · zero tokens
+result   envelope: output + why[] + next[] (preview + handle if large)
+model    relays under contract · surfaces NOW/THEN
+event    structured conformance record → checkers score the contract</pre>
+<p>The governed loop (<code>/sflow-continue</code>) cycles WHERE-AM-I → CLARIFY → GENERATE → PUBLISH → VERIFY → NEXT: <b>the kernel owns the loop; the model fills exactly one slot</b> (generation) and narrates the rest. It stops loudly at every human boundary, and any arrow is a safe place for a session to die — state is on the branch; the next <code>continue</code>, on any machine, re-enters where truth left it. Mutations ride the action envelope (kernel-computed, content-hashed, revision-bound, one action per execution), so an invalid call is unexpressible rather than caught. The invariant every new skill inherits: the skill layer can make the kernel easier to ask — it can never make it possible to bypass.</p>
+</section>
+
+
+<section id="motion">
+<div class="kick">07 · Freedom of motion</div>
+<h2>Suspension and resumption without loss of governance</h2>
+<p>The system's most consequential human property: a developer may leave the loop at any moment and re-enter it at any later moment, on any machine, without notice, without penalty, and without weakening a single guarantee. This is possible because governance is applied <b>at the boundaries of work, not during it</b>.</p>
+<table>
+<tr><th>Moment</th><th>What happens</th><th>What preserves governance</th></tr>
+<tr><td>Entering a work phase</td><td>An interval baseline pins itself: source-base commit, specification and policy hashes, protected paths, required checks, escalation ladder</td><td>The contract is fixed before freedom begins — later configuration changes cannot alter it</td></tr>
+<tr><td>During the interval</td><td>Any editor, any assistant, any commit style, online or offline. No check-ins, no narration, no mandatory checkpoints, no timers</td><td>Nothing needs supervising, because nothing during the interval can mutate lifecycle state — mutation requires the kernel transaction</td></tr>
+<tr><td>Leaving</td><td>Closing the laptop with no command is a legal, recorded-free exit. Optionally: <code>checkpoint</code> (local — may be dirty, honestly labeled machine-local) or <code>checkpoint --published</code> (clean tree, remote reachability verified before durability is claimed); <code>pause --publish</code> for handoffs</td><td>Checkpoint records state what they can prove and no more; pause duration is never exported or evaluated</td></tr>
+<tr><td>Returning — any machine</td><td><code>story continue</code> rebuilds the continuation packet: PINNED (the contract), SINCE YOU LEFT (observed changes, clearly separated), STALE, and the valid next actions</td><td>Contract and drift are never blended; the packet is computed from the branch, so every machine derives the same truth</td></tr>
+<tr><td>The boundary</td><td>Before submission, <code>reconcile</code> deterministically compares reality against the baseline; a human assigns meaning through a recorded disposition — including correcting the plan while keeping the code</td><td>Verification concentrates at the crossing point: evidence bound to the exact commit, protected-path and policy predicates evaluated, escalation along the pinned ladder with all work preserved</td></tr>
+</table>
+<p>The design argument: continuous oversight and durable governance are separable. Because state authority is in Git and mutation is transactional, the interval requires no observation to remain safe — and the boundary check is stronger than continuous supervision would be, because it is deterministic, reproducible, and bound to exact content. The result is a process that is simultaneously stricter at its checkpoints and freer between them than conventional practice.</p>
+</section>
+
+<section id="tokens">
+<div class="kick">08 · Where the tokens go</div>
+<h2>Token economics, measured</h2>
+<p>The design rule: <b>cost scales with governed work, never with sessions.</b> The overwhelming majority of operations — gates, transitions, planning, status, composition, recovery — are deterministic kernel code: zero tokens, milliseconds, provably model-free (CI runs a complete story lifecycle with fake model executables on the PATH).</p>
+<table>
+<tr><th>Surface</th><th>Conventional always-loaded design</th><th>Singularity Flow</th></tr>
+<tr><td>Session fixed cost</td><td>~1,400 tokens (full catalog at every login, used or not)</td><td><b>&asymp;42 tokens</b> — 3 indexed skills × ~14; the other 94 demand-page on invocation</td></tr>
+<tr><td>Structural questions</td><td>5–15k tokens of exploratory file reading</td><td><b>&asymp;172-token</b> bounded code-graph query (blast radius, dependencies)</td></tr>
+<tr><td>Large results</td><td>Full report pasted into context; cache invalidated</td><td>Deterministic preview + revision-bound handle; <code>show --section</code> expands on demand; transcripts stay append-only and cache-valid</td></tr>
+<tr><td>Grounding</td><td>Whole world model, every phase</td><td>Phase-declared views, tiered (full/brief), budgeted per phase with refusal-before-invocation; three measurements recorded (candidate / selected / final prompt) so savings claims can&rsquo;t inflate</td></tr>
+<tr><td>Latency floor</td><td>—</td><td>&asymp;97&nbsp;ms cold CLI start (lazy dispatch); ≤150&nbsp;ms reads, CI-enforced budgets</td></tr>
+</table>
+<p>Accounting is exact where the host supplies it and labeled <code>unavailable</code> otherwise — never estimated; measurement method travels with every number.</p>
+<h3>Why kernel operations cost zero — in detail</h3>
+<p>The majority of platform operations are questions about state or transitions of state: which phase is current, which gates pass, what actions are legal, which approvals bind which hashes, how to recover a failed publication, what a story's history is. These are computations over files and Git refs — there is no linguistic content in them, and therefore no theoretical reason for a language model to participate. The kernel executes them as ordinary Node code: file reads, hash comparisons, set arithmetic, graph walks. Token cost: zero. Latency: milliseconds (≈97&nbsp;ms cold, less warm).</p>
+<p>When such an operation is invoked <em>through</em> the conversational surface, the only tokens spent are interface tokens: the skill body on first use (bounded by the stamped ceiling) and the bounded relay of a result preview — typically tens of tokens wrapping an operation whose own cost is zero regardless of its complexity. An eight-gate submission check and a one-line status query cost the same: nothing. The composition step that prepares a generation is itself L0 — the kernel assembles pinned templates, views, and inputs deterministically, so tokens are spent only on the single step that is genuinely linguistic: the model drafting the artifact.</p>
+<p>Three consequences follow. First, cost scales with <b>governed creative work</b>, never with team size, session count, or curiosity — status checks, planning, review preparation, and recovery are free at any frequency. Second, the zero-cost core is what makes routing everything through the kernel affordable: a transaction that cost tokens would be bypassed; one that costs milliseconds becomes a habit. Third, the claim is enforced rather than asserted: every zero-token operation is classified <code>model: never</code> in the operation registry, and CI runs the complete lifecycle with model executables replaced by tripwires — any deterministic path that attempted a model call would fail the build.</p>
+
+</section>
+
+
+<section id="minima">
+<div class="kick">09 · Theoretical minima</div>
+<h2>The irreducible cost model</h2>
+<p>Each cost dimension of governed delivery has a theoretical lower bound. The architecture is designed to approach these bounds and to make the remaining cost explicit and inspectable. What remains at the bound is not overhead — it is the substance of governance itself.</p>
+<table>
+<tr><th>Dimension</th><th>Typical additional cost</th><th>Irreducible minimum</th><th>Mechanism that approaches it</th></tr>
+<tr><td>Tokens</td><td>Always-loaded catalogs; results re-entering context; whole-model grounding</td><td>Zero for deterministic truth; information content of the artifact plus required grounding for creation</td><td>L0 kernel operations; demand-paged skills; reference previews; phase-budgeted views</td></tr>
+<tr><td>Human ceremony</td><td>Coordination and reporting activity not tied to a decision</td><td>One human act per non-delegable decision</td><td>Approval boundaries as configuration; policy waivers move consent upstream into reviewed policy</td></tr>
+<tr><td>Cycle time</td><td>Process latency between decision points</td><td>Authoring time plus one review latency per approval boundary</td><td>Millisecond kernel operations; receipts isolate approval wait as the dominant residual</td></tr>
+<tr><td>Durable state</td><td>Parallel records, copies, and secondary systems</td><td>The worldline: decisions, identities, and content hashes</td><td>Git as sole authority; all other views are regenerable projections</td></tr>
+<tr><td>User knowledge</td><td>Process documentation held in memory</td><td>One command plus the judgment of the role</td><td><code>nextsteps</code> and the narration contract surface the process at the moment of need</td></tr>
+<tr><td>Trust</td><td>Reliance on process having been followed</td><td>The hash function, the configured identity assurance, and reviewer attention</td><td>Everything else moves from the trusted column to the verified column</td></tr>
+</table>
+<p>The consequence for evaluation: measured cost above these minima indicates removable inefficiency; measured cost at these minima is the definition of the governance being purchased. The impact framework reports both, with the measurement method attached.</p>
+</section>
+
+<section id="different">
+<div class="kick">10 · What is actually different</div>
+<h2>Versus agent frameworks</h2>
+<table>
+<tr><th>Agent-orchestration stack</th><th>This architecture</th></tr>
+<tr><td>The model owns the loop (plans, executes, judges, remembers)</td><td>The kernel owns the loop; the model drafts and ranks within kernel-computed legal actions</td></tr>
+<tr><td>Process = prompt instructions the model may follow</td><td>Process = executable state transitions the kernel enforces</td></tr>
+<tr><td>State in conversation/vector memory</td><td>State in Git branches — durable, shared, auditable, resumable anywhere</td></tr>
+<tr><td>Agent claims completion; agent can approve</td><td>Kernel validates completion; humans approve exact hashes; agents structurally cannot</td></tr>
+<tr><td>Verifier is another LLM pass</td><td>Verifiers are arithmetic: hashes, set coverage, gates, pixel diffs — which is why self-correction (heal, autopilot) is safe here and Goodhart-soup there</td></tr>
+<tr><td>Safety = sandboxes around model-written code</td><td>Safety = model-written execution is unexpressible; the envelope replaces the sandbox</td></tr>
+<tr><td>Works only while the model host is up</td><td>Model removable (tripwire-proven); governance not removable</td></tr>
+</table>
+<p>Independent convergence: NVIDIA&rsquo;s NOOA harness research arrived at typed boundaries, reference-passing, explicit state, and deterministic gates (&ldquo;a finding is accepted only when the code says so&rdquo;) from the performance direction; this system arrives from the governance direction — same boundary ideas, opposite execution model (their code-as-action + sandbox stack vs. this envelope + kernel-owned loop).</p>
+</section>
+
+<section id="evidence">
+<div class="kick">11 · The evidence plane</div>
+<h2>Claims vs. proof, kept separate</h2>
+<p>Every consequential object is content-addressed and joined: artifacts, inputs, approvals (identity + authority + artifact SHA-256, stale-on-edit), checks bound to exact commits, clause claims (<code>spec trace</code>: requirement → claim → commit → test → approval), MCP tool outputs, visual pixel evidence, and per-story <b>Impact Receipts</b> — deterministic, completion-commit-bound, reproducible by <code>impact verify</code>, compared in pre-registered studies that label results <em>validated quality-gated gain</em> vs. <em>observed acceleration</em> and refuse cohorts below the privacy floor. The append-only ledger verifies from a bare clone, offline. Mechanical coverage never claims semantic correctness; judgment and evidence are both retained and never confused — the honesty gradient (<code>exact · derived · self-reported · unavailable</code>) is schema, not style.</p>
+</section>
+
+<section id="extend">
+<div class="kick">12 · Extensibility</div>
+<h2>Where it extends — always at a controlled boundary</h2>
+<table>
+<tr><th>Extension point</th><th>Mechanism</th><th>Governance it inherits</th></tr>
+<tr><td>Work types (rails)</td><td>workflow.yml phase compositions</td><td>PR-reviewed on sflow/config; pinned per story; monotone fold</td></tr>
+<tr><td>Capabilities</td><td>Tree with per-node constraints</td><td>Tighten-only; edits via review branches</td></tr>
+<tr><td>Agents</td><td>Markdown persona + declared tools/views</td><td>Composed, hashed, pinned; never an approver</td></tr>
+<tr><td>Skills</td><td>Folder + registry entry + contract class</td><td>Mechanical stamping; 463-check gate; token ceilings</td></tr>
+<tr><td>MCP tools</td><td>Host-managed servers; per-phase/per-agent allowlists</td><td>Flow governs, never transports; evidence hash-pinned; scrubbed provenance</td></tr>
+<tr><td>Evidence providers</td><td>Normalized ImpactEvidence envelope</td><td>Observations only — cannot mutate, approve, or publish</td></tr>
+<tr><td>Documentation</td><td>Versioned topics compiled from registry + catalog</td><td>Mapping closed by check; Copilot answers grounded + cited</td></tr>
+<tr><td>Models/providers</td><td>Adapter behind one chokepoint</td><td>Policy per operation; tool scope adapters cannot widen</td></tr>
+</table>
+<p>The pattern every row repeats: <b>add capability at a controlled boundary rather than expanding the platform.</b> Extensions gain the pins, hashes, and approvals for free; none can acquire authority.</p>
+</section>
+
+
+<section id="authoring">
+<div class="kick">13 · The authoring surface</div>
+<h2>Bringing things in — agents, skills, artifacts, workflows, world model</h2>
+<p>Every kind of capability enters through the same pattern: plain files, brought from anywhere Git or HTTPS can reach, admitted through a validation gate, then pinned and governed like everything native. Nothing imported can acquire authority.</p>
+<table>
+<tr><th>What</th><th>How it comes in</th><th>Gate it passes</th></tr>
+<tr><td>Agents</td><td>Markdown personas (<code>.agent.md</code>: role, declared tools, world-model views) — authored locally, copied from any repository, or mapped onto existing Copilot agent definitions the host already runs</td><td>Composed deterministically, hashed, pinned per story; tool declarations cross-checked against MCP policy; an agent role is never an authorization role</td></tr>
+<tr><td>Skills</td><td>A folder plus a registry line — portable by construction (zero-dependency files), so a skill authored in any repository or fetched from any URL drops in unchanged</td><td>Mechanical contract stamping; token ceilings; the full <code>check</code> validation set; slash-only unless deliberately indexed</td></tr>
+<tr><td>Artifacts &amp; documents</td><td>Local files via <code>documents upload</code> / <code>inputs add</code>; remote artifacts fetched by URL (HTTPS-only, credentialed URLs rejected, redirects re-validated, size-capped)</td><td>Hashed before use; persisted source URLs stripped of query and fragment; forged lifecycle metadata inside imported files removed; written only to pinned paths</td></tr>
+<tr><td>Workflows</td><td>Work types composed as phases in <code>workflow.yml</code> — created, copied between repositories, or evolved like any configuration</td><td>Review branch and pull request onto <code>sflow/config</code>; schema validation; the monotone policy fold (may tighten inherited constraints, never weaken them); pinned per story at start</td></tr>
+<tr><td>World model</td><td>Built deterministically from the repository (or extended progressively per view); published to the governed state branch</td><td>Injected into prompts only as <b>phase-declared views under byte budgets</b> — never wholesale; version-pinned, staleness surfaced as warnings; grounding is optional, never a lifecycle precondition</td></tr>
+</table>
+<p><b>Git-workflow compatibility is by construction, not adaptation:</b> stories are branches created from the team&rsquo;s normal base; developers commit in their own style; pull requests, protected branches, code review, and CI operate unchanged — the kernel adds its lifecycle commits through the same Git it found, touching only allowlisted governed paths in isolated commits. Existing branching models (trunk-based, GitFlow, fork-based) require no modification; the platform&rsquo;s three additional branches (<code>sflow/config</code>, work-item state, the evidence branch) live alongside them without intersecting application history.</p>
+</section>
+
+
+<section id="primitives">
+<div class="kick">14 · The primitives</div>
+<h2>Eleven primitives, five dualities, one identity</h2>
+<pre>                      ┌───────────────────────┐
+                      │      THE SUBJECT      │  one ID · same truth on every surface
+                      └───────────┬───────────┘
+        content ────────────────── ┆ ────────────────── time
+        HASH        identity of bytes   │   PIN         identity across time
+        state ───────────────────  ┆  ─────────────── change
+        STATE MACHINE  what may change  │   TRANSACTION  how change lands
+        freedom ─────────────────  ┆  ────────────── boundary
+        INTERVAL    bounded freedom     │   GATE        deterministic boundary
+        machine ─────────────────  ┆  ─────────────── human
+        CONTRACT    judgment, bounded   │   APPROVAL    judgment, binding
+        attempt ─────────────────  ┆  ─────────────── memory
+        GENERATION  numbered attempt    │   RECORD      append-only memory</pre>
+<table>
+<tr><th>Primitive</th><th>Definition</th><th>What dies without it</th></tr>
+<tr><td class="c">Subject</td><td>A governed unit of work with one stable ID, resolving to the same branch and state from every surface</td><td>Frame invariance</td></tr>
+<tr><td class="c">Hash</td><td>Content addressing as the identity of bytes — equality, staleness, and tamper evidence all reduce to it</td><td>Evidence itself</td></tr>
+<tr><td class="c">Pin</td><td>A hash bound at a moment, immutable for a scope — configuration made contract</td><td>Stability of in-flight work</td></tr>
+<tr><td class="c">Phase state machine</td><td>Lifecycle as explicit states and legal transitions; one authority file, all else projection</td><td>Process as fact rather than intention</td></tr>
+<tr><td class="c">Generation</td><td>A numbered, immutable attempt — history accretes, never rewrites</td><td>Honest history</td></tr>
+<tr><td class="c">Transaction</td><td>The only write path: verified preconditions, isolated commit, CAS advance, journaled exactly-once recovery</td><td>Kill-anything-anytime safety</td></tr>
+<tr><td class="c">Interval</td><td>A bounded span of ungoverned freedom between governed boundaries — freedom as a first-class object</td><td>The developer&rsquo;s dignity</td></tr>
+<tr><td class="c">Gate</td><td>A deterministic predicate over state; refusals name evidence and repair</td><td>Verification without opinion</td></tr>
+<tr><td class="c">Approval</td><td>One human act binding identity, authority, and exact hash; stale on change; never automatable by axiom</td><td>Accountability</td></tr>
+<tr><td class="c">Contract</td><td>A typed behavioral boundary on the probabilistic layer — the model as client, never component</td><td>Containment</td></tr>
+<tr><td class="c">Record</td><td>An append-only, hash-chained event; the worldline is records composed, audit is records read</td><td>Memory that can be believed</td></tr>
+</table>
+<p>Completeness runs both directions: every feature decomposes into these — heal is gate + contract + generation + transaction; autopilot is the planner iterating transactions until an approval; impact is records + pins + arithmetic; a waiver is an approval moved upstream into a pinned policy — and none of the eleven decomposes further within the platform&rsquo;s vocabulary. Remove any one and a named guarantee dies with it. This is the complete ontology: fourteen sections of architecture, spelled with eleven words.</p>
+</section>
+
+<section id="recap">
+<div class="kick">15 · The invariants</div>
+<h2>What always holds</h2>
+<table>
+<tr><th style="width:52px">ID</th><th>Invariant</th></tr>
+<tr><td class="c">I1</td><td>The model never mutates state — it requests; the kernel executes.</td></tr>
+<tr><td class="c">I2</td><td>Approval requires an authorized human and binds exact bytes.</td></tr>
+<tr><td class="c">I3</td><td>In-flight work runs under its pinned starting contract.</td></tr>
+<tr><td class="c">I4</td><td>Any machine reconstructs the same truth from a clone.</td></tr>
+<tr><td class="c">I5</td><td>Failure leaves either nothing or an exactly-once-recoverable journal.</td></tr>
+</table>
+<p>Everything else — 1,163 deterministic tests, tripwire-proven model independence, ~42-token sessions, receipts, worldlines — is these five, compounded.</p>
+<p class="muted" style="font-size:13px">Numbers cited are measured on the reference environment or stated as design properties against a conventional counterfactual; methods travel with the numbers. Baseline: first release.</p>
+<footer>Singularity Flow · Architecture Guide · first release · companions: Technical Deep Dive, User Guide, PO Guide, Perspectives · self-contained.</footer>
+</section>
+
+</main>
+</div>
+<script>
+(function(){var L=[].slice.call(document.querySelectorAll('nav a.t')),S=L.map(function(a){return document.querySelector(a.getAttribute('href'))});
+function y(){var p=window.scrollY+130,c=0;for(var i=0;i<S.length;i++){if(S[i]&&S[i].offsetTop<=p)c=i}L.forEach(function(a,i){a.classList.toggle('on',i===c)})}
+window.addEventListener('scroll',y,{passive:true});y()})();
+</script>
+</body>
+</html>
