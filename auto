@@ -1,0 +1,303 @@
+SPEC — Automatic Repository Attachment for VS Code
+Status: proposed
+Scope: VS Code extension + CLI workspace resolver
+Goal: start/resume governed work without manually opening a repository first
+1. Problem
+Today, Singularity Flow relies on the repository currently open in VS Code to:
+locate singularity/workflow.yml;
+run the CLI with the correct working directory;
+determine the Git branch and Work ID;
+expose source files to Copilot.
+This creates a confusing dependency:
+Select Singularity workspace
+→ manually find and open repository
+→ possibly open another VS Code window
+→ attach Story session
+→ start Copilot
+The selected Singularity workspace already knows its repositories. Requiring the user to locate one again is unnecessary.
+2. Desired behavior
+The user should be able to start from the Singularity Flow sidebar:
+Select workspace
+→ select or start Story
+→ Singularity resolves repository
+→ clone/fetch working copy if necessary
+→ attach it to the current VS Code window
+→ attach Story session
+→ open governed Copilot handoff
+No manual repository opening and no additional VS Code window.
+3. Terminology
+Singularity workspace: project scope containing repository and capability mappings.
+Delivery repository: repository where a Story is implemented.
+Working copy: local clone or Git worktree used for one Story.
+Attach repository: add the working-copy directory to the current VS Code window.
+Attach session: select a Work ID, branch, phase, and governed agent for CLI and Copilot operations.
+Repository attachment and session attachment are separate operations.
+4. User experience
+4.1 Selecting a workspace
+Selecting a workspace must immediately load:
+workspace identity;
+declared repositories;
+capabilities;
+active and completed Stories;
+Lifecycle, Inbox, Configuration, and Logs.
+It must not require an open repository.
+4.2 Starting a Story
+The Story intake form determines the delivery repository using this precedence:
+Repository explicitly selected by the user.
+Repository mapped to the selected delivery capability.
+Only eligible delivery repository in the workspace.
+Otherwise, display a repository picker.
+If no repository can be resolved, show:
+Select the repository where this Story will be delivered.
+
+Do not show “Open a repository first.”
+4.3 Resuming a Story
+For an existing Story, use its pinned repository ID. The user must not be asked to select it again.
+Show a preview:
+Story             WRK-123
+Repository        mobile-app
+Branch            WRK-123
+Local directory   /workspaces/payments/worktrees/mobile-app/WRK-123
+Remote status     Up to date
+Current phase     implementation
+Agent             developer
+Primary action:
+Continue in this window
+
+4.4 Repository attachment
+After confirmation, the extension:
+Resolves or materializes the working copy.
+Fetches the required remote references.
+Checks out the exact Story branch.
+Attaches the Story session.
+Adds the directory using vscode.workspace.updateWorkspaceFolders().
+Refreshes the Singularity views.
+Offers to open Copilot Chat with the governed handoff.
+The extension must not call APIs that open a separate VS Code window.
+4.5 Copilot handoff
+After attachment, show:
+WRK-123 is ready in mobile-app. Phase: implementation. Agent: developer.
+
+Actions:
+Continue with Copilot
+Open Story dashboard
+Open terminal in Story
+Not now
+The governed handoff must include:
+workspace ID;
+repository ID and absolute working directory;
+Work ID and branch;
+workflow and current phase;
+governed agent;
+approved prior-phase artifacts;
+active evidence;
+applicable world-model context;
+deterministic next action.
+5. Working-copy strategy
+Do not switch branches underneath another active Story.
+Use this policy:
+Situation	Behavior
+Repository is absent locally	Clone into the workspace repository area
+Repository is present and unused	Use the existing clone
+Correct Story branch is already checked out	Reuse it
+Another branch has uncommitted changes	Create a dedicated Git worktree
+Another Story uses the repository	Create a dedicated Git worktree
+Remote Story branch exists	Fetch and create a tracking worktree
+Story branch does not exist	Create it only as part of confirmed Story start
+Path is outside the selected workspace	Reject unless explicitly imported
+
+
+Recommended layout:
+<workspace>/
+  repos/
+    mobile-app/
+  worktrees/
+    mobile-app/
+      WRK-123/
+      WRK-456/
+The layout is local infrastructure and must not be committed.
+6. CLI interfaces
+Add:
+singularity-flow workspace repository resolve \
+  --workspace <WORKSPACE-ID> \
+  --work-id <WORK-ID> \
+  --json
+Read-only. Returns repository, clone, branch, and attachment status.
+singularity-flow workspace repository materialize \
+  --workspace <WORKSPACE-ID> \
+  --work-id <WORK-ID> \
+  [--repository <REPOSITORY-ID>] \
+  [--fetch] \
+  --json
+Creates or repairs the working copy but does not open VS Code.
+singularity-flow workspace session attach \
+  --workspace <WORKSPACE-ID> \
+  --work-id <WORK-ID> \
+  [--repository <REPOSITORY-ID>] \
+  [--agent <AGENT-ID>] \
+  --json
+Attaches the local Flow session in the resolved working copy.
+Short Copilot commands:
+/sf-workspace <WORKSPACE-ID>
+/sf-session <WORK-ID>
+/sf-resume <WORK-ID>
+/sf-session must resolve the repository from the workspace instead of inspecting arbitrary repositories on the machine.
+7. CLI result envelope
+Repository resolution should return:
+{
+  "schemaVersion": 1,
+  "workspace": {
+    "id": "payments",
+    "path": "/workspaces/payments"
+  },
+  "subject": {
+    "kind": "story",
+    "id": "WRK-123"
+  },
+  "repository": {
+    "id": "mobile-app",
+    "origin": "https://git.example/mobile-app.git",
+    "defaultBranch": "main"
+  },
+  "workingCopy": {
+    "path": "/workspaces/payments/worktrees/mobile-app/WRK-123",
+    "kind": "worktree",
+    "exists": true,
+    "branch": "WRK-123",
+    "head": "full-commit-sha",
+    "dirty": false
+  },
+  "attachment": {
+    "sessionAttached": true,
+    "vscodeFolderRequired": true
+  },
+  "warnings": [],
+  "next": []
+}
+8. VS Code commands
+Add or revise:
+Singularity Flow: Select Workspace
+Singularity Flow: Start Story
+Singularity Flow: Resume Story
+Singularity Flow: Attach Story to Current Window
+Singularity Flow: Detach Repository from Current Window
+Singularity Flow: Repair Story Working Copy
+Singularity Flow: Open Story in Copilot
+Context menus:
+Story → Continue in this window
+Story → Attach working repository
+Repository → Open working copy
+Repository → Repair local copy
+Workspace → Manage attached repositories
+9. Sidebar behavior
+Workspaces
+Workspaces
+└─ Payments
+   ├─ 3 repositories
+   ├─ 2 active Stories
+   └─ Manage workspace
+Lifecycle
+Lifecycle
+├─ Active
+│  └─ WRK-123 · implementation
+│     ├─ mobile-app · attached
+│     ├─ Continue with Copilot
+│     └─ Story artifacts
+├─ Waiting
+└─ Completed
+If the repository is not attached:
+WRK-123 · implementation
+└─ Attach mobile-app to continue
+10. State and authority
+Information	Authority
+Workspace registry	Existing machine-local workspace registry
+Repository definitions	Workspace/capability configuration
+Work ID and repository mapping	Governed Story state
+Branch and remote receipt	Governed Story state
+Local clone/worktree path	Machine-local workspace metadata
+Active agent and session	.git/singularity-flow/session.json in the working copy
+Folders attached to VS Code	VS Code window state
+Lifecycle progress	Governed Story branch/state
+
+
+VS Code folder attachment must never become lifecycle authority.
+11. Safety rules
+Never scan the machine for matching repositories.
+Inspect only repositories declared by the selected workspace.
+Never force-push.
+Never discard local changes.
+Never switch a dirty repository to another Story branch.
+Never infer the target repository from a similarly named folder.
+Never create a branch until Story intake is confirmed.
+Never open another VS Code window automatically.
+If workspace trust is required, stop and let VS Code display its native trust prompt.
+Treat SSH, proxy, certificate, and credential failures as actionable errors without partially attaching a session.
+12. Error handling
+Replace generic messages with specific recovery actions.
+Missing clone
+mobile-app is not available locally. Clone it into this workspace?
+
+Dirty working copy
+The existing mobile-app clone has uncommitted changes. Singularity can create an isolated worktree for WRK-123 without disturbing them.
+
+Missing remote branch
+No remote branch exists for WRK-123. Resume cannot continue. Start the Story or verify its branch receipt.
+
+Access failure
+Singularity could not fetch mobile-app. Check Git authentication, corporate proxy, or certificate settings, then retry.
+
+Ambiguous repository
+This Story is eligible for multiple repositories. Select where it will be delivered.
+
+13. Refresh behavior
+After attachment or session changes:
+Invalidate the workspace snapshot cache.
+Refresh Workspaces, Lifecycle, Inbox, Configuration, and Logs.
+Start file watchers for the attached working copy.
+Ignore temporary lock and telemetry writes that do not change lifecycle state.
+Retry a drifting snapshot with bounded backoff before displaying an error.
+14. Test plan
+Repository resolution
+One repository defaults automatically.
+Capability mapping selects the correct repository.
+Multiple eligible repositories produce a picker.
+Existing Story uses its pinned repository.
+Undeclared repositories are rejected.
+Materialization
+Missing repository is cloned.
+Existing clean clone is reused.
+Dirty clone creates an isolated worktree.
+Existing remote Story branch is tracked.
+A failed fetch leaves no false session attachment.
+Concurrent Stories receive separate worktrees.
+VS Code
+Repository is added to the current window.
+No command invokes vscode.openFolder with a new-window option.
+Empty VS Code windows work.
+Existing multi-root workspaces work.
+Repeated attachment is idempotent.
+Detachment removes only the workspace folder, not the files or Story session.
+Lifecycle views refresh automatically.
+Copilot
+Handoff runs from the resolved repository.
+Prompt contains the correct Work ID, repository, phase, and agent.
+Approved artifacts and active evidence are included.
+Copilot does not inspect the Singularity Flow product source by mistake.
+Switching Stories changes context deterministically.
+Safety
+Dirty changes are preserved.
+No force push occurs.
+No arbitrary home-directory scanning occurs.
+Branches are not created before confirmation.
+Access failures do not leave partial Story state.
+15. Acceptance criteria
+The change is complete when:
+A user can launch VS Code with no folder open.
+Select a Singularity workspace.
+Select an existing Story or complete Story intake.
+Continue in the current window.
+Have the correct repository cloned or worktree materialized.
+See it added to the same VS Code window.
+Open Copilot with the correct governed Story context.
+Run /sf-status and receive status for that Story—not for the Singularity Flow product repository.
+Complete this without manually browsing to or opening a repository folder.
