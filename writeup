@@ -1,0 +1,177 @@
+A governed delivery layer for human–AI software development
+
+**Product and maturity brief · 15 August 2026**  
+**Code baseline reviewed:** `main@86054ae`
+
+## Executive summary
+
+SingularityFlow is a spec-driven software delivery platform designed for a world in which developers increasingly work with AI assistants but organisations must still retain control over intent, authority, evidence and release decisions.
+
+It is not another coding assistant and it does not attempt to replace GitHub Copilot, an IDE, Jira or CI/CD. Instead, it sits around those tools as a governed delivery layer. Copilot can understand the user, draft material and help perform work; SingularityFlow determines which work item is active, which configuration applies, what evidence exists, what action is legal, who may approve it and whether it is ready to advance.
+
+The simplest description is:
+
+> **Developers and AI assistants are free to work. SingularityFlow makes the resulting delivery explainable, reviewable and provable.**
+
+The product is technically well beyond a concept or demonstration. Its deterministic kernel, lifecycle records, policy enforcement, work intervals, approvals, reconciliation, convergence, impact evidence and model-containment mechanisms form a substantial pre-production platform. However, maturity varies by layer. The underlying governance engine is considerably more mature than the guided Copilot experience and the proposed Explore rail. Overall, SingularityFlow should be described as an **advanced pre-production platform approaching an enterprise pilot**, not yet as a production-proven enterprise product.
+
+## The problem it solves
+
+AI coding tools dramatically reduce the cost of producing code, but code generation is only one part of delivery. As development accelerates, organisations face harder questions:
+
+- What approved requirement was this change meant to satisfy?
+- Which specification, policy and repository state governed the work?
+- Did an AI model produce a suggestion, or did a human make the decision?
+- Were the relevant tests and checks executed against the exact submitted bytes?
+- What changed after an approval was given?
+- Can a developer leave, return later and recover the correct context?
+- Can the same governance survive a change of model, assistant, IDE or machine?
+
+Conventional assistants optimise the current conversation. SingularityFlow governs the delivery across conversations, tools, people and time.
+
+## What the solution is
+
+SingularityFlow combines five product ideas into one coherent system.
+
+### 1. A spec-driven delivery journey
+
+Work begins from governed intent and moves through recognisable steps such as specification, planning, implementation, convergence, verification and release. The user can experience this through a small set of verbs rather than learning the internal lifecycle machinery.
+
+Specifications are not merely prompt context. They become versioned subjects with clauses, exact artifact generations, approvals, evidence links and conformance records. When approved content changes, the system can invalidate or reopen only the affected parts rather than pretending the earlier decision still applies.
+
+### 2. A deterministic governance kernel
+
+The kernel is the product’s authority boundary. It owns workflow state, transitions, policy resolution, hashes, approvals, publication, recovery, evidence and identity checks. Models may propose content or interpretations, but they cannot approve their own output, silently advance a lifecycle or substitute narrative for evidence.
+
+This separation is central to the architecture:
+
+> **Copilot understands and guides; the SingularityFlow kernel decides what is real, legal and executable.**
+
+The result is an AI-enabled workflow without turning the model into the workflow engine.
+
+### 3. A guided Copilot front door
+
+The intended user experience begins with **Talk to SFlow** or `@sflow`. A new user does not need to know command names, branch conventions or lifecycle terminology. The guide presents a small, contextual menu:
+
+```text
+What is on your mind today?
+
+1. Continue current work
+2. See my work and pending decisions
+3. Start something new
+4. Switch workspace
+5. Run a quick impact analysis
+6. Explore repositories or investigate a problem
+```
+
+An experienced user can skip the menu and state an intent directly. The guide explains the situation, asks one bounded question at a time and offers only actions the kernel says are currently valid. It can help a user continue a Story, investigate a failed build, trace a bug to a change, explore registered repositories or begin governed work—but the conversation never becomes a second state store or approval channel.
+
+### 4. Developer freedom inside governed boundaries
+
+SingularityFlow does not require the developer to remain inside a proprietary coding loop. A developer can use their preferred IDE, assistant and normal Git workflow, make their own commits, pause the work and return later.
+
+Governed work intervals pin the starting revision, configuration, protected paths, required checks and relevant policies. When the developer returns, SingularityFlow reconciles actual changes against the pinned baseline and intended work. This provides freedom during development without losing accountability at the boundary.
+
+The proposed **Explore rail** extends this principle to uncertain, prototype-heavy work. A developer can begin with a one-line hunch, work without continuous lifecycle prompts, and later ask SingularityFlow to inventory the result, propose candidate intent and help an authorised human formalise it before verification. The honest record says that intent was reconstructed and ratified at landing; it does not pretend the work was specified in advance.
+
+### 5. A reusable repository world model
+
+SingularityFlow builds a governed understanding of repositories and exposes role- and phase-specific views—for example business, architecture, development and testing views. Instead of repeatedly sending an entire repository to a model, the platform can compose the smallest relevant context from pinned knowledge, code structure, artifacts and evidence.
+
+This improves grounding and can reduce token consumption by avoiding repeated rediscovery, selecting only the views needed for the current task and reusing stable, hash-addressed context. The architectural benefit is stronger than simple token reduction: different models and agents can work from the same organisational understanding rather than constructing a new, inconsistent picture in every conversation.
+
+## What makes SingularityFlow different
+
+Most AI development products centre on generating or editing code. SingularityFlow centres on preserving the relationship between **intent, implementation, evidence and human authority**.
+
+Its differentiation is the combination of:
+
+- freedom to use different assistants and development environments;
+- deterministic lifecycle enforcement outside the model;
+- exact-generation approvals bound to hashes;
+- spec-to-code-to-test traceability;
+- world-model views that make context reusable and economical;
+- governed reconciliation of work performed outside the platform;
+- explicit separation of facts, model interpretations and human judgments;
+- visual and test evidence attached to the exact work reviewed;
+- recoverable, Git-transferable delivery state rather than chat-session memory;
+- measurement that can distinguish observed association from validated causation.
+
+The durable asset is therefore not a particular agent. It is the kernel-owned delivery record and the organisational knowledge that any authorised agent can consume.
+
+## Current maturity
+
+SingularityFlow’s maturity is best assessed by layer rather than with one blanket label.
+
+| Layer | Current maturity | Assessment |
+|---|---|---|
+| Governance kernel | Advanced pre-production | Real state transitions, policy resolution, approvals, exact hashes, publication and recovery exist in code and are extensively tested. |
+| Spec-driven lifecycle | Advanced pre-production | Multiple work types, governed artifacts, phase gates, clause traceability and fast-path orchestration are implemented. |
+| Work intervals and reconciliation | Advanced pre-production | Baselines, local checkpoints, changed-path evidence, protected paths, escalation and clean-target enforcement are implemented. |
+| Model containment | Advanced pre-production | Operations are classified by model policy, deterministic fallbacks exist, and no-model tripwires are tested. |
+| Convergence and assurance | Advanced prototype | Deterministic convergence and assisted candidates are implemented; broader real-project validation is still needed. |
+| World model and views | Advanced prototype | The architecture is differentiated and substantial, but performance, cross-branch materialisation and operational hardening remain important. |
+| VS Code experience | Functional product surface | A real extension and lifecycle views exist; the experience is still becoming simpler and more role-oriented. |
+| Guided Copilot experience | Specification-ready | The interaction contract and safety architecture are detailed, but the complete contextual front door is not yet implemented end to end. |
+| Explore/Vibe rail | Validated design | It composes well from existing interval, reconciliation, cancellation and waiver foundations; landing analysis and intent ratification are not implemented. |
+| Enterprise operations | Early | The platform has not yet accumulated production usage, support history, upgrade evidence, scale data or multi-team operating experience. |
+
+### Overall maturity statement
+
+The fairest external description is:
+
+> **SingularityFlow is an advanced, technically substantial pre-production platform with a mature governance core, an emerging guided experience and several differentiated capabilities ready for controlled enterprise pilots.**
+
+It would be inaccurate to call it an idea-stage prototype. It would also be premature to call it production mature until it has completed real multi-team pilots, upgrade and recovery exercises, security review, performance characterisation and sustained operational use.
+
+## Evidence of engineering maturity
+
+The current codebase demonstrates qualities normally absent from an early prototype:
+
+- deterministic operations continue to function with models disabled;
+- approvals and evidence bind to exact source and artifact revisions;
+- stale approvals and configuration drift are treated explicitly;
+- publication and recovery are designed as lifecycle concerns;
+- protected paths and low-risk waivers have executable predicates;
+- model-assisted outputs are kept separate from deterministic findings;
+- local versus remotely durable state is labelled honestly;
+- lifecycle behavior is covered by a broad automated test suite;
+- configuration and workflows are designed as normal extensible definitions rather than hard-coded demonstrations.
+
+A targeted review of the current baseline ran 31 tests covering work intervals, quick-fix governance, convergence, impact comparison and model tripwires, with all 31 passing. This is meaningful evidence of kernel quality, although it is not a substitute for the full suite or production validation.
+
+## What remains before a serious enterprise pilot
+
+The shortest credible path is not to add more conceptual breadth. It is to prove one complete user journey.
+
+The recommended pilot slice is:
+
+1. Open **Talk to SFlow** and receive the contextual home menu.
+2. Continue existing work or start a new Story without knowing commands.
+3. Move through specification, planning and implementation using the existing kernel.
+4. Allow development in any editor and reconcile the returned changes.
+5. Run deterministic checks, convergence and visual assurance where applicable.
+6. Complete an authorised review bound to exact bytes.
+7. Publish, recover from a simulated failure and produce a release receipt.
+8. Resume the same Story from another machine using Git-visible state.
+
+Before broader rollout, the platform should additionally demonstrate:
+
+- security and threat-model review of the host adapter and tool boundary;
+- clean installation and upgrade across representative repositories;
+- deterministic recovery from interrupted publication;
+- performance and token measurements on real repositories;
+- multi-user authority and self-approval tests;
+- provider-neutral build provenance with at least one reference CI adapter;
+- usability evidence from developers, reviewers and product owners;
+- documented support, diagnostics and failure-recovery procedures.
+
+## Product outlook
+
+SingularityFlow has the ingredients to become a software delivery command layer rather than another short-lived assistant wrapper. Its strongest idea is not that AI can generate every artifact. It is that organisations can gain the speed and flexibility of AI-assisted development without giving up the durable structures that make software trustworthy.
+
+The near-term product opportunity is to make the existing sophistication feel small: one conversational entry point, a handful of understandable journeys and an invisible deterministic kernel underneath. If that experience is executed well, users should feel freedom while working and confidence when the work is ready to move forward.
+
+That is the product promise:
+
+> **Start from an idea. Work with freedom. Return at any time. Know exactly what changed, why it changed, who decided and what evidence makes it safe to deliver.**
