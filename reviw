@@ -1,0 +1,104 @@
+# Singularity Flow — What It Is, and How Mature It Is
+
+*An honest assessment, graded the way the product grades its own evidence:
+claims below are labeled **measured** (verified against the codebase),
+**self-demonstrated** (the product applied to itself), or **unvalidated**
+(plausible, awaiting external contact). Verification boundary: the last
+audited repository state; the codebase moves daily.*
+
+## What it is
+
+Singularity Flow is a Git-native lifecycle kernel for AI-assisted software
+delivery. A deterministic, zero-dependency CLI owns lifecycle state as a
+state machine on Git branches; models — any vendor's, or none — draft,
+clarify, and narrate through typed contracts, but cannot approve, skip a
+step, mutate state, or declare work done. Every artifact is hashed; every
+approval binds a named human authority to exact bytes and lapses if they
+change; every completed story mints a deterministic receipt; the entire
+evidence chain verifies offline from a bare clone. The one-line version:
+**prompts generate work — Singularity Flow proves what work happened, under
+which rules, and who said yes.**
+
+Within the firm it sits *beneath* our existing tooling rather than beside
+it: Copilot and coding agents perform on it, our Jira intake and Teams
+notifications plug into it, existing Git workflows run unchanged on top of
+it, and audit or risk review requires nothing but a repository clone. It
+was built inside our constraints — Artifactory-only distribution,
+locked-down machines, no hosted services, no data egress — so adoption
+requires no new infrastructure, procurement, or security exception.
+
+## What exists today — measured
+
+- **The kernel**: publication as a transaction (isolated commits,
+  compare-and-swap, disk-fingerprint conflict detection, journaled
+  exactly-once recovery); pinned per-story configuration with a monotone
+  tighten-only policy fold; work intervals with checkpoints, cross-machine
+  resume, and deterministic reconciliation; approvals with authority
+  groups, exact-hash binding, and automatic staleness; policy waivers
+  recorded as waivers, never as approvals; rail escalation with all work
+  preserved.
+- **Scale and verification**: on the order of 1,150+ deterministic tests
+  across ~140 files; 460+ static validations across ~97 conversational
+  skills under six machine-stamped behavioral contracts; a CI tripwire
+  that runs the complete story lifecycle with model executables replaced
+  by failing fakes — "works without AI" is a build gate, not a slogan.
+- **Surfaces**: CLI, a substantial VS Code extension (inbox, journey,
+  stories, traceability, analytics, ~50+ palette commands), and Copilot
+  chat skills — all computing the same truth from the same branches; a
+  reviewer's full onboarding is one clone.
+- **Instruments**: exact token/cost telemetry (≈42-token fixed session
+  cost, demand-paged skills, reference-passing previews); impact receipts
+  and pre-registered studies with quality-gated labels, evidence grades,
+  and privacy floors; model-independence enforcement with per-operation
+  policy; an append-only evidence ledger verifiable offline.
+- **Documentation**: a seven-document suite (deep dive, architecture,
+  user, product-owner, perspectives, narrative, skills) plus packaged
+  in-product help topics — all written against verified code.
+
+## How mature — by dimension
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Architecture | **High** | Eleven primitives, five invariants, held consistently across ~20 specs; every recent capability shipped as composition, not new machinery — the strongest available signal that the foundations are right |
+| Correctness discipline | **High, and honestly earned** | The kernel survived an adversarial self-audit that found and fixed six real defects (including a lost-update CAS blindspot), with reproductions published in commit history — the audit trail contains evidence *against* earlier versions, which is precisely what makes the current version's guarantees credible |
+| Feature completeness | **Broad core, sharp known edges** | The full lifecycle, measurement, and model-independence layers are implemented; a tracked defect list is open (world-model merge-base data loss and resolution staleness; narration-layer enforcement gaps) and the schema-migration framework — named prerequisite by multiple specs — remains the one critical structural gap |
+| Self-application | **Self-demonstrated** | The platform is developed under its own governance: clause-bound specifications extracted into its own check gates, tests bound to requirement IDs — anyone can inspect a repository where the governance claim demonstrates itself |
+| Enterprise posture | **Strong by construction** | Zero runtime dependencies, no hosted services, no telemetry egress, air-gap capable, credentials never touched, offline verification — constraint-native for regulated and locked-down environments |
+| Operability | **Adequate for pilot scale** | Doctor/sync/recover cover the failure modes; retention/archival at multi-year scale is designed-for but unbuilt |
+| Internal validation | **Unvalidated — the honest zero** | No user outside the build effort has yet run it. Every belief about the human experience — that ceremony feels proportional, that refusals read as help, that POs will love the inbox — is currently plausible and uncorroborated. The product's own evidence rules would refuse to render its adoption thesis |
+
+## The gaps, plainly
+
+A short, tracked list: the schema-migration framework (≈2 days, blocking
+receipt-minting at scale); the world-model second-observer fixes; the
+narration layer's enforcement pass; two small hardening items. None is
+architectural; all are scheduled work. The only gap that matters
+strategically is the last row of the table above — and it is fixed not by
+engineering but by two names and ninety minutes with a real epic.
+
+## Verdict
+
+**Architecturally mature, operationally self-proven, unvalidated with
+internal users.**
+This is a system whose foundations have stopped moving — new capabilities
+now arrive as compositions of eleven stable primitives — whose correctness
+culture has already survived its own adversarial audit in public, and
+whose distinguishing properties (repository-resident truth, hash-bound
+authority, model-optionality, honest measurement) are structural rather
+than aspirational. The recommended next step is a supervised two-week pilot: one team, one
+real epic, one product owner and one developer, ordinary stories — with
+the platform's own receipts measuring the result. That pilot is also the
+only remaining source of the evidence this assessment lacks. Broader
+rollout should follow pilot evidence, not precede it — not because the
+kernel isn't trustworthy, but because the human experience is unmeasured,
+and this platform, of all platforms, should refuse to claim what it has
+not observed.
+
+**The ask, concretely:** two named participants, ninety minutes to start,
+two weeks of ordinary work. No infrastructure, no procurement, no security
+review beyond reading the repository — the platform runs entirely on
+approved tooling we already have.
+
+The fair one-sentence summary: **an internal platform with the correctness
+discipline of a mature system and the user-evidence of a prototype — and
+honest enough to say so, because saying so is the product.**
